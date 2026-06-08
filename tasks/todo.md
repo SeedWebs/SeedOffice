@@ -1,0 +1,151 @@
+# SeedOffice — P1 Task List
+
+> vertical slices เรียงตาม dependency · ทำจากบนลงล่าง · ภาพรวมที่ [plan.md](./plan.md) · สเปค [SPEC.md](../SPEC.md) v0.7
+> ทุก task DoD = `typecheck + lint + test` เขียว + verify ผ่าน + ขึ้น preview ได้
+
+---
+
+## Phase 0 — Foundation
+
+### ☐ T01 — Monorepo scaffold + tooling
+**deps:** —
+- pnpm workspaces: `apps/web` (Vite+React+React Router+Tailwind), `apps/api` (Hono Worker), `packages/db` (Drizzle), `packages/core` (pure)
+- `wrangler.toml` + bindings: D1, R2, vars; worker เสิร์ฟ `/api/*` + static assets ของ SPA
+- runners: ESLint, `tsc --noEmit`, Vitest; scripts `dev/build/deploy/lint/typecheck/test`
+- **AC:** `pnpm dev` เปิด SPA + `GET /api/health` → 200 `{ok:true}`; `pnpm test` รันได้
+- **Verify:** เปิด localhost เห็น SPA, curl /api/health ได้ ok; CI (lint/typecheck/test) เขียว
+
+### ☐ T02 — DB foundation (Drizzle + D1) + config + seed
+**deps:** T01
+- schema เริ่มต้น: `users`, `sessions`, `rates`, **`company_config`** (cutoffDay=25, workHourCapMinutes=480) + migration แรก
+- seed คล้าย mockup: owner (owner@seedwebs.com) + members (ปอนด์/น้ำ/ตูน/บีม/กร…) + vendor (สมชาย) + rates
+- **AC:** migrate กับ local D1 ได้; seed insert ได้; query ผ่าน Drizzle; config อ่านได้
+- **Verify:** `pnpm db:migrate` + `db:seed` สำเร็จ; drizzle studio เห็นตาราง/ข้อมูล
+
+### ☐ T03 — Core money/time/cycle math (pure, TDD)
+**deps:** T01
+- `packages/core`: types สตางค์/นาที; `baseSatang(minutes, rateSatangPerHour)` + กฎปัดเศษ; `cycleOf(date, cutoffDay)` → `{start,end,payDate}` (≥25 → งวดถัดไป, ≤24 → งวดนี้); **`netOf(base, adjustments[])`** = base + Σincome − Σdeduction; `costSatang(entries)` + profit/margin; `capMinutes(perDay, cap)`
+- **เขียนเทสต์ก่อน** ครอบ edge: วันที่ 24/25/26, สิ้นเดือน, ปัดครึ่งสตางค์, adjustment +/−, เกินเพดานชั่วโมง
+- **AC:** ทุกฟังก์ชัน pure (รับ date เข้า ไม่มี Date.now ภายใน); coverage สูง; **สูตรปัดเศษ + net ยืนยันกับเจ้าของ**
+- **Verify:** `pnpm test packages/core` เขียว; ตารางเทียบ 1 งวดจริง
+
+---
+
+## Phase 1 — Auth & identity  →  **CP1**
+
+### ☐ T04 — Google OAuth + session (API)
+**deps:** T02
+- OAuth login/callback (Hono) → session ใน D1 + httpOnly secure cookie; logout (เพิกถอน)
+- allow: domain `seedwebs.com` (member) + vendor allowlist; **email ที่ไม่ถูก provision = ปฏิเสธ**
+- **AC:** อีเมล allowed → session; ไม่ allowed → 403; logout เพิกถอน session
+- **Verify:** e2e login จริง 1 รอบ (manual) + integration mock OAuth ใน CI
+
+### ☐ T05 — Frontend auth + protected routes + role nav
+**deps:** T04
+- auth context (`/api/me`), guard routes, **nav ตาม role** ตาม §2 (owner/member/vendor) — เมนู: ภาพรวม·โปรเจกต์·ค่าตอบแทน·(เงินสดย่อย P2)·ตั้งค่า; **role switcher บน top bar** (mock); logout
+- **AC:** ไม่ login → เด้ง login; **vendor เห็นแค่ ภาพรวม + โปรเจกต์** (+ ค่าตอบแทนของตัวเอง), ไม่เห็นเมนูการเงินทีม
+- **Verify:** login 3 role เห็น nav ต่างกันตาม mockup
+
+### ☐ T06 — Role-guard middleware + audit log
+**deps:** T04
+- middleware ตรวจ role ต่อ endpoint; `audit_logs` + helper เขียน log
+- **AC:** member ยิง endpoint owner-only → 403; **vendor ยิง P&L/payroll → 403**; action การเงินถูก log
+- **Verify:** integration test สิทธิ์ครบ 3 role; ดู `audit_logs` มี record
+
+> **CP1:** login ได้, role กัน nav + API ถูกต้อง — รีวิวกับเจ้าของ
+
+---
+
+## Phase 2 — Users, rates & config
+
+### ☐ T07 — Users CRUD + rates (effective-dated) + company config
+**deps:** T06
+- owner provision user (email, role, status); ตั้ง/แก้ **rate effective-dated** (เก็บประวัติ); self เห็น rate ตัวเอง
+- หน้า **ตั้งค่า**: company config (วันตัดรอบ, เพดานชั่วโมง/วัน)
+- **AC:** owner เพิ่ม user/ตั้ง rate (เปลี่ยน rate เก็บประวัติ ไม่ลบของเก่า); แก้ config ได้; non-owner ทำไม่ได้
+- **Verify:** ตั้ง rate 2 ครั้ง → 2 records; member เปิดตั้งค่าไม่ได้
+
+---
+
+## Phase 3 — Projects → tasks  →  **CP2**
+
+### ☐ T08 — Projects (2 ประเภท) + list (timeline / cards / table / search)
+**deps:** T07
+- `projects` (type project|recurring, status incl `archived`, quotedSatang, client, วันที่); CRUD
+- **งานโปรเจกต์**: **timeline ภาพรวม** (12 ด. scroll-x, คอลัมน์ชื่อ/งบ฿K sticky, บาร์+เส้นวันนี้) + **cards** (สถานะ · avatar · ⚠️ **%จ่าย → wired ใน T14 · จุดสีกำไร/health → wired ใน T17** = placeholder ก่อน) ; **งานต่อเนื่อง**: ตารางทุกราย
+- **ค้นหา/กรอง** lightbox (⌘K): active + archived + filter chips
+- **AC:** สร้าง/แก้/ลิสต์ 2 ประเภท; **vendor เห็นชื่อ/สถานะ ไม่เห็นเงิน** (งบ/%จ่าย/กำไร); ค้นหาเจอทั้ง active+archived
+- **Verify:** สร้างโปรเจกต์เห็นใน timeline+cards; สลับ vendor ไม่เห็นคอลัมน์เงิน; ⌘K ค้นเจอ
+
+### ☐ T09 — Task groups + tasks (start/due, sortable) + project-detail timeline + checkbox
+**deps:** T08
+- `task_groups` + `tasks` (groupId, sortOrder, assignee, status, **estimate**, **startDate / dueDate**, ติดดาว); project detail: groups + tasks
+- **โหมดจัดเรียง** (ปุ่มมุมขวาบน เปิด/ปิด grip — ปกติซ่อน) reorder group+task; **checkbox เสร็จ** (line-through); **task-group timeline** (บาร์ = `min(startDate)`–`max(dueDate)` ของ task ในกลุ่ม)
+- **AC:** สร้าง/แก้/ลบ group+task; reorder persist; เช็คเสร็จ; timeline คำนวณช่วงจาก task start/due; assign member/vendor
+- **Verify:** ลากเรียงแล้ว reload คงลำดับ; เช็ค task → done; vendor เห็น task แต่ไม่เห็น P&L
+
+### ☐ T10 — Task detail: comments + attachments (R2) + activity log
+**deps:** T09
+- drawer: รายละเอียด + **comment** (`task_comments`) + **แนบรูป/ไฟล์ (R2)** (`task_attachments`) + **activity log** (กางได้, อ่านจาก `audit_logs`: สร้าง/แก้/มอบหมาย/สถานะ/comment · ลงเวลา/แก้เวลา จะโผล่เมื่อ T12/T13 มา)
+- **AC:** comment โพสต์/แสดง; ไฟล์อัปขึ้น R2 + thumbnail + โหลดได้; activity แสดงเรียงเวลา
+- **Verify:** อัปรูป+ไฟล์ → เห็น/โหลด; comment เรียงเวลา; ทำ action → ขึ้นใน activity
+
+### ☐ T11 — Task stars (ทำวันนี้) + Quick Add + ภาพรวมส่วนตัว (ย่อ)
+**deps:** T09
+- `task_stars` (forDate); **Quick Add modal** (ปุ่ม + คีย์ **N**): project→group→title→ติดดาว
+- **ภาพรวม (ย่อ, P1)**: **งานวันนี้** (task ติดดาว + ปุ่ม play/เวลา — *การเดินเวลาเชื่อมเมื่อ T12 พร้อม*) + **งานเร็วๆ นี้** (≤5) — *team hub (presence/standup/ปฏิทิน) = P2*
+- **AC:** ติดดาว → ขึ้น "งานวันนี้"; Quick Add (N) สร้าง task ใน project/group ที่เลือก
+- **Verify:** ติดดาว task → เห็นบนภาพรวม; กด N เพิ่ม task สำเร็จ
+
+> **CP2:** จัดการงานครบ + timeline + ค้นหา (แทน Notion) — รีวิวกับเจ้าของ
+
+---
+
+## Phase 4 — Time tracking  →  **CP3**
+
+### ☐ T12 — Time entries: timer + manual (จาก task)
+**deps:** T09, T07 (rate), T03
+- `time_entries` (+ `timer_sessions` สำหรับ timer เดินอยู่); ลงเวลาจาก task detail: timer start/stop + manual; **snapshot rate** ตอนสร้าง; edit + soft-delete
+- แสดง **`H:MM:SS`** (ชั่วโมงหลักเดียว) + อ้าง **เพดานชั่วโมง/วัน** (config)
+- **AC:** timer stop → entry มี rateSnapshot; manual ได้; แก้/ลบ (soft) ได้; **ทุก role รวม vendor ลงของตัวเองได้**
+- **Verify:** จับเวลา 1 รอบ + manual → เห็น entry + rateSnapshot ถูก; vendor ลงของตัวเองได้
+
+### ☐ T13 — Time audit + integrity metric (manual%)
+**deps:** T12
+- log manual/แก้/ลบ (ก่อน→หลัง) ลง `audit_logs`; คำนวณ **manual% ต่อคนต่องวด**; team-hours view + **flag สีส้ม >10%** (เห็นทั้งทีม) + จำนวนครั้งที่แก้
+- **AC:** แก้เวลา → มี audit (before/after); manual% ตรงนิยามทั้งงวด; >10% ขึ้นสีส้ม
+- **Verify:** สร้าง manual เกิน 10% ของงวด → แถวส้ม; แก้ entry → เห็น audit
+
+> **CP3:** ลงเวลาได้ครบ (แทน Everhour) — รีวิวกับเจ้าของ
+
+---
+
+## Phase 5 — Milestones · ค่าตอบแทน · P&L  →  **CP4 = P1 done**
+
+### ☐ T14 — Milestones + payments (per project)
+**deps:** T08
+- `milestones` (งบ/กำหนด/สถานะต่องวด) + `payments` (installment, จ่ายแล้ว/ยอด)
+- **AC:** เพิ่ม/แก้งวดงาน + งวดจ่าย; คำนวณ **%ลูกค้าจ่ายแล้ว** (→ card T08) + งบต่องวด (→ P&L T17); owner+member เท่านั้น
+- **Verify:** ใส่ payment → %จ่ายบน card อัปเดต; vendor ไม่เห็น
+
+### ☐ T15 — ค่าตอบแทน (self view): สรุปเวลา + base + รายได้/หัก = สุทธิ
+**deps:** T12, T07, T03
+- `pay_adjustments` (kind: allowance|depreciation|bonus|other_income|sso|wht|other_deduction) + `pay_notes`; **base = core calc**; net = base + Σรายได้ − Σหัก
+- หน้า self **2 คอลัมน์**: ซ้าย = **สรุปเวลาของฉัน** (ชั่วโมงงวด/วันนี้/เป้า/manual%/ตามโปรเจกต์) · ขวา = **โน้ตจากหัวหน้า** (ถ้ามี) + **ค่าตอบแทน** (รายได้−หัก=สุทธิ) + **เงินสดย่อยรอเบิกของตัวเอง** (P1 = ฿0/ซ่อน จนกว่า petty cash P2)
+- **AC:** base/net ตรง core; **เจ้าตัวเห็นของตัวเองครบ**; **member ดู เงินพิเศษ/net/โน้ต คนอื่นไม่ได้ (server 403)**; vendor เห็นของตัวเอง (หัก ณ ที่จ่าย 3%)
+- **Verify:** เทียบ base/net กับ core test; member B เปิดข้อมูล member A → ถูกปฏิเสธ
+
+### ☐ T16 — ค่าตอบแทน (owner overview) + CSV + ปิดงวด + โน้ต
+**deps:** T15
+- หน้า owner: ตารางทั้งทีม (ชม. · manual% · **รายได้** เงินเดือน/เบี้ยเลี้ยง/ค่าสึกหรอ/เงินพิเศษ/อื่นๆ · **หัก** ปกส./ภาษี/อื่นๆ · **สุทธิ** · **โน้ต**); owner ใส่ `pay_adjustments` + **`pay_notes`** รายคน/รายงวด (**เงินพิเศษ + โน้ต = ลับ เห็นเฉพาะเจ้าตัว**)
+- **export CSV** (ทำรายการธนาคารวันที่ 25) + **ปิดงวด → snapshot `payslips`** (breakdown + โน้ต, ไม่เปลี่ยนย้อนหลัง)
+- **AC:** ตารางรวม + total ถูก; CSV ดาวน์โหลดได้; ปิดงวดสร้าง payslip; **non-owner เข้าไม่ได้**
+- **Verify:** export เทียบยอด; ปิดงวด → payslips ถูกสร้าง; member เปิดหน้านี้ไม่ได้
+
+### ☐ T17 — Project cost / profit (P&L)
+**deps:** T12, T08, T14, T03
+- cost = Σ(ชั่วโมง×rateSnapshot)/โปรเจกต์; profit = ราคาขาย − cost; margin; **กำไร/ขาดทุนต่องวด (milestone %)** + **%ลูกค้าจ่าย (payment)**; แถบ P&L ย่อ + **จุดสี health บน card** (เติมจาก placeholder T08)
+- **AC:** cost/profit/margin ตรง core; owner+member เห็น; **vendor ไม่เห็น P&L เลย (server + UI)**; breakdown รายคนโชว์ **ชั่วโมง** (ไม่โชว์เงินรายคน)
+- **Verify:** เทียบ cost กับ core; สลับ vendor → ไม่เห็นเงินทั้ง list + detail
+
+> **CP4:** ลูปเงินครบ → **P1 เสร็จ** — รีวิว + ตัดสินใจเข้า P2 (petty cash + team hub)

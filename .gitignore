@@ -1,0 +1,12 @@
+# OS
+.DS_Store
+
+# Claude Code (local-only)
+.claude/settings.local.json
+
+# Node / build (สำหรับตอน build P1)
+node_modules/
+dist/
+.wrangler/
+.dev.vars
+*.local

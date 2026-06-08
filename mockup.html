@@ -1,0 +1,1206 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>SeedOffice — Mockup</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<script src="https://unpkg.com/lucide@latest"></script>
+<script>
+  tailwind.config = { theme: { extend: {
+    fontFamily: { sans: ['Inter','Noto Sans Thai','sans-serif'] },
+    colors: { brand: { 50:'#ecfdf5',100:'#d1fae5',200:'#a7f3d0',400:'#34d399',500:'#10b981',600:'#059669',700:'#047857',800:'#065f46' } }
+  }}}
+</script>
+<style>
+  body{font-family:'Inter','Noto Sans Thai',sans-serif; background: #f5f5f7;}
+  .nav-active{background:#ecfdf5;color:#047857}
+  .nav-active svg{color:#059669}
+  *::-webkit-scrollbar{display:none}            /* ซ่อน scrollbar ทุกจุด (แบบ macOS) ยัง scroll ได้ */
+  *{scrollbar-width:none; -ms-overflow-style:none}
+</style>
+</head>
+<body class="text-slate-800 antialiased">
+
+<!-- top bar: mockup label + role switcher (แยกจากดีไซน์หลัก) -->
+<div class="bg-slate-900 text-white flex items-center justify-between px-6 h-10">
+  <span class="text-xs font-semibold tracking-widest text-slate-400">MOCKUP</span>
+  <div class="flex items-center gap-1 bg-slate-800 rounded-lg p-0.5 text-xs font-medium">
+    <span class="text-slate-400 px-1.5 hidden sm:inline">ดูในมุม</span>
+    <button onclick="setRole('owner')" id="rb-owner" class="role-btn px-2.5 py-1 rounded-md">Owner</button>
+    <button onclick="setRole('member')" id="rb-member" class="role-btn px-2.5 py-1 rounded-md">Member</button>
+    <button onclick="setRole('vendor')" id="rb-vendor" class="role-btn px-2.5 py-1 rounded-md">Vendor</button>
+  </div>
+</div>
+
+<div class="flex h-[calc(100dvh-40px)] overflow-hidden">
+
+  <!-- mobile nav backdrop -->
+  <div id="navBackdrop" onclick="closeNav()" class="fixed left-0 right-0 bottom-0 top-10 bg-slate-900/40 z-30 hidden lg:hidden"></div>
+
+  <!-- SIDEBAR -->
+  <aside id="sidebar" class="fixed top-10 bottom-0 right-0 z-40 translate-x-full transition-transform duration-200 lg:static lg:translate-x-0 lg:z-auto w-52 shrink-0 bg-white shadow-sm flex flex-col">
+    <div class="h-16 flex items-center gap-2.5 px-5 border-b border-slate-200">
+      <div class="w-8 h-8 rounded-lg bg-brand-600 grid place-items-center text-white"><i data-lucide="sprout" class="w-5 h-5"></i></div>
+      <div><div class="font-bold text-slate-900 leading-none">SeedOffice</div><div class="text-[11px] text-slate-400 mt-0.5">SeedWebs</div></div>
+    </div>
+    <nav class="flex-1 p-3 space-y-0.5 text-sm">
+      <a data-section="dashboard" data-roles="owner,member,vendor" onclick="showSection('dashboard')" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer"><i data-lucide="layout-dashboard" class="w-[18px] h-[18px]"></i> ภาพรวม</a>
+      <a data-section="projects" data-roles="owner,member,vendor" onclick="showSection('projects')" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer"><i data-lucide="folder-kanban" class="w-[18px] h-[18px]"></i> โปรเจกต์</a>
+      <a data-section="inbox" data-roles="owner,member" onclick="showSection('inbox')" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer"><i data-lucide="inbox" class="w-[18px] h-[18px]"></i> อีเมลกลาง</a>
+      <a data-section="payroll" data-roles="owner,member" onclick="showSection('payroll')" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer"><i data-lucide="wallet" class="w-[18px] h-[18px]"></i> ค่าตอบแทน</a>
+      <a data-section="expenses" data-roles="owner,member" onclick="showSection('expenses')" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer"><i data-lucide="receipt" class="w-[18px] h-[18px]"></i> เงินสดย่อย</a>
+      <div data-roles="owner">
+        <a data-section="admin" data-roles="owner" onclick="showSection('admin')" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer"><i data-lucide="settings" class="w-[18px] h-[18px]"></i> ตั้งค่า</a>
+      </div>
+    </nav>
+    <div class="p-3 border-t border-slate-200">
+      <div class="flex items-center gap-2.5 px-2 py-1.5">
+        <div class="w-8 h-8 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-xs font-semibold">เม</div>
+        <div class="min-w-0"><div class="text-sm font-medium text-slate-800 truncate" id="meName">เม่น (คุณ)</div><div class="text-[11px] text-slate-400 truncate" id="meRole">Owner</div></div>
+      </div>
+    </div>
+  </aside>
+
+  <!-- MAIN -->
+  <div class="flex-1 flex flex-col min-w-0">
+    <!-- mobile top bar (real app chrome — hamburger lives here, not in the mockup bar) -->
+    <div class="lg:hidden h-12 bg-white border-b border-slate-200 flex items-center gap-2.5 px-4 shrink-0">
+      <div class="w-7 h-7 rounded-lg bg-brand-600 grid place-items-center text-white"><i data-lucide="sprout" class="w-4 h-4"></i></div>
+      <div class="font-bold text-slate-900 leading-none">SeedOffice</div>
+      <button onclick="toggleNav()" aria-label="เมนู" class="ml-auto -mr-1 p-1.5 rounded-lg text-slate-500 hover:bg-slate-100"><i data-lucide="menu" class="w-5 h-5"></i></button>
+    </div>
+    <main class="flex-1 overflow-y-auto">
+      <header id="pageHeader" class="h-16 bg-white border-b border-slate-200 flex items-center gap-4 px-6">
+        <h1 id="pageTitle" class="text-xl font-bold text-slate-900">โปรเจกต์</h1>
+        <div id="pageAction" class="ml-auto"></div>
+      </header>
+      <div class="p-3 sm:p-6">
+
+      <!-- ===== DASHBOARD (time-focused, no money) ===== -->
+      <section id="section-dashboard" data-section-panel>
+        <div class="grid grid-cols-1 lg:grid-cols-5 gap-5">
+          <!-- งานวันนี้ (table: ดาว · โปรเจกต์ · group · task · play+เวลา) -->
+          <div class="lg:col-span-3 bg-white rounded-lg shadow-sm p-5">
+            <div class="flex items-center justify-between mb-2">
+              <div class="font-semibold text-slate-900">งานวันนี้</div>
+              <button onclick="openQuickAdd()" class="text-xs bg-brand-50 text-brand-700 hover:bg-brand-100 px-2 py-1 rounded-lg flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่มงานด่วน</button>
+            </div>
+            <div class="text-sm">
+              <div onclick="openTask()" class="grid grid-cols-[18px_minmax(0,1fr)_92px] sm:grid-cols-[18px_minmax(0,1.1fr)_minmax(0,0.85fr)_minmax(0,1.7fr)_96px] gap-x-3 items-center py-2 -mx-2 px-2 rounded-lg hover:bg-slate-50 cursor-pointer">
+                <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400 sm:order-1"></i>
+                <div class="min-w-0 flex flex-col sm:contents">
+                  <span class="truncate text-slate-800 sm:order-4">หน้า Product</span>
+                  <span class="flex items-center gap-1 min-w-0 sm:contents">
+                    <span class="truncate text-slate-500 text-[11px] sm:text-sm sm:order-2">ทรัพย์เจริญ</span>
+                    <span class="text-slate-300 text-[11px] sm:hidden">·</span>
+                    <span class="truncate text-slate-400 text-[11px] sm:text-sm sm:order-3">Frontend</span>
+                  </span>
+                </div>
+                <button id="tBtn" onclick="event.stopPropagation();toggleTimer()" class="w-full flex items-center justify-center gap-1.5 bg-rose-500 text-white px-2 py-1 rounded-lg text-xs font-medium tabular-nums sm:order-5"><i data-lucide="pause" class="w-3.5 h-3.5"></i> <span id="tClock">3:42:00</span></button>
+              </div>
+              <div onclick="openTask()" class="grid grid-cols-[18px_minmax(0,1fr)_92px] sm:grid-cols-[18px_minmax(0,1.1fr)_minmax(0,0.85fr)_minmax(0,1.7fr)_96px] gap-x-3 items-center py-2 -mx-2 px-2 rounded-lg hover:bg-slate-50 cursor-pointer">
+                <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400 sm:order-1"></i>
+                <div class="min-w-0 flex flex-col sm:contents">
+                  <span class="truncate text-slate-800 sm:order-4">รีวิว layout</span>
+                  <span class="flex items-center gap-1 min-w-0 sm:contents">
+                    <span class="truncate text-slate-500 text-[11px] sm:text-sm sm:order-2">Bloom</span>
+                    <span class="text-slate-300 text-[11px] sm:hidden">·</span>
+                    <span class="truncate text-slate-400 text-[11px] sm:text-sm sm:order-3">Design</span>
+                  </span>
+                </div>
+                <button onclick="event.stopPropagation()" class="w-full flex items-center justify-center gap-1.5 text-slate-400 hover:text-brand-600 hover:bg-brand-50 px-2 py-1 rounded-lg text-xs tabular-nums sm:order-5"><i data-lucide="play" class="w-3.5 h-3.5"></i> <span>1:30:00</span></button>
+              </div>
+              <div onclick="openTask()" class="grid grid-cols-[18px_minmax(0,1fr)_92px] sm:grid-cols-[18px_minmax(0,1.1fr)_minmax(0,0.85fr)_minmax(0,1.7fr)_96px] gap-x-3 items-center py-2 -mx-2 px-2 rounded-lg hover:bg-slate-50 cursor-pointer">
+                <i data-lucide="star" class="w-4 h-4 text-slate-300 sm:order-1"></i>
+                <div class="min-w-0 flex flex-col sm:contents">
+                  <span class="truncate text-slate-800 sm:order-4">ตอบอีเมลลูกค้า</span>
+                  <span class="flex items-center gap-1 min-w-0 sm:contents">
+                    <span class="truncate text-slate-500 text-[11px] sm:text-sm sm:order-2">Bloom</span>
+                    <span class="text-slate-300 text-[11px] sm:hidden">·</span>
+                    <span class="truncate text-slate-400 text-[11px] sm:text-sm sm:order-3">Backend</span>
+                  </span>
+                </div>
+                <button onclick="event.stopPropagation()" class="w-full flex items-center justify-center gap-1.5 text-slate-400 hover:text-brand-600 hover:bg-brand-50 px-2 py-1 rounded-lg text-xs tabular-nums sm:order-5"><i data-lucide="play" class="w-3.5 h-3.5"></i> <span>0:30:00</span></button>
+              </div>
+              <div onclick="openTask()" class="grid grid-cols-[18px_minmax(0,1fr)_92px] sm:grid-cols-[18px_minmax(0,1.1fr)_minmax(0,0.85fr)_minmax(0,1.7fr)_96px] gap-x-3 items-center py-2 -mx-2 px-2 rounded-lg hover:bg-slate-50 cursor-pointer">
+                <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400 sm:order-1"></i>
+                <div class="min-w-0 flex flex-col sm:contents">
+                  <span class="truncate text-slate-800 sm:order-4">แก้ฟอร์มจองคิว</span>
+                  <span class="flex items-center gap-1 min-w-0 sm:contents">
+                    <span class="truncate text-slate-500 text-[11px] sm:text-sm sm:order-2">คลินิกหมอฟัน</span>
+                    <span class="text-slate-300 text-[11px] sm:hidden">·</span>
+                    <span class="truncate text-slate-400 text-[11px] sm:text-sm sm:order-3">Frontend</span>
+                  </span>
+                </div>
+                <button onclick="event.stopPropagation()" class="w-full flex items-center justify-center gap-1.5 text-slate-400 hover:text-brand-600 hover:bg-brand-50 px-2 py-1 rounded-lg text-xs tabular-nums sm:order-5"><i data-lucide="play" class="w-3.5 h-3.5"></i> <span>0:00:00</span></button>
+              </div>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-3">กด ▶ จับเวลา · งานที่จับเวลาวันนี้มาอยู่ที่นี่ทั้งหมด · ★ = ตั้งใจทำวันนี้</p>
+          </div>
+
+          <!-- งานเร็วๆ นี้ -->
+          <div class="lg:col-span-2 bg-white rounded-lg shadow-sm p-5">
+            <div class="flex items-center justify-between mb-2">
+              <div class="font-semibold text-slate-900">งานเร็วๆ นี้</div>
+              <a class="text-xs text-brand-600 hover:underline cursor-pointer">งานทั้งหมดของฉัน</a>
+            </div>
+            <div>
+              <div onclick="openTask()" class="flex items-center gap-2 py-1.5 -mx-2 px-2 rounded-lg hover:bg-slate-50 cursor-pointer text-sm"><span class="flex-1 min-w-0 truncate text-slate-700">เชื่อม API สินค้า <span class="text-slate-400">· Bloom</span></span><span class="text-[11px] text-slate-400 shrink-0">10 มิ.ย.</span></div>
+              <div onclick="openTask()" class="flex items-center gap-2 py-1.5 -mx-2 px-2 rounded-lg hover:bg-slate-50 cursor-pointer text-sm"><span class="flex-1 min-w-0 truncate text-slate-700">หน้า About + ทีม <span class="text-slate-400">· ทรัพย์เจริญ</span></span><span class="text-[11px] text-slate-400 shrink-0">11 มิ.ย.</span></div>
+              <div onclick="openTask()" class="flex items-center gap-2 py-1.5 -mx-2 px-2 rounded-lg hover:bg-slate-50 cursor-pointer text-sm"><span class="flex-1 min-w-0 truncate text-slate-700">ปรับ responsive <span class="text-slate-400">· ทรัพย์เจริญ</span></span><span class="text-[11px] text-slate-400 shrink-0">12 มิ.ย.</span></div>
+              <div onclick="openTask()" class="flex items-center gap-2 py-1.5 -mx-2 px-2 rounded-lg hover:bg-slate-50 cursor-pointer text-sm"><span class="flex-1 min-w-0 truncate text-slate-700">ตั้งค่า payment gateway <span class="text-slate-400">· Bloom</span></span><span class="text-[11px] text-slate-400 shrink-0">13 มิ.ย.</span></div>
+              <div onclick="openTask()" class="flex items-center gap-2 py-1.5 -mx-2 px-2 rounded-lg hover:bg-slate-50 cursor-pointer text-sm"><span class="flex-1 min-w-0 truncate text-slate-700">เขียน content หน้าแรก <span class="text-slate-400">· ทรัพย์เจริญ</span></span><span class="text-[11px] text-slate-400 shrink-0">15 มิ.ย.</span></div>
+            </div>
+          </div>
+        </div>
+
+        <!-- team activity + สรุปงานประจำวัน (รวมกล่องเดียว) -->
+        <div data-roles="owner,member" class="mt-5 bg-white rounded-lg shadow-sm p-5">
+          <div class="flex items-center justify-between mb-4">
+            <div class="font-semibold text-slate-900">ทีมงาน</div>
+            <label class="flex items-center gap-2 text-xs text-slate-500 cursor-pointer select-none">
+              แสดงเมื่อวาน
+              <span class="relative inline-block align-middle">
+                <input id="toggleYest" type="checkbox" onchange="renderStandup()" class="peer sr-only">
+                <span class="block w-9 h-5 bg-slate-200 rounded-full peer-checked:bg-brand-500 transition"></span>
+                <span class="absolute left-0.5 top-0.5 w-4 h-4 bg-white rounded-full shadow transition peer-checked:translate-x-4"></span>
+              </span>
+            </label>
+          </div>
+          <div id="teamRow" class="flex flex-wrap gap-3"></div>
+          <div id="standupGrid" class="grid grid-cols-1 md:grid-cols-3 gap-px bg-slate-200 rounded-lg overflow-hidden text-sm mt-5"></div>
+        </div>
+
+        <!-- team calendar -->
+        <div data-roles="owner,member" class="mt-5 bg-white rounded-lg shadow-sm p-5">
+          <div class="flex items-center justify-between mb-3 flex-wrap gap-2">
+            <div class="flex items-center gap-2">
+              <i data-lucide="calendar" class="w-4 h-4 text-brand-600"></i>
+              <span class="font-semibold text-slate-900">ปฏิทินทีมงาน</span>
+              <div class="flex items-center gap-0.5 ml-1">
+                <button onclick="navCal(-1)" class="w-7 h-7 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-100"><i data-lucide="chevron-left" class="w-4 h-4"></i></button>
+                <button onclick="calGoToday()" class="text-xs text-slate-500 hover:bg-slate-100 px-2 py-1 rounded-lg">วันนี้</button>
+                <button onclick="navCal(1)" class="w-7 h-7 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-100"><i data-lucide="chevron-right" class="w-4 h-4"></i></button>
+              </div>
+              <span id="calLabel" class="text-sm text-slate-400">มิถุนายน 2569</span>
+            </div>
+            <div class="flex items-center gap-2">
+              <div class="flex bg-slate-100 rounded-lg p-0.5 text-xs font-medium">
+                <button onclick="setCalView('day')" id="cv-day" class="px-2.5 py-1 rounded-md text-slate-500">Day</button>
+                <button onclick="setCalView('week')" id="cv-week" class="px-2.5 py-1 rounded-md text-slate-500">Week</button>
+                <button onclick="setCalView('month')" id="cv-month" class="px-2.5 py-1 rounded-md text-slate-500">Month</button>
+              </div>
+              <button class="text-xs bg-brand-600 text-white rounded-lg px-2.5 py-1.5 hover:bg-brand-700 flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่ม</button>
+              <div class="relative">
+                <button onclick="toggleCalMenu()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-lg hover:bg-slate-50"><i data-lucide="settings" class="w-4 h-4"></i></button>
+                <div id="calMenu" class="hidden absolute right-0 top-full mt-1 w-52 bg-white shadow-sm rounded-xl shadow-lg p-1 z-30 text-sm">
+                  <button class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 flex items-center gap-2"><i data-lucide="refresh-cw" class="w-4 h-4 text-slate-400"></i> Sync Google Calendar</button>
+                  <button class="w-full text-left px-3 py-2 rounded-lg hover:bg-slate-50 flex items-center gap-2"><i data-lucide="share-2" class="w-4 h-4 text-slate-400"></i> แชร์ปฏิทิน (ICS)</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          <div id="calGrid"></div>
+          <p class="text-[11px] text-slate-400 mt-2">Day / Week / Month ดูได้ในหน้าเดียว · วันลา/ประชุม/วันหยุด + ตัดรอบ/จ่ายเงินเดือน · sync/แชร์อยู่ในไอคอน ⚙</p>
+        </div>
+
+      </section>
+
+      <!-- ===== PROJECTS (timeline + cards + upcoming) ===== -->
+      <section id="section-projects" data-section-panel class="hidden">
+        <!-- TIMELINE -->
+        <div class="bg-white rounded-lg shadow-sm p-4 mb-5">
+          <div class="flex items-center justify-between mb-3">
+            <span class="font-semibold text-slate-900 text-sm">ไทม์ไลน์</span>
+            <span class="text-[11px] text-slate-400">งบ = ราคาขาย · เส้นแดง = วันนี้ · เลื่อนแนวนอนดูทั้งปี (ข้ามปี = โหลดต่อ)</span>
+          </div>
+          <div class="overflow-x-auto">
+            <div id="projTimeline" class="min-w-[1180px]"></div>
+          </div>
+        </div>
+
+        <!-- CARDS (type 1: งานโปรเจกต์ มีกำหนดส่ง) -->
+        <div class="font-semibold text-slate-900 mb-3">งานโปรเจกต์ <span class="text-xs font-normal text-slate-400">· มีกำหนดส่ง · 6 รายการ</span></div>
+        <div id="projCards" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
+
+        <!-- TYPE 2: งานต่อเนื่อง (recurring) -->
+        <div class="mt-6">
+          <div class="font-semibold text-slate-900 mb-3">งานต่อเนื่อง <span class="text-xs font-normal text-slate-400">· ดูแลรายเดือน/ปี · เรียงตาม todo ที่ต้องส่ง · คลิกดูได้ทุกราย</span></div>
+          <div class="bg-white rounded-lg shadow-sm overflow-x-auto">
+            <table class="w-full text-sm min-w-[600px]">
+              <thead class="bg-slate-50 text-slate-500 text-xs"><tr>
+                <th class="text-left font-medium px-5 py-3">โปรเจกต์</th>
+                <th class="text-left font-medium px-3 py-3">Todo ที่เปิดอยู่</th>
+                <th class="text-left font-medium px-3 py-3 w-28">กำหนดส่ง</th>
+                <th class="text-left font-medium px-5 py-3 w-24">ค้างที่</th>
+              </tr></thead>
+              <tbody id="maBody" class="divide-y divide-slate-100"></tbody>
+            </table>
+          </div>
+        </div>
+      </section>
+
+      <!-- ===== PROJECT DETAIL (task management) ===== -->
+      <section id="section-project" data-section-panel data-allow="owner,member,vendor" class="hidden">
+        <button onclick="showSection('projects')" class="text-sm text-slate-400 hover:text-slate-600 flex items-center gap-1 mb-4"><i data-lucide="chevron-left" class="w-4 h-4"></i> โปรเจกต์ทั้งหมด</button>
+        <div class="flex flex-wrap items-center gap-3 mb-4">
+          <h2 class="text-xl font-bold text-slate-900">เว็บไซต์ ทรัพย์เจริญ</h2>
+          <span class="text-xs bg-brand-50 text-brand-700 px-2 py-0.5 rounded-full">active</span>
+          <div class="ml-auto flex items-center gap-3">
+            <!-- compact progress, hover detail -->
+            <div data-roles="owner,member" class="group relative flex items-center gap-2 text-xs">
+              <span class="text-slate-400">progress</span>
+              <div class="w-28 h-2 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-amber-400" style="width:92%"></div></div>
+              <span class="text-amber-600 font-medium">92%</span>
+              <div class="absolute z-10 right-0 top-full mt-2 w-52 bg-slate-900 text-white rounded-xl p-3 opacity-0 group-hover:opacity-100 pointer-events-none transition shadow-lg">
+                <div class="flex justify-between py-0.5"><span class="text-slate-300">ชั่วโมง</span><span>322 / 350</span></div>
+                <div class="flex justify-between py-0.5"><span class="text-slate-300">ต้นทุน / ขาย</span><span>฿96.5k / ฿180k</span></div>
+                <div class="flex justify-between py-0.5 border-t border-slate-700 mt-1 pt-1"><span class="text-slate-300">กำไร</span><span class="text-brand-300">฿83.5k (46%)</span></div>
+              </div>
+            </div>
+            <button data-roles="owner,member" id="reorderBtn" onclick="toggleReorder()" title="จัดเรียง task group / งาน" class="flex items-center gap-1.5 text-xs border border-slate-200 rounded-lg px-2.5 py-1.5 text-slate-500 hover:bg-slate-50"><i data-lucide="arrow-up-down" class="w-3.5 h-3.5"></i> จัดเรียง</button>
+          </div>
+        </div>
+
+        <!-- task-group timeline -->
+        <div class="bg-white rounded-lg shadow-sm p-4 mb-4">
+          <div class="flex items-baseline gap-2 mb-3"><span class="text-sm font-semibold text-slate-700">ไทม์ไลน์</span><span class="text-[11px] text-slate-400">ช่วง = งานที่เริ่มเร็วสุด → จบช้าสุด ในกลุ่ม</span></div>
+          <div class="overflow-x-auto"><div id="projGroupTl" class="min-w-[760px]"></div></div>
+        </div>
+
+        <!-- task groups -->
+        <div class="space-y-4">
+          <!-- group -->
+          <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div class="flex items-center gap-2 px-4 py-3 border-b border-slate-200 bg-slate-50/50">
+              <i data-lucide="grip-vertical" class="grip hidden w-4 h-4 text-slate-300 cursor-grab"></i>
+              <span class="font-semibold text-slate-800 text-sm">Design</span>
+              <span class="text-xs text-slate-400">3 งาน · 64 ชม.</span>
+              <button class="ml-auto text-xs text-slate-400 hover:text-brand-600 flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> task</button>
+            </div>
+            <div class="divide-y divide-slate-50">
+              <div onclick="openTask()" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 cursor-pointer">
+                <i data-lucide="grip-vertical" class="grip hidden w-4 h-4 text-slate-200 cursor-grab"></i>
+                <span class="w-4 h-4 rounded-full border-2 border-brand-400 bg-brand-400 grid place-items-center"><i data-lucide="check" class="w-2.5 h-2.5 text-white"></i></span>
+                <span class="text-sm text-slate-400 line-through flex-1">Hero section</span>
+                <div class="w-6 h-6 rounded-full bg-violet-100 text-violet-700 grid place-items-center text-[10px] font-semibold">น้</div>
+                <span class="text-xs text-slate-400 tabular-nums">22 ชม.</span>
+              </div>
+              <div onclick="openTask()" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 cursor-pointer">
+                <i data-lucide="grip-vertical" class="grip hidden w-4 h-4 text-slate-200 cursor-grab"></i>
+                <span class="w-4 h-4 rounded-full border-2 border-slate-300"></span>
+                <span class="text-sm flex-1">หน้า About + ทีม</span>
+                <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                <div class="w-6 h-6 rounded-full bg-violet-100 text-violet-700 grid place-items-center text-[10px] font-semibold">น้</div>
+                <span class="text-xs text-slate-400 tabular-nums">8 ชม.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- group 2 -->
+          <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div class="flex items-center gap-2 px-4 py-3 border-b border-slate-200 bg-slate-50/50">
+              <i data-lucide="grip-vertical" class="grip hidden w-4 h-4 text-slate-300 cursor-grab"></i>
+              <span class="font-semibold text-slate-800 text-sm">Frontend</span>
+              <span class="text-xs text-slate-400">5 งาน · 198 ชม.</span>
+              <button class="ml-auto text-xs text-slate-400 hover:text-brand-600 flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> task</button>
+            </div>
+            <div class="divide-y divide-slate-50">
+              <div onclick="openTask()" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 cursor-pointer ring-1 ring-inset ring-brand-100 bg-brand-50/30">
+                <i data-lucide="grip-vertical" class="grip hidden w-4 h-4 text-slate-200 cursor-grab"></i>
+                <span class="w-4 h-4 rounded-full border-2 border-amber-400"></span>
+                <span class="text-sm flex-1 font-medium">หน้า Product <span class="text-[11px] text-brand-600">· ⏱ กำลังจับเวลา</span></span>
+                <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i>
+                <div class="w-6 h-6 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-[10px] font-semibold">เม</div>
+                <span class="text-xs text-slate-400 tabular-nums">31 ชม.</span>
+              </div>
+              <div onclick="openTask()" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 cursor-pointer">
+                <i data-lucide="grip-vertical" class="grip hidden w-4 h-4 text-slate-200 cursor-grab"></i>
+                <span class="w-4 h-4 rounded-full border-2 border-slate-300"></span>
+                <span class="text-sm flex-1">เชื่อม API สินค้า</span>
+                <div class="w-6 h-6 rounded-full bg-sky-100 text-sky-700 grid place-items-center text-[10px] font-semibold">ปอ</div>
+                <span class="text-xs text-slate-400 tabular-nums">—</span>
+              </div>
+              <div onclick="openTask()" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 cursor-pointer">
+                <i data-lucide="grip-vertical" class="grip hidden w-4 h-4 text-slate-200 cursor-grab"></i>
+                <span class="w-4 h-4 rounded-full border-2 border-slate-300"></span>
+                <span class="text-sm flex-1">ปรับ responsive มือถือ</span>
+                <div class="w-6 h-6 rounded-full bg-amber-100 text-amber-700 grid place-items-center text-[10px] font-semibold">สม</div>
+                <span class="text-xs text-slate-400 tabular-nums">12 ชม.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- group: Backend -->
+          <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div class="flex items-center gap-2 px-4 py-3 border-b border-slate-200 bg-slate-50/50">
+              <i data-lucide="grip-vertical" class="grip hidden w-4 h-4 text-slate-300 cursor-grab"></i>
+              <span class="font-semibold text-slate-800 text-sm">Backend</span>
+              <span class="text-xs text-slate-400">4 งาน · 88 ชม.</span>
+              <button class="ml-auto text-xs text-slate-400 hover:text-brand-600 flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> task</button>
+            </div>
+            <div class="divide-y divide-slate-50">
+              <div onclick="openTask()" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 cursor-pointer">
+                <i data-lucide="grip-vertical" class="grip hidden w-4 h-4 text-slate-200 cursor-grab"></i>
+                <span class="w-4 h-4 rounded-full border-2 border-brand-400 bg-brand-400 grid place-items-center"><i data-lucide="check" class="w-2.5 h-2.5 text-white"></i></span>
+                <span class="text-sm text-slate-400 line-through flex-1">เซ็ตอัพ API + DB schema</span>
+                <div class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 grid place-items-center text-[10px] font-semibold">กร</div>
+                <span class="text-xs text-slate-400 tabular-nums">28 ชม.</span>
+              </div>
+              <div onclick="openTask()" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 cursor-pointer">
+                <i data-lucide="grip-vertical" class="grip hidden w-4 h-4 text-slate-200 cursor-grab"></i>
+                <span class="w-4 h-4 rounded-full border-2 border-brand-400 bg-brand-400 grid place-items-center"><i data-lucide="check" class="w-2.5 h-2.5 text-white"></i></span>
+                <span class="text-sm text-slate-400 line-through flex-1">ระบบสมาชิก / auth</span>
+                <div class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 grid place-items-center text-[10px] font-semibold">กร</div>
+                <span class="text-xs text-slate-400 tabular-nums">24 ชม.</span>
+              </div>
+              <div onclick="openTask()" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 cursor-pointer">
+                <i data-lucide="grip-vertical" class="grip hidden w-4 h-4 text-slate-200 cursor-grab"></i>
+                <span class="w-4 h-4 rounded-full border-2 border-amber-400"></span>
+                <span class="text-sm flex-1">เชื่อม payment gateway</span>
+                <div class="w-6 h-6 rounded-full bg-sky-100 text-sky-700 grid place-items-center text-[10px] font-semibold">ปอ</div>
+                <span class="text-xs text-slate-400 tabular-nums">20 ชม.</span>
+              </div>
+              <div onclick="openTask()" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 cursor-pointer">
+                <i data-lucide="grip-vertical" class="grip hidden w-4 h-4 text-slate-200 cursor-grab"></i>
+                <span class="w-4 h-4 rounded-full border-2 border-slate-300"></span>
+                <span class="text-sm flex-1">ตั้งค่า deploy / CI</span>
+                <div class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 grid place-items-center text-[10px] font-semibold">กร</div>
+                <span class="text-xs text-slate-400 tabular-nums">—</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- group: Staging -->
+          <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div class="flex items-center gap-2 px-4 py-3 border-b border-slate-200 bg-slate-50/50">
+              <i data-lucide="grip-vertical" class="grip hidden w-4 h-4 text-slate-300 cursor-grab"></i>
+              <span class="font-semibold text-slate-800 text-sm">Staging</span>
+              <span class="text-xs text-slate-400">2 งาน · 18 ชม.</span>
+              <button class="ml-auto text-xs text-slate-400 hover:text-brand-600 flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> task</button>
+            </div>
+            <div class="divide-y divide-slate-50">
+              <div onclick="openTask()" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 cursor-pointer">
+                <i data-lucide="grip-vertical" class="grip hidden w-4 h-4 text-slate-200 cursor-grab"></i>
+                <span class="w-4 h-4 rounded-full border-2 border-brand-400 bg-brand-400 grid place-items-center"><i data-lucide="check" class="w-2.5 h-2.5 text-white"></i></span>
+                <span class="text-sm text-slate-400 line-through flex-1">ขึ้น staging server</span>
+                <div class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 grid place-items-center text-[10px] font-semibold">กร</div>
+                <span class="text-xs text-slate-400 tabular-nums">6 ชม.</span>
+              </div>
+              <div onclick="openTask()" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 cursor-pointer">
+                <i data-lucide="grip-vertical" class="grip hidden w-4 h-4 text-slate-200 cursor-grab"></i>
+                <span class="w-4 h-4 rounded-full border-2 border-amber-400"></span>
+                <span class="text-sm flex-1">ทดสอบ regression</span>
+                <div class="w-6 h-6 rounded-full bg-rose-100 text-rose-700 grid place-items-center text-[10px] font-semibold">บี</div>
+                <span class="text-xs text-slate-400 tabular-nums">12 ชม.</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- group: UAT -->
+          <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div class="flex items-center gap-2 px-4 py-3 border-b border-slate-200 bg-slate-50/50">
+              <i data-lucide="grip-vertical" class="grip hidden w-4 h-4 text-slate-300 cursor-grab"></i>
+              <span class="font-semibold text-slate-800 text-sm">UAT</span>
+              <span class="text-xs text-slate-400">2 งาน</span>
+              <button class="ml-auto text-xs text-slate-400 hover:text-brand-600 flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> task</button>
+            </div>
+            <div class="divide-y divide-slate-50">
+              <div onclick="openTask()" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 cursor-pointer">
+                <i data-lucide="grip-vertical" class="grip hidden w-4 h-4 text-slate-200 cursor-grab"></i>
+                <span class="w-4 h-4 rounded-full border-2 border-slate-300"></span>
+                <span class="text-sm flex-1">ลูกค้าทดสอบ + เก็บ feedback</span>
+                <div class="w-6 h-6 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-[10px] font-semibold">เม</div>
+                <span class="text-xs text-slate-400 tabular-nums">—</span>
+              </div>
+              <div onclick="openTask()" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 cursor-pointer">
+                <i data-lucide="grip-vertical" class="grip hidden w-4 h-4 text-slate-200 cursor-grab"></i>
+                <span class="w-4 h-4 rounded-full border-2 border-slate-300"></span>
+                <span class="text-sm flex-1">แก้ตาม feedback รอบ 1</span>
+                <div class="w-6 h-6 rounded-full bg-violet-100 text-violet-700 grid place-items-center text-[10px] font-semibold">น้</div>
+                <span class="text-xs text-slate-400 tabular-nums">—</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- group: Go Live -->
+          <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div class="flex items-center gap-2 px-4 py-3 border-b border-slate-200 bg-slate-50/50">
+              <i data-lucide="grip-vertical" class="grip hidden w-4 h-4 text-slate-300 cursor-grab"></i>
+              <span class="font-semibold text-slate-800 text-sm">Go Live</span>
+              <span class="text-xs text-slate-400">3 งาน</span>
+              <button class="ml-auto text-xs text-slate-400 hover:text-brand-600 flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> task</button>
+            </div>
+            <div class="divide-y divide-slate-50">
+              <div onclick="openTask()" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 cursor-pointer">
+                <i data-lucide="grip-vertical" class="grip hidden w-4 h-4 text-slate-200 cursor-grab"></i>
+                <span class="w-4 h-4 rounded-full border-2 border-slate-300"></span>
+                <span class="text-sm flex-1">ย้ายขึ้น production</span>
+                <div class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 grid place-items-center text-[10px] font-semibold">กร</div>
+                <span class="text-xs text-slate-400 tabular-nums">—</span>
+              </div>
+              <div onclick="openTask()" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 cursor-pointer">
+                <i data-lucide="grip-vertical" class="grip hidden w-4 h-4 text-slate-200 cursor-grab"></i>
+                <span class="w-4 h-4 rounded-full border-2 border-slate-300"></span>
+                <span class="text-sm flex-1">ตั้งค่า domain + SSL</span>
+                <div class="w-6 h-6 rounded-full bg-sky-100 text-sky-700 grid place-items-center text-[10px] font-semibold">ปอ</div>
+                <span class="text-xs text-slate-400 tabular-nums">—</span>
+              </div>
+              <div onclick="openTask()" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 cursor-pointer">
+                <i data-lucide="grip-vertical" class="grip hidden w-4 h-4 text-slate-200 cursor-grab"></i>
+                <span class="w-4 h-4 rounded-full border-2 border-slate-300"></span>
+                <span class="text-sm flex-1">ตรวจ SEO + analytics</span>
+                <div class="w-6 h-6 rounded-full bg-pink-100 text-pink-700 grid place-items-center text-[10px] font-semibold">แพ</div>
+                <span class="text-xs text-slate-400 tabular-nums">—</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- group: MA -->
+          <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+            <div class="flex items-center gap-2 px-4 py-3 border-b border-slate-200 bg-slate-50/50">
+              <i data-lucide="grip-vertical" class="grip hidden w-4 h-4 text-slate-300 cursor-grab"></i>
+              <span class="font-semibold text-slate-800 text-sm">MA</span>
+              <span class="text-xs text-slate-400">2 งาน · ฟรี 3 เดือน</span>
+              <button class="ml-auto text-xs text-slate-400 hover:text-brand-600 flex items-center gap-1"><i data-lucide="plus" class="w-3.5 h-3.5"></i> task</button>
+            </div>
+            <div class="divide-y divide-slate-50">
+              <div onclick="openTask()" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 cursor-pointer">
+                <i data-lucide="grip-vertical" class="grip hidden w-4 h-4 text-slate-200 cursor-grab"></i>
+                <span class="w-4 h-4 rounded-full border-2 border-slate-300"></span>
+                <span class="text-sm flex-1">ดูแลประจำเดือน (มิ.ย.)</span>
+                <div class="w-6 h-6 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-[10px] font-semibold">เม</div>
+                <span class="text-xs text-slate-400 tabular-nums">—</span>
+              </div>
+              <div onclick="openTask()" class="flex items-center gap-3 px-4 py-3 hover:bg-slate-50 cursor-pointer">
+                <i data-lucide="grip-vertical" class="grip hidden w-4 h-4 text-slate-200 cursor-grab"></i>
+                <span class="w-4 h-4 rounded-full border-2 border-slate-300"></span>
+                <span class="text-sm flex-1">สำรองข้อมูล + อัปเดต plugin</span>
+                <div class="w-6 h-6 rounded-full bg-indigo-100 text-indigo-700 grid place-items-center text-[10px] font-semibold">กร</div>
+                <span class="text-xs text-slate-400 tabular-nums">—</span>
+              </div>
+            </div>
+          </div>
+
+          <button class="w-full text-sm text-slate-400 hover:text-brand-600 border-2 border-dashed border-slate-200 hover:border-brand-300 rounded-lg py-3 flex items-center justify-center gap-1"><i data-lucide="plus" class="w-4 h-4"></i> เพิ่ม task group</button>
+        </div>
+      </section>
+
+      <!-- ===== PAYROLL (money of self lives here) ===== -->
+      <section id="section-payroll" data-section-panel class="hidden">
+        <div data-roles="member" class="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-4xl items-start">
+          <!-- LEFT: my time summary (cross-check ก่อนตัดรอบ) -->
+          <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="text-sm text-slate-400">สรุปเวลาของฉัน — งวด 25 พ.ค.–24 มิ.ย.</div>
+            <div class="flex items-start gap-3 mt-3">
+              <div><div class="text-3xl font-bold tabular-nums text-slate-900">96.0</div><div class="text-[11px] text-slate-400">ชั่วโมงงวดนี้</div></div>
+              <span class="ml-auto text-[11px] bg-emerald-50 text-emerald-600 px-2 py-1 rounded-full">manual 4% · ปกติ</span>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-1.5">วันนี้ 5.0 ชม. · เป้า 8 ชม./วัน</div>
+            <div class="mt-4 space-y-2">
+              <div class="text-[11px] font-medium text-slate-400 uppercase tracking-wide">ตามโปรเจกต์</div>
+              <div class="flex items-center gap-2"><span class="text-sm text-slate-600 flex-1 truncate">ร้านค้าออนไลน์ Bloom</span><div class="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-brand-400" style="width:54%"></div></div><span class="text-xs text-slate-500 tabular-nums w-14 text-right">52.0 ชม.</span></div>
+              <div class="flex items-center gap-2"><span class="text-sm text-slate-600 flex-1 truncate">เว็บไซต์ ทรัพย์เจริญ</span><div class="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-sky-400" style="width:29%"></div></div><span class="text-xs text-slate-500 tabular-nums w-14 text-right">28.0 ชม.</span></div>
+              <div class="flex items-center gap-2"><span class="text-sm text-slate-600 flex-1 truncate">ภายใน / อื่นๆ</span><div class="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-slate-300" style="width:17%"></div></div><span class="text-xs text-slate-500 tabular-nums w-14 text-right">16.0 ชม.</span></div>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-3 flex items-center gap-1"><i data-lucide="info" class="w-3 h-3"></i> ตรวจชั่วโมงให้ตรงก่อนตัดรอบ 24 (cross-check)</p>
+          </div>
+          <!-- RIGHT: เงิน (ค่าตอบแทน + เงินสดย่อยรอเบิก) -->
+          <div class="space-y-4">
+          <div class="bg-amber-50 border border-amber-100 rounded-lg p-4">
+            <div class="text-xs font-medium text-amber-700 flex items-center gap-1.5"><i data-lucide="message-square" class="w-4 h-4"></i> โน้ตจากหัวหน้า · งวดนี้</div>
+            <p class="text-sm text-slate-700 mt-1.5">เดือนนี้ทำ checkout ของ Bloom ได้ดีมาก ปิดงานไว ขอบคุณที่ทุ่มเทนะ 🙌</p>
+          </div>
+          <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="text-sm text-slate-400">ค่าตอบแทนของฉัน — งวด 25 พ.ค.–24 มิ.ย.</div>
+            <div class="mt-4 space-y-2">
+              <div class="text-[11px] font-medium text-emerald-700 uppercase tracking-wide">รายได้</div>
+              <div class="flex items-center justify-between"><span class="text-sm text-slate-500">เงินเดือน (96.0 ชม. × ฿400)</span><span class="tabular-nums">฿38,400</span></div>
+              <div class="flex items-center justify-between"><span class="text-sm text-slate-500">เบี้ยเลี้ยง</span><span class="tabular-nums">฿1,500</span></div>
+              <div class="flex items-center justify-between"><span class="text-sm text-slate-500">ค่าสึกหรอ</span><span class="tabular-nums">฿2,000</span></div>
+              <div class="flex items-center justify-between"><span class="text-sm text-slate-500 flex items-center gap-1">เงินพิเศษ <i data-lucide="lock" class="w-3 h-3 text-slate-300"></i></span><span class="tabular-nums text-amber-700">฿3,000</span></div>
+              <div class="flex items-center justify-between"><span class="text-sm text-slate-500">เงินได้อื่นๆ</span><span class="tabular-nums text-slate-300">—</span></div>
+              <div class="text-[11px] font-medium text-rose-600 uppercase tracking-wide pt-2">หัก</div>
+              <div class="flex items-center justify-between"><span class="text-sm text-slate-500">ประกันสังคม</span><span class="tabular-nums text-rose-500">-฿750</span></div>
+              <div class="flex items-center justify-between"><span class="text-sm text-slate-500">ภาษีหัก ณ ที่จ่าย</span><span class="tabular-nums text-rose-500">-฿1,200</span></div>
+              <div class="flex items-center justify-between"><span class="text-sm text-slate-500">รายการหักอื่นๆ</span><span class="tabular-nums text-slate-300">—</span></div>
+              <div class="flex items-center justify-between pt-3 border-t border-slate-200"><span class="text-sm font-medium text-slate-700">รวมสุทธิ</span><span class="text-xl font-bold tabular-nums text-slate-900">฿42,950</span></div>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-4 flex items-center gap-1"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> เงินพิเศษ + ยอดสุทธิ เห็นเฉพาะคุณกับ owner · จ่าย 26 มิ.ย.</p>
+          </div>
+          <!-- own pending reimbursement -->
+          <div class="bg-white rounded-lg shadow-sm p-5">
+            <div class="flex items-center justify-between"><span class="text-sm text-slate-500">เงินสดย่อยรอเบิกของฉัน</span><span class="text-lg font-bold tabular-nums text-slate-900">฿2,700</span></div>
+            <div class="text-xs text-slate-400 mt-1">Stock photo ฿2,700 · รออนุมัติ</div>
+          </div>
+          </div>
+        </div>
+
+        <div data-roles="owner">
+          <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
+            <div class="text-sm text-slate-500">งวด 25 พ.ค. – 24 มิ.ย. 2569 · ตัดรอบ 24 · ทำรายการธนาคาร 25 · จ่าย 26</div>
+            <div class="flex gap-2">
+              <button class="flex items-center gap-2 text-sm shadow-sm rounded-lg px-3 py-2 hover:bg-slate-50"><i data-lucide="download" class="w-4 h-4"></i> Export CSV</button>
+              <button class="flex items-center gap-2 text-sm bg-slate-800 text-white rounded-lg px-3 py-2 hover:bg-slate-900"><i data-lucide="lock" class="w-4 h-4"></i> ปิดงวด</button>
+            </div>
+          </div>
+          <div class="bg-white rounded-lg shadow-sm overflow-x-auto">
+            <table class="w-full text-sm min-w-[1120px]">
+              <thead class="bg-slate-50 text-slate-500 text-xs">
+                <tr>
+                  <th rowspan="2" class="text-left font-medium px-4 py-2 sticky left-0 bg-slate-50 z-10">คน</th>
+                  <th rowspan="2" class="text-right font-medium px-2 py-2">ชม.</th>
+                  <th rowspan="2" class="text-right font-medium px-2 py-2">manual%</th>
+                  <th colspan="5" class="text-center font-semibold px-2 py-1.5 border-l border-slate-200 text-emerald-700">รายได้</th>
+                  <th colspan="3" class="text-center font-semibold px-2 py-1.5 border-l border-slate-200 text-rose-600">หัก</th>
+                  <th rowspan="2" class="text-right font-semibold px-4 py-2 border-l border-slate-200 text-slate-700">สุทธิ</th>
+                  <th rowspan="2" class="text-center font-medium px-3 py-2 border-l border-slate-200">โน้ต</th>
+                </tr>
+                <tr>
+                  <th class="text-right font-normal px-2 pb-1.5 border-l border-slate-200">เงินเดือน</th>
+                  <th class="text-right font-normal px-2 pb-1.5">เบี้ยเลี้ยง</th>
+                  <th class="text-right font-normal px-2 pb-1.5">ค่าสึกหรอ</th>
+                  <th class="text-right font-normal px-2 pb-1.5 text-amber-600">เงินพิเศษ 🔒</th>
+                  <th class="text-right font-normal px-2 pb-1.5">อื่นๆ</th>
+                  <th class="text-right font-normal px-2 pb-1.5 border-l border-slate-200">ปกส.</th>
+                  <th class="text-right font-normal px-2 pb-1.5">ภาษี</th>
+                  <th class="text-right font-normal px-2 pb-1.5">อื่นๆ</th>
+                </tr>
+              </thead>
+              <tbody class="divide-y divide-slate-100 tabular-nums">
+                <tr>
+                  <td class="px-4 py-2.5 text-slate-700 sticky left-0 bg-white z-10">ปอนด์</td>
+                  <td class="text-right px-2">96.0</td><td class="text-right px-2 text-slate-400">4%</td>
+                  <td class="text-right px-2 border-l border-slate-100">฿38,400</td><td class="text-right px-2">฿1,500</td><td class="text-right px-2">฿2,000</td><td class="text-right px-2 text-amber-700">฿3,000</td><td class="text-right px-2 text-slate-300">—</td>
+                  <td class="text-right px-2 border-l border-slate-100 text-rose-500">-฿750</td><td class="text-right px-2 text-rose-500">-฿1,200</td><td class="text-right px-2 text-slate-300">—</td>
+                  <td class="text-right px-4 border-l border-slate-100 font-semibold">฿42,950</td>
+                  <td class="text-center px-3 border-l border-slate-100"><button title="เดือนนี้ทำ checkout ของ Bloom ได้ดีมาก ปิดงานไว ขอบคุณที่ทุ่มเทนะ 🙌" class="w-7 h-7 grid place-items-center rounded-lg text-amber-500 hover:bg-amber-50 mx-auto"><i data-lucide="message-square" class="w-4 h-4"></i></button></td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-2.5 text-slate-700 sticky left-0 bg-white z-10">น้ำ</td>
+                  <td class="text-right px-2">88.5</td><td class="text-right px-2 text-slate-400">6%</td>
+                  <td class="text-right px-2 border-l border-slate-100">฿30,975</td><td class="text-right px-2">฿1,500</td><td class="text-right px-2">฿2,000</td><td class="text-right px-2 text-amber-700">฿2,000</td><td class="text-right px-2 text-slate-300">—</td>
+                  <td class="text-right px-2 border-l border-slate-100 text-rose-500">-฿750</td><td class="text-right px-2 text-rose-500">-฿620</td><td class="text-right px-2 text-slate-300">—</td>
+                  <td class="text-right px-4 border-l border-slate-100 font-semibold">฿35,105</td>
+                  <td class="text-center px-3 border-l border-slate-100"><button title="งาน Hero/About สวยมาก ลูกค้าชมมาด้วย 👏" class="w-7 h-7 grid place-items-center rounded-lg text-amber-500 hover:bg-amber-50 mx-auto"><i data-lucide="message-square" class="w-4 h-4"></i></button></td>
+                </tr>
+                <tr class="bg-orange-50/40">
+                  <td class="px-4 py-2.5 text-slate-700 sticky left-0 bg-orange-50 z-10"><span class="inline-flex items-center gap-1.5"><span class="w-1.5 h-1.5 rounded-full bg-orange-400"></span>ตูน</span></td>
+                  <td class="text-right px-2">64.0</td><td class="text-right px-2 text-orange-600 font-semibold">18%</td>
+                  <td class="text-right px-2 border-l border-slate-100">฿12,800</td><td class="text-right px-2">฿1,000</td><td class="text-right px-2">฿2,000</td><td class="text-right px-2 text-amber-700">฿4,000</td><td class="text-right px-2 text-slate-300">—</td>
+                  <td class="text-right px-2 border-l border-slate-100 text-rose-500">-฿640</td><td class="text-right px-2 text-slate-300">—</td><td class="text-right px-2 text-rose-500">-฿500</td>
+                  <td class="text-right px-4 border-l border-slate-100 font-semibold">฿18,660</td>
+                  <td class="text-center px-3 border-l border-slate-100"><button title="ช่วงนี้ลง manual เยอะ (18%) ลองกดจับเวลาระหว่างทำงานดูนะ" class="w-7 h-7 grid place-items-center rounded-lg text-amber-500 hover:bg-amber-50 mx-auto"><i data-lucide="message-square" class="w-4 h-4"></i></button></td>
+                </tr>
+                <tr>
+                  <td class="px-4 py-2.5 text-slate-700 sticky left-0 bg-white z-10">สมชาย <span class="text-[10px] text-slate-400">(vendor)</span></td>
+                  <td class="text-right px-2">40.0</td><td class="text-right px-2 text-slate-400">9%</td>
+                  <td class="text-right px-2 border-l border-slate-100">฿14,000</td><td class="text-right px-2 text-slate-300">—</td><td class="text-right px-2 text-slate-300">—</td><td class="text-right px-2 text-slate-300">—</td><td class="text-right px-2 text-slate-300">—</td>
+                  <td class="text-right px-2 border-l border-slate-100 text-slate-300">—</td><td class="text-right px-2 text-rose-500">-฿420</td><td class="text-right px-2 text-slate-300">—</td>
+                  <td class="text-right px-4 border-l border-slate-100 font-semibold">฿13,580</td>
+                  <td class="text-center px-3 border-l border-slate-100"><button title="ฝากโน้ตถึงพนักงาน (เตือน/ชม)" class="w-7 h-7 grid place-items-center rounded-lg text-slate-300 hover:text-brand-500 hover:bg-slate-50 mx-auto"><i data-lucide="message-square-plus" class="w-4 h-4"></i></button></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <p class="text-xs text-slate-400 mt-3 flex items-center gap-1"><i data-lucide="info" class="w-3.5 h-3.5"></i> รายได้ − หัก = สุทธิ · เงินพิเศษ 🔒 เห็นเฉพาะ owner · manual% >10% = สีส้ม (ตูน) · ค่าสึกหรอ ~฿2,000/ด. · vendor หัก ณ ที่จ่าย 3% (ไม่มี ปกส./สวัสดิการ) · 💬 โน้ต = ข้อความถึงเจ้าตัว (เตือน/ชม) เห็นเฉพาะเจ้าตัว · SeedOffice ไม่จ่ายเงินเอง</p>
+        </div>
+      </section>
+
+      <!-- ===== EXPENSES ===== -->
+      <section id="section-expenses" data-section-panel class="hidden">
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-5">
+          <div class="bg-white rounded-lg shadow-sm p-5">
+            <div class="font-semibold text-slate-900 mb-3">ลงค่าใช้จ่าย</div>
+            <input placeholder="รายละเอียด เช่น ค่า domain" class="w-full text-sm shadow-sm rounded-lg px-3 py-2 mb-2">
+            <div class="grid grid-cols-2 gap-2 mb-2"><input type="number" placeholder="จำนวน ฿" class="text-sm shadow-sm rounded-lg px-3 py-2"><select class="text-sm shadow-sm rounded-lg px-3 py-2"><option>ค่าโฮสต์/โดเมน</option><option>เดินทาง</option><option>อุปกรณ์</option></select></div>
+            <button class="w-full text-sm border-2 border-dashed border-slate-200 rounded-lg py-3 text-slate-400 hover:border-brand-300 hover:text-brand-600 flex items-center justify-center gap-1 mb-2"><i data-lucide="camera" class="w-4 h-4"></i> แนบรูปใบเสร็จ</button>
+            <button class="w-full bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium py-2 rounded-lg">ส่งขออนุมัติ</button>
+          </div>
+          <div class="lg:col-span-2 bg-white rounded-lg shadow-sm p-5">
+            <div class="flex items-center justify-between mb-3"><div class="font-semibold text-slate-900">เงินสดย่อย — งวดนี้</div><span class="text-sm text-slate-500">ค้างคืน <b class="text-slate-800">฿4,250</b></span></div>
+            <table class="w-full text-sm"><thead class="text-slate-400 text-xs border-b border-slate-200"><tr><th class="text-left font-medium py-2">รายการ</th><th class="text-left font-medium py-2">คน</th><th class="text-right font-medium py-2">จำนวน</th><th class="text-right font-medium py-2">สถานะ</th></tr></thead>
+              <tbody class="divide-y divide-slate-50">
+                <tr><td class="py-2.5">ค่า domain .com</td><td>เม่น</td><td class="text-right tabular-nums">฿1,290</td><td class="text-right"><span class="text-[11px] bg-brand-50 text-brand-700 px-2 py-0.5 rounded-full">อนุมัติ</span></td></tr>
+                <tr><td class="py-2.5">Taxi หาลูกค้า</td><td>น้ำ</td><td class="text-right tabular-nums">฿260</td><td class="text-right"><span class="text-[11px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">รออนุมัติ</span></td></tr>
+                <tr><td class="py-2.5">Stock photo</td><td>ปอนด์</td><td class="text-right tabular-nums">฿2,700</td><td class="text-right"><span class="text-[11px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">รออนุมัติ</span></td></tr>
+              </tbody>
+            </table>
+            <p class="text-[11px] text-slate-400 mt-3">P2 · สรุป → export เข้า FlowAccount (CSV ก่อน)</p>
+          </div>
+        </div>
+      </section>
+
+      <!-- (Standup page removed — รวมอยู่ใน "สรุปงานวันนี้" + ตารางชั่วโมงทีม บนหน้าแรก) -->
+
+      <!-- ===== INBOX ===== -->
+      <section id="section-inbox" data-section-panel class="hidden">
+        <div id="inboxFolders" class="flex flex-nowrap items-center gap-1 bg-slate-100 rounded-xl p-1 mb-4 w-full sm:w-fit overflow-x-auto"></div>
+        <div class="bg-white rounded-lg shadow-sm overflow-hidden flex h-[74vh]">
+          <div id="inboxMain" class="flex-1 min-w-0 flex flex-col"></div>
+        </div>
+      </section>
+
+      <!-- ===== ADMIN ===== -->
+      <section id="section-admin" data-section-panel class="hidden">
+        <div class="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div class="p-5 border-b border-slate-200"><div class="font-semibold text-slate-900">ผู้ใช้ & rate</div></div>
+          <div class="overflow-x-auto"><table class="w-full text-sm min-w-[520px]"><thead class="bg-slate-50 text-slate-500 text-xs"><tr><th class="text-left font-medium px-5 py-3">ชื่อ</th><th class="text-left font-medium px-3 py-3">อีเมล</th><th class="text-left font-medium px-3 py-3">role</th><th class="text-right font-medium px-5 py-3">rate</th></tr></thead>
+            <tbody class="divide-y divide-slate-100">
+              <tr><td class="px-5 py-3">เมธ</td><td class="px-3 text-slate-400">owner@seedwebs.com</td><td class="px-3"><span class="text-[11px] bg-brand-100 text-brand-700 px-2 py-0.5 rounded-full">owner</span></td><td class="text-right px-5 tabular-nums">฿450</td></tr>
+              <tr><td class="px-5 py-3">ปอนด์</td><td class="px-3 text-slate-400">pond@seedwebs.com</td><td class="px-3"><span class="text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full">member</span></td><td class="text-right px-5 tabular-nums">฿400</td></tr>
+              <tr><td class="px-5 py-3">สมชาย</td><td class="px-3 text-slate-400">somchai.freelance@example.com</td><td class="px-3"><span class="text-[11px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full">vendor</span></td><td class="text-right px-5 tabular-nums">฿350</td></tr>
+            </tbody>
+          </table></div>
+        </div>
+        <p class="text-xs text-slate-400 mt-3">owner provision เอง · member = domain seedwebs.com · vendor = allowlist Gmail · เปลี่ยน rate เก็บประวัติ</p>
+      </section>
+
+      </div>
+    </main>
+  </div>
+</div>
+
+<!-- ===== PROJECT SEARCH (command palette) ===== -->
+<div id="projSearchBackdrop" onclick="closeProjSearch()" class="fixed inset-0 bg-slate-900/40 hidden z-50"></div>
+<div id="projSearchModal" class="fixed inset-0 z-50 hidden flex items-start justify-center pt-20 px-4 pointer-events-none">
+  <div class="pointer-events-auto w-full max-w-xl bg-white rounded-2xl shadow-2xl overflow-hidden">
+    <div class="flex items-center gap-2.5 px-4 py-3 border-b border-slate-200">
+      <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
+      <input id="projSearchInput" oninput="renderProjSearch()" placeholder="ค้นหาโปรเจกต์ (active + archived)..." class="flex-1 text-sm bg-transparent focus:outline-none placeholder:text-slate-400">
+      <kbd class="text-[10px] text-slate-400 border border-slate-200 rounded px-1.5 py-0.5">esc</kbd>
+    </div>
+    <div class="flex items-center gap-1.5 px-4 py-2 border-b border-slate-200 text-xs flex-wrap">
+      <span class="text-slate-400 mr-1">กรอง:</span>
+      <button onclick="setProjFilter('all')" data-pf="all" class="pf-chip px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">ทั้งหมด</button>
+      <button onclick="setProjFilter('project')" data-pf="project" class="pf-chip px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">กำลังทำ</button>
+      <button onclick="setProjFilter('ma')" data-pf="ma" class="pf-chip px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">งานต่อเนื่อง</button>
+      <button onclick="setProjFilter('archived')" data-pf="archived" class="pf-chip px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">archived</button>
+    </div>
+    <div id="projSearchResults" class="max-h-[52vh] overflow-y-auto p-2"></div>
+  </div>
+</div>
+
+<!-- ===== QUICK ADD TASK MODAL ===== -->
+<div id="qaBackdrop" onclick="closeQuickAdd()" class="fixed inset-0 bg-slate-900/30 hidden z-40"></div>
+<div id="qaModal" class="fixed inset-0 z-50 hidden flex items-start justify-center pt-24 px-4 pointer-events-none">
+  <div class="pointer-events-auto w-full max-w-md bg-white rounded-lg shadow-2xl shadow-sm p-5">
+    <div class="flex items-center justify-between mb-3"><div class="font-semibold text-slate-900">เพิ่มงานด่วน</div><button onclick="closeQuickAdd()" class="text-slate-400 hover:text-slate-600"><i data-lucide="x" class="w-5 h-5"></i></button></div>
+    <input placeholder="ชื่องาน..." class="w-full text-sm shadow-sm rounded-lg px-3 py-2.5 mb-3 focus:outline-none focus:ring-2 focus:ring-brand-200">
+    <div class="grid grid-cols-2 gap-2 mb-3">
+      <select class="text-sm shadow-sm rounded-lg px-3 py-2"><option>โปรเจกต์: ทรัพย์เจริญ</option><option>Bloom store</option><option>คลินิกหมอฟัน</option></select>
+      <select class="text-sm shadow-sm rounded-lg px-3 py-2"><option>กลุ่ม: Frontend</option><option>Design</option><option>Backend</option></select>
+    </div>
+    <label class="flex items-center gap-2 text-sm text-slate-600 mb-4"><input type="checkbox" checked class="rounded"> <i data-lucide="star" class="w-4 h-4 text-amber-400 fill-amber-400"></i> ทำวันนี้ (ติดดาว)</label>
+    <div class="flex justify-end gap-2"><button onclick="closeQuickAdd()" class="text-sm px-3 py-2 rounded-lg hover:bg-slate-50">ยกเลิก</button><button onclick="closeQuickAdd()" class="text-sm bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700">เพิ่มงาน</button></div>
+    <p class="text-[11px] text-slate-400 mt-3">ทิป: กด <kbd class="bg-slate-100 px-1 rounded shadow-sm">N</kbd> เปิดด่วนจากทุกหน้า</p>
+  </div>
+</div>
+
+<!-- ===== TASK DETAIL DRAWER ===== -->
+<div id="taskBackdrop" onclick="closeTask()" class="fixed inset-0 bg-slate-900/30 hidden z-40"></div>
+<aside id="taskDrawer" class="fixed top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl z-50 translate-x-full transition-transform duration-200 flex flex-col">
+  <div class="p-4 border-b border-slate-200 flex items-start gap-2">
+    <div class="flex-1 min-w-0">
+      <div class="flex items-center gap-2 text-xs text-slate-400 mb-1.5">เว็บไซต์ ทรัพย์เจริญ · Frontend</div>
+      <div class="flex items-center gap-3">
+        <button id="taskCheck" onclick="toggleTaskDone()" title="ทำเครื่องหมายว่าเสร็จ" class="shrink-0 w-7 h-7 rounded-lg border-2 border-slate-300 hover:border-brand-400 grid place-items-center transition"></button>
+        <div id="taskTitle" class="text-lg font-semibold text-slate-900">หน้า Product</div>
+      </div>
+    </div>
+    <button onclick="closeTask()" class="text-slate-400 hover:text-slate-600 shrink-0"><i data-lucide="x" class="w-5 h-5"></i></button>
+  </div>
+  <div class="flex-1 overflow-y-auto p-4 space-y-5">
+    <!-- meta + log time -->
+    <div class="flex items-center gap-2 flex-wrap text-xs">
+      <span id="taskStatusChip" class="bg-amber-100 text-amber-700 px-2 py-1 rounded-lg">กำลังทำ</span>
+      <span class="bg-slate-100 text-slate-600 px-2 py-1 rounded-lg flex items-center gap-1"><span class="w-4 h-4 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-[9px] font-semibold">เม</span> เมธ</span>
+      <span class="bg-amber-50 text-amber-600 px-2 py-1 rounded-lg flex items-center gap-1"><i data-lucide="star" class="w-3 h-3 fill-amber-400 text-amber-400"></i> วันนี้</span>
+    </div>
+    <!-- timer for THIS task -->
+    <div class="bg-brand-50 rounded-xl p-3 flex items-center gap-3">
+      <div class="flex-1"><div class="text-[11px] text-brand-700">ลงเวลาที่งานนี้</div><div class="text-2xl font-bold tabular-nums text-slate-900">00:42:18</div></div>
+      <button class="bg-rose-500 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-1"><i data-lucide="square" class="w-4 h-4"></i> หยุด</button>
+      <button class="shadow-sm bg-white px-3 py-2 rounded-lg text-sm">+ manual</button>
+    </div>
+    <!-- description -->
+    <div><div class="text-xs font-medium text-slate-400 mb-1">รายละเอียด</div><p class="text-sm text-slate-600">ทำหน้า product listing + filter ตาม design ใน Figma รองรับ responsive</p></div>
+    <!-- attachments -->
+    <div>
+      <div class="text-xs font-medium text-slate-400 mb-2">ไฟล์แนบ</div>
+      <div class="grid grid-cols-3 gap-2">
+        <div class="aspect-square rounded-lg bg-slate-100 grid place-items-center text-slate-400"><i data-lucide="image" class="w-6 h-6"></i></div>
+        <div class="aspect-square rounded-lg bg-slate-100 grid place-items-center text-slate-400"><i data-lucide="file-text" class="w-6 h-6"></i></div>
+        <button class="aspect-square rounded-lg border-2 border-dashed border-slate-200 grid place-items-center text-slate-400 hover:border-brand-300 hover:text-brand-600"><i data-lucide="plus" class="w-5 h-5"></i></button>
+      </div>
+    </div>
+    <!-- comments -->
+    <div>
+      <div class="text-xs font-medium text-slate-400 mb-2">ความเห็น</div>
+      <div class="space-y-3">
+        <div class="flex gap-2"><div class="w-7 h-7 rounded-full bg-sky-100 text-sky-700 grid place-items-center text-[10px] font-semibold shrink-0">ปอ</div><div class="bg-slate-50 rounded-xl px-3 py-2 text-sm text-slate-600"><b class="text-slate-700">ปอนด์</b> · ใช้ component grid เดิมจาก Bloom ได้เลยนะ</div></div>
+        <div class="flex gap-2"><div class="w-7 h-7 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-[10px] font-semibold shrink-0">เม</div><div class="bg-slate-50 rounded-xl px-3 py-2 text-sm text-slate-600"><b class="text-slate-700">เมธ</b> · โอเค กำลังทำอยู่</div></div>
+      </div>
+    </div>
+    <!-- activity log (ClickUp-style · ซ่อนไว้ คลิกกาง) -->
+    <div class="border-t border-slate-100 pt-4">
+      <button onclick="toggleActivity()" class="flex items-center gap-2 w-full text-left text-xs font-medium text-slate-400 hover:text-slate-600"><i data-lucide="history" class="w-4 h-4"></i> ประวัติกิจกรรม <span class="text-slate-300">(8)</span><i id="actChevron" data-lucide="chevron-down" class="w-4 h-4 ml-auto transition-transform"></i></button>
+      <div id="actList" class="hidden mt-3 space-y-2.5">
+        <div class="flex gap-2 text-xs"><div class="w-5 h-5 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-[9px] font-semibold shrink-0">เม</div><div class="flex-1 leading-snug"><b class="text-slate-700">เมธ</b> <span class="text-slate-500">แก้เวลา 3:00 → 2:30 ชม.</span> <span class="text-slate-400">· วันนี้ 09:15</span></div></div>
+        <div class="flex gap-2 text-xs"><div class="w-5 h-5 rounded-full bg-sky-100 text-sky-700 grid place-items-center text-[9px] font-semibold shrink-0">ปอ</div><div class="flex-1 leading-snug"><b class="text-slate-700">ปอนด์</b> <span class="text-slate-500">คอมเมนต์ "ใช้ component grid เดิม…"</span> <span class="text-slate-400">· เมื่อวาน 16:40</span></div></div>
+        <div class="flex gap-2 text-xs"><div class="w-5 h-5 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-[9px] font-semibold shrink-0">เม</div><div class="flex-1 leading-snug"><b class="text-slate-700">เมธ</b> <span class="text-slate-500">ลงเวลา +2:30 ชม.</span> <span class="text-slate-400">· เมื่อวาน 15:10</span></div></div>
+        <div class="flex gap-2 text-xs"><div class="w-5 h-5 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-[9px] font-semibold shrink-0">เม</div><div class="flex-1 leading-snug"><b class="text-slate-700">เมธ</b> <span class="text-slate-500">ติดดาว "ทำวันนี้"</span> <span class="text-slate-400">· เมื่อวาน 09:05</span></div></div>
+        <div class="flex gap-2 text-xs"><div class="w-5 h-5 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-[9px] font-semibold shrink-0">เม</div><div class="flex-1 leading-snug"><b class="text-slate-700">เมธ</b> <span class="text-slate-500">เปลี่ยนสถานะ รอเริ่ม → กำลังทำ</span> <span class="text-slate-400">· 5 มิ.ย.</span></div></div>
+        <div class="flex gap-2 text-xs"><div class="w-5 h-5 rounded-full bg-sky-100 text-sky-700 grid place-items-center text-[9px] font-semibold shrink-0">ปอ</div><div class="flex-1 leading-snug"><b class="text-slate-700">ปอนด์</b> <span class="text-slate-500">แนบไฟล์ hero-mockup.png</span> <span class="text-slate-400">· 4 มิ.ย.</span></div></div>
+        <div class="flex gap-2 text-xs"><div class="w-5 h-5 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-[9px] font-semibold shrink-0">เม</div><div class="flex-1 leading-snug"><b class="text-slate-700">เมธ</b> <span class="text-slate-500">มอบหมายให้ เมธ</span> <span class="text-slate-400">· 4 มิ.ย.</span></div></div>
+        <div class="flex gap-2 text-xs"><div class="w-5 h-5 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-[9px] font-semibold shrink-0">เม</div><div class="flex-1 leading-snug"><b class="text-slate-700">เมธ</b> <span class="text-slate-500">สร้างงานนี้</span> <span class="text-slate-400">· 4 มิ.ย.</span></div></div>
+      </div>
+    </div>
+  </div>
+  <div class="p-3 border-t border-slate-200 flex gap-2">
+    <input class="flex-1 text-sm shadow-sm rounded-lg px-3 py-2" placeholder="เพิ่มความเห็น...">
+    <button class="bg-brand-600 text-white px-3 rounded-lg"><i data-lucide="send" class="w-4 h-4"></i></button>
+  </div>
+</aside>
+
+<script>
+  lucide.createIcons();
+  const titles = { dashboard:'ภาพรวม', projects:'โปรเจกต์', project:'โปรเจกต์', inbox:'อีเมลกลาง', payroll:'ค่าตอบแทน', expenses:'เงินสดย่อย', admin:'ตั้งค่า' };
+  const PRIMARY='flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-3.5 py-2 rounded-lg';
+  const ACTIONS = {
+    projects:'<div class="flex items-center gap-2"><button onclick="openProjSearch()" title="ค้นหา (⌘K)" class="w-9 h-9 grid place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"><i data-lucide="search" class="w-4 h-4"></i></button><button class="'+PRIMARY+'"><i data-lucide="plus" class="w-4 h-4"></i> โปรเจกต์ใหม่</button></div>',
+    inbox:()=>'<div class="flex items-center gap-2"><button title="เขียนอีเมลใหม่" class="w-9 h-9 grid place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"><i data-lucide="pen-line" class="w-4 h-4"></i></button>'+mbSelectorHTML()+'</div>',
+    admin:'<button class="'+PRIMARY+'"><i data-lucide="user-plus" class="w-4 h-4"></i> เพิ่มผู้ใช้</button>',
+  };
+  let currentRole='owner', currentSection='dashboard';
+
+  // mobile nav drawer (slides in from the right)
+  function openNav(){ const s=document.getElementById('sidebar'); if(s)s.classList.remove('translate-x-full'); const b=document.getElementById('navBackdrop'); if(b)b.classList.remove('hidden'); }
+  function closeNav(){ const s=document.getElementById('sidebar'); if(s)s.classList.add('translate-x-full'); const b=document.getElementById('navBackdrop'); if(b)b.classList.add('hidden'); }
+  function toggleNav(){ const s=document.getElementById('sidebar'); if(!s)return; s.classList.contains('translate-x-full')?openNav():closeNav(); }
+
+  function showSection(id){
+    currentSection=id;
+    closeNav();
+    document.querySelectorAll('[data-section-panel]').forEach(s=>s.classList.add('hidden'));
+    const p=document.getElementById('section-'+id); if(p)p.classList.remove('hidden');
+    document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('nav-active'));
+    const nav=document.querySelector('.nav-item[data-section="'+id+'"]'); if(nav)nav.classList.add('nav-active');
+    const hd=document.getElementById('pageHeader');
+    if(id==='dashboard'){ hd.style.display='none'; }
+    else { hd.style.display=''; document.getElementById('pageTitle').textContent=titles[id]||''; }
+    const _act=ACTIONS[id]; document.getElementById('pageAction').innerHTML = (typeof _act==='function'?_act():_act)||'';
+    if(id==='inbox') renderInbox();
+    if(id==='project') renderProjectDetail();
+    lucide.createIcons();
+  }
+  function setRole(role){
+    currentRole=role;
+    document.querySelectorAll('[data-roles]').forEach(el=>{ el.style.display = el.getAttribute('data-roles').split(',').includes(role)?'':'none'; });
+    ['owner','member','vendor'].forEach(r=>{ const b=document.getElementById('rb-'+r); if(!b)return; if(r===role){b.classList.add('bg-white','shadow-sm','text-slate-900');b.classList.remove('text-slate-300');}else{b.classList.remove('bg-white','shadow-sm','text-slate-900');b.classList.add('text-slate-300');} });
+    const names={owner:'เมธ (คุณ)',member:'ปอนด์ (คุณ)',vendor:'สมชาย (vendor)'}, rl={owner:'Owner',member:'Member',vendor:'Vendor (external)'};
+    document.getElementById('meName').textContent=names[role]; document.getElementById('meRole').textContent=rl[role];
+    const navEl=document.querySelector('.nav-item[data-section="'+currentSection+'"]');
+    const sec=document.getElementById('section-'+currentSection); const allow=sec&&sec.getAttribute('data-allow');
+    const ok = navEl ? navEl.getAttribute('data-roles').split(',').includes(role) : (allow?allow.split(',').includes(role):true);
+    if(!ok) showSection('dashboard');
+    lucide.createIcons();
+  }
+
+  // task drawer
+  function openTask(){ document.getElementById('taskBackdrop').classList.remove('hidden'); document.getElementById('taskDrawer').classList.remove('translate-x-full'); setTaskDone(false); var al=document.getElementById('actList'); if(al)al.classList.add('hidden'); var ac=document.getElementById('actChevron'); if(ac)ac.style.transform=''; lucide.createIcons(); }
+  function closeTask(){ document.getElementById('taskBackdrop').classList.add('hidden'); document.getElementById('taskDrawer').classList.add('translate-x-full'); }
+  let taskDone=false;
+  function setTaskDone(v){
+    taskDone=v;
+    const box=document.getElementById('taskCheck'), title=document.getElementById('taskTitle'), st=document.getElementById('taskStatusChip');
+    if(!box) return;
+    if(v){
+      box.className='shrink-0 w-7 h-7 rounded-lg border-2 border-brand-500 bg-brand-500 grid place-items-center text-white transition';
+      box.innerHTML='<i data-lucide="check" class="w-4 h-4"></i>';
+      title.className='text-lg font-semibold text-slate-400 line-through';
+      if(st){ st.textContent='เสร็จแล้ว'; st.className='bg-emerald-100 text-emerald-700 px-2 py-1 rounded-lg'; }
+    } else {
+      box.className='shrink-0 w-7 h-7 rounded-lg border-2 border-slate-300 hover:border-brand-400 grid place-items-center transition';
+      box.innerHTML='';
+      title.className='text-lg font-semibold text-slate-900';
+      if(st){ st.textContent='กำลังทำ'; st.className='bg-amber-100 text-amber-700 px-2 py-1 rounded-lg'; }
+    }
+    lucide.createIcons();
+  }
+  function toggleTaskDone(){ setTaskDone(!taskDone); }
+  function toggleActivity(){ const l=document.getElementById('actList'), c=document.getElementById('actChevron'); if(!l)return; const open=l.classList.toggle('hidden')===false; if(c)c.style.transform=open?'rotate(180deg)':''; }
+
+  // timer (TIME only)
+  let running=true, secs=3*3600+42*60;
+  const fmt=n=>String(n).padStart(2,'0');
+  setInterval(()=>{ if(!running)return; secs++; const h=Math.floor(secs/3600),m=Math.floor((secs%3600)/60),s=secs%60; const el=document.getElementById('tClock'); if(el)el.textContent=h+':'+fmt(m)+':'+fmt(s); },1000);
+  function toggleTimer(){ running=!running; const b=document.getElementById('tBtn'); const t=document.getElementById('tClock').textContent; const base='w-full flex items-center justify-center gap-1.5 px-2 py-1 rounded-lg text-xs font-medium tabular-nums'; if(running){ b.className=base+' bg-rose-500 text-white'; b.innerHTML='<i data-lucide="pause" class="w-3.5 h-3.5"></i> <span id="tClock">'+t+'</span>'; } else { b.className=base+' bg-slate-100 text-slate-500'; b.innerHTML='<i data-lucide="play" class="w-3.5 h-3.5"></i> <span id="tClock">'+t+'</span>'; } lucide.createIcons(); }
+
+  // quick add task (modal — chosen over inline: dashboard has no fixed project/group context)
+  function openQuickAdd(){ document.getElementById('qaBackdrop').classList.remove('hidden'); document.getElementById('qaModal').classList.remove('hidden'); }
+  function closeQuickAdd(){ document.getElementById('qaBackdrop').classList.add('hidden'); document.getElementById('qaModal').classList.add('hidden'); }
+  document.addEventListener('keydown', e=>{ const t=(document.activeElement.tagName||'').toLowerCase(); const typing=t==='input'||t==='textarea'||t==='select'; if((e.key==='n'||e.key==='N') && !typing){ e.preventDefault(); openQuickAdd(); } if((e.metaKey||e.ctrlKey)&&(e.key==='k'||e.key==='K')){ e.preventDefault(); openProjSearch(); } if(e.key==='/' && !typing){ e.preventDefault(); openProjSearch(); } if(e.key==='Escape'){ closeQuickAdd(); closeTask(); closeProjSearch(); closeMbMenu(); closeNav(); } });
+
+  // project search (command palette) — active + archived + filter
+  let projFilter='all';
+  const PROJ_ALL=[
+    {l:'🏢',n:'เว็บไซต์ ทรัพย์เจริญ',type:'project',meta:'Staging',arch:false},
+    {l:'🛍️',n:'ร้านค้าออนไลน์ Bloom',type:'project',meta:'Dev',arch:false},
+    {l:'🦷',n:'ระบบจองคิว คลินิกหมอฟัน',type:'project',meta:'Staging',arch:false},
+    {l:'📚',n:'คอร์สออนไลน์ SkillUp',type:'project',meta:'Dev',arch:false},
+    {l:'📰',n:'แพลตฟอร์มข่าว BrightMedia',type:'project',meta:'Go Live',arch:false},
+    {l:'🎓',n:'พอร์ทัลนักศึกษา CampusLink',type:'project',meta:'MA',arch:false},
+    {l:'☕',n:'ร้านกาแฟ บ้านสวน',type:'ma',meta:'รายเดือน',arch:false},
+    {l:'💄',n:'คลินิกความงาม Glow',type:'ma',meta:'รายเดือน',arch:false},
+    {l:'🚚',n:'บจก. สมหวัง Logistics',type:'ma',meta:'รายปี',arch:false},
+    {l:'🏫',n:'โรงเรียนอนุบาลดาวเด่น',type:'ma',meta:'รายเดือน',arch:false},
+    {l:'🗂️',n:'เว็บเก่า บจก. ไทยรุ่งเรือง',type:'project',meta:'ส่งมอบ 2567',arch:true},
+    {l:'🎪',n:'Landing แคมเปญ Songkran 67',type:'project',meta:'ปิดแล้ว',arch:true},
+    {l:'🏬',n:'ระบบสต๊อก ร้านเฟอร์นิเจอร์',type:'project',meta:'ส่งมอบ 2566',arch:true},
+    {l:'📋',n:'MA โรงแรมเขาใหญ่ (ยกเลิก)',type:'ma',meta:'archived',arch:true},
+  ];
+  const STC={Dev:'bg-orange-100 text-orange-700',Design:'bg-amber-100 text-amber-800',Staging:'bg-yellow-100 text-yellow-800','Go Live':'bg-violet-100 text-violet-700',MA:'bg-emerald-100 text-emerald-700'};
+  function projMatch(p){ if(projFilter==='archived') return p.arch; if(projFilter==='project') return p.type==='project'&&!p.arch; if(projFilter==='ma') return p.type==='ma'&&!p.arch; return true; }
+  function renderProjSearch(){
+    const q=(document.getElementById('projSearchInput').value||'').trim().toLowerCase();
+    const res=PROJ_ALL.filter(p=>projMatch(p) && p.n.toLowerCase().includes(q));
+    const el=document.getElementById('projSearchResults');
+    el.innerHTML = res.length ? res.map(p=>'<div onclick="closeProjSearch();showSection(\'project\')" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 cursor-pointer text-sm"><span class="text-lg">'+p.l+'</span><span class="flex-1 min-w-0 truncate '+(p.arch?'text-slate-400':'text-slate-800')+'">'+p.n+'</span>'+(p.arch?'<span class="text-[10px] bg-slate-100 text-slate-500 px-2 py-0.5 rounded-full shrink-0">archived</span>':'<span class="text-[11px] '+(STC[p.meta]||'bg-slate-100 text-slate-500')+' px-2 py-0.5 rounded-full shrink-0">'+p.meta+'</span>')+'</div>').join('') : '<div class="text-sm text-slate-400 text-center py-8">ไม่พบโปรเจกต์</div>';
+  }
+  function setProjFilter(f){ projFilter=f; document.querySelectorAll('.pf-chip').forEach(b=>{ if(b.getAttribute('data-pf')===f){b.classList.add('bg-brand-600','text-white');b.classList.remove('bg-slate-100','text-slate-600');}else{b.classList.remove('bg-brand-600','text-white');b.classList.add('bg-slate-100','text-slate-600');} }); renderProjSearch(); }
+  function openProjSearch(){ document.getElementById('projSearchBackdrop').classList.remove('hidden'); document.getElementById('projSearchModal').classList.remove('hidden'); const i=document.getElementById('projSearchInput'); i.value=''; setProjFilter('all'); setTimeout(()=>i.focus(),0); }
+  function closeProjSearch(){ document.getElementById('projSearchBackdrop').classList.add('hidden'); document.getElementById('projSearchModal').classList.add('hidden'); }
+
+  // ===== อีเมลกลาง: ตัวเลือกกล่องเมล (ทั้งหมด + ต่อกล่อง + unread badge) =====
+  let selMailbox='all', selFolder='unassigned', openConvId=null;
+  const MAILBOXES=[
+    {k:'sw-support',co:'SeedWebs',name:'SW Support',email:'support@seedwebs.com',unread:2,dot:'bg-brand-500'},
+    {k:'sw-account',co:'SeedWebs',name:'SW Account',email:'account@seedwebs.com',unread:3,dot:'bg-sky-500'},
+    {k:'sg-info',co:'SeedGrit',name:'SG Info',email:'info@seedgrit.com',unread:6,dot:'bg-amber-500'},
+  ];
+  const mbTotal=()=>MAILBOXES.reduce((s,m)=>s+m.unread,0);
+  const mbCur=()=>MAILBOXES.find(m=>m.k===selMailbox);
+  function mbSelectorHTML(){
+    const cur=mbCur(), label=cur?cur.name:'ทั้งหมด', count=cur?cur.unread:mbTotal();
+    const row=(k,dot,name,unread,bold)=>'<button onclick="pickMailbox(\''+k+'\')" class="w-full flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-slate-50 '+(selMailbox===k?'bg-slate-50':'')+'"><span class="w-2 h-2 rounded-full '+dot+'"></span><span class="flex-1 text-left text-sm '+(bold?'font-medium ':'')+'text-slate-700">'+name+'</span><span class="text-[11px] '+(unread?'bg-rose-100 text-rose-600':'text-slate-300')+' px-1.5 rounded-full">'+unread+'</span></button>';
+    const groups=[...new Set(MAILBOXES.map(m=>m.co))];
+    const grpHTML=groups.map(g=>'<div class="px-2.5 pt-2 pb-1 text-[10px] font-medium text-slate-400 uppercase tracking-wide">'+g+'</div>'+MAILBOXES.filter(m=>m.co===g).map(m=>row(m.k,m.dot,m.name,m.unread,false)).join('')).join('');
+    return '<div class="relative">'
+      +'<button onclick="toggleMbMenu(event)" class="flex items-center gap-2 text-sm border border-slate-200 bg-white rounded-lg pl-3 pr-2 py-2 hover:bg-slate-50"><i data-lucide="inbox" class="w-4 h-4 text-slate-400"></i><span class="font-medium text-slate-700">'+label+'</span><span class="text-[11px] bg-rose-100 text-rose-600 px-1.5 rounded-full">'+count+'</span><i data-lucide="chevron-down" class="w-4 h-4 text-slate-400"></i></button>'
+      +'<div id="mbMenu" class="hidden absolute right-0 mt-1.5 w-60 bg-white rounded-xl shadow-lg border border-slate-200 p-1.5 z-50">'+row('all','bg-slate-300','ทั้งหมด',mbTotal(),true)+'<div class="my-1 border-t border-slate-100"></div>'+grpHTML+'</div>'
+      +'</div>';
+  }
+  function toggleMbMenu(e){ if(e)e.stopPropagation(); const m=document.getElementById('mbMenu'); if(m)m.classList.toggle('hidden'); }
+  function closeMbMenu(){ const m=document.getElementById('mbMenu'); if(m)m.classList.add('hidden'); }
+  function pickMailbox(k){ selMailbox=k; openConvId=null; document.getElementById('pageAction').innerHTML=mbSelectorHTML(); renderInbox(); lucide.createIcons(); }
+  document.addEventListener('click', ()=>closeMbMenu());
+
+  const mbBy=k=>MAILBOXES.find(m=>m.k===k);
+  const FOLDERS=[
+    {k:'unassigned',name:'ยังไม่มอบหมาย',icon:'inbox'},
+    {k:'mine',name:'ของฉัน',icon:'user'},
+    {k:'drafts',name:'ฉบับร่าง',icon:'file-text'},
+    {k:'assigned',name:'มอบหมายแล้ว',icon:'check'},
+    {k:'closed',name:'ปิดแล้ว',icon:'archive'},
+    {k:'spam',name:'สแปม',icon:'ban'},
+  ];
+  const CONV=[
+    {id:7474,cust:'Grab',subj:'Thank you for your payment!',prev:'Your postpaid May bill is fully paid! Payment summary...',wait:'4 ชม.',mb:'sw-account',folder:'unassigned',attach:false,from:'Grab Thailand',email:'no-reply@grab.com',company:'Grab',to:'account@seedwebs.com',date:'วันนี้ 09:10',body:'Your postpaid May bill is fully paid!\n\nPayment summary: ฿1,240.00\nThanks for choosing GrabBusiness.',files:[],past:['Thank you for your payment! (April)','Your April postpaid bill is ready','Thank you for your payment! (March)'],pastCount:9},
+    {id:7473,cust:'Mail Delivery Subsystem',subj:'Delivery Status Notification (Failure)',prev:"** Message not delivered ** Your message couldn't be delivered to studio...",wait:'4 ชม.',mb:'sw-support',folder:'unassigned',attach:true,from:'Mail Delivery Subsystem',email:'mailer-daemon@googlemail.com',company:'',to:'support@seedwebs.com',date:'วันนี้ 08:55',body:"** Message not delivered **\n\nYour message couldn't be delivered to studio@example.com because the address couldn't be found.",files:['original_message.eml'],past:[]},
+    {id:7472,cust:'Studio 7 Online',subj:'6.6 ภาคต่อ!! คนไวได้ก่อน AirPods 3,8XX฿',prev:'+ คูปองลดเพิ่ม 600฿ รีบกดด่วนก่อนโค้ดจะหมด!',wait:'4 ชม.',mb:'sw-support',folder:'spam',attach:false,from:'Studio 7 Online',email:'promo@studio7online.com',company:'Studio 7',to:'support@seedwebs.com',date:'วันนี้ 07:30',body:'โปรโมชั่น 6.6 ลดทั้งร้าน! AirPods ราคาพิเศษ + คูปองลดเพิ่ม 600฿ รีบกดด่วน',files:[],past:['5.5 ลดทั้งร้าน! ไอทีราคาพิเศษ','รับโค้ดส่วนลดสมาชิกใหม่ 300฿']},
+    {id:7468,cust:'support@agilebits.com',subj:'Re: 1Password Support Request 627749',prev:'Hello, Thanks for taking the time to contact the 1Password Customer Sup...',wait:'6 มิ.ย.',mb:'sw-account',folder:'unassigned',attach:false,from:'1Password Support',email:'support@agilebits.com',company:'1Password',to:'account@seedwebs.com',date:'6 มิ.ย. 16:20',body:"Hello,\n\nThanks for taking the time to contact the 1Password Customer Support team. We'd be happy to help with your request.",files:[],past:['Your 1Password invoice (SeedWebs).','Re: 1Password Support Request 627201','Welcome to 1Password Business'],pastCount:6},
+    {id:7467,cust:'1password',subj:'Your 1Password invoice (SeedWebs).',prev:'Your invoice has been paid. $19.95 has been charged to the payment met...',wait:'6 มิ.ย.',mb:'sw-account',folder:'closed',attach:true,from:'1Password',email:'billing@1password.com',company:'1Password',to:'account@seedwebs.com',date:'6 มิ.ย. 09:00',body:'Your invoice has been paid.\n\n$19.95 has been charged to the payment method on file. Thank you!',files:['invoice_1password.pdf'],past:['Your 1Password invoice — เม.ย.','Your 1Password invoice — มี.ค.','Your 1Password invoice — ก.พ.'],pastCount:11},
+    {id:7466,cust:'สุดารัตน์ มีสุข',subj:'บิลเก้าอี้ 4 ชุด',prev:'แนบบิลค่าเก้าอี้สำนักงาน 4 ชุดค่ะ',wait:'6 มิ.ย.',mb:'sw-account',folder:'assigned',attach:true,from:'สุดารัตน์ มีสุข',email:'suda.m@example.com',company:'',to:'account@seedwebs.com',date:'6 มิ.ย. 11:40',body:'เรียนฝ่ายบัญชี\n\nแนบบิลค่าเก้าอี้สำนักงาน 4 ชุดมาด้วยค่ะ รบกวนตรวจสอบและดำเนินการเบิกจ่าย',files:['bill_chairs.pdf'],past:['บิลโต๊ะทำงาน 2 ตัว','ใบเสร็จค่าตกแต่งออฟฟิศ']},
+    {id:7461,cust:'vz.noreply-etax@vietjet',subj:'Your invoice from Thai VietJet Air ET202606244014',prev:"Hello บริษัท ซีดเว็บส์ จำกัด, You're receiving this email because yo...",wait:'5 มิ.ย.',mb:'sw-account',folder:'unassigned',attach:true,from:'Thai VietJet Air',email:'vz.noreply-etax@vietjetair.com',company:'Thai VietJet Air',to:'account@seedwebs.com',date:'5 มิ.ย. 18:02',body:"Hello บริษัท ซีดเว็บส์ จำกัด,\n\nYou're receiving this email because you booked a flight. Your e-Tax invoice is attached.",files:['etax_vietjet.pdf'],past:['Your invoice from Thai VietJet Air ET202605...','Booking confirmation BKK–CNX','Your invoice from Thai VietJet Air ET202604...'],pastCount:6},
+    {id:7426,cust:'สมศักดิ์ มีชัย',subj:'คำสั่งซื้อใหม่ เลขที่ OR-26000196',prev:"คำสั่งซื้อใหม่ เลขที่ OR-26000196 You've received a new order from สมศักดิ์ มีชัย",wait:'3 มิ.ย.',mb:'sg-info',folder:'unassigned',attach:false,from:'สมศักดิ์ มีชัย',email:'somsak.m@example.com',company:'',to:'info@seedgrit.com',date:'3 มิ.ย. 10:15',body:"คำสั่งซื้อใหม่ เลขที่ OR-26000196\n\nYou've received a new order from สมศักดิ์ มีชัย.",files:[],past:['คำสั่งซื้อ เลขที่ OR-26000188','คำสั่งซื้อ เลขที่ OR-26000175','สอบถามสินค้าก่อนสั่งซื้อ']},
+    {id:7455,cust:'finance@learnpro.co.th',subj:'แจ้งวางบิลสำหรับงวดที่ 3 ของ Project : ระบบ LMS เลิร์นโปร',prev:'เรียน บริษัท เลิร์นโปร จำกัด อ้างอิงถึง Project : ระบบ LMS เลิร์นโปร...',wait:'4 มิ.ย.',mb:'sg-info',folder:'assigned',attach:true,from:'คุณวิรัตน์ (เลิร์นโปร)',email:'finance@learnpro.co.th',company:'บริษัท เลิร์นโปร จำกัด',to:'info@seedgrit.com',cc:'accounting@learnpro.co.th, pm@learnpro.co.th, account@seedwebs.com',date:'4 มิ.ย. 13:27',body:'เรียน บริษัท เลิร์นโปร จำกัด\n\nอ้างอิงถึง Project : ระบบ LMS เลิร์นโปร\n\nทางบริษัทฯ ได้ดำเนินการจัดทำระบบทดสอบ เพื่อให้ทางบริษัท เลิร์นโปร จำกัด เข้าทดสอบการใช้งานระบบ โดยทางทีม Dev ได้ประสานงานกับผู้ประสานงานฝั่งลูกค้าไว้ก่อนหน้านี้\n\nดังนั้น บริษัทฯ ขออนุญาตดำเนินการวางบิลสำหรับงวดที่ 3 ของ Project\n\nรายละเอียดปรากฏตามเอกสารแนบ\n\nขอบคุณมากค่ะ',files:['IV2026060006.pdf'],past:['Re: ขอติดตามการชำระเงิน · ระบบ LMS เลิร์นโปร งวดที่ 3 (30%)','ขอติดตามการชำระเงิน · ระบบ LMS เลิร์นโปร งวดที่ 3 (30%)','Re: ใบเสนอราคา งานเพิ่มเว็บไซต์ learnpro.co.th','นำส่งใบเสนอราคาและใบแจ้งหนี้ ระบบ LMS เลิร์นโปร','นำส่งใบแจ้งหนี้ Website : เลิร์นโปร - Headless CMS'],pastCount:12},
+  ];
+  const inMb=c=> selMailbox==='all' || c.mb===selMailbox;
+  const folderCount=f=> CONV.filter(c=>inMb(c) && c.folder===f).length;
+  const convRows=()=> CONV.filter(c=>inMb(c) && (selFolder==='all'||c.folder===selFolder));
+  const folderName=k=> k==='all'?'ทั้งหมด':((FOLDERS.find(f=>f.k===k)||{}).name||'');
+  function setFolder(f){ selFolder=f; openConvId=null; renderInbox(); }
+  function openConv(id){ openConvId=id; renderInbox(); }
+  function backToList(){ openConvId=null; renderInbox(); }
+  function renderInbox(){
+    const pt=document.getElementById('pageTitle'); if(pt) pt.textContent = selMailbox==='all'?'อีเมลกลาง':((mbCur()||{}).name||'อีเมลกลาง');
+    const fEl=document.getElementById('inboxFolders');
+    if(fEl){
+      const btn=(k,name,n)=>{ const act=selFolder===k; return '<button onclick="setFolder(\''+k+'\')" class="shrink-0 whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium '+(act?'bg-white shadow-sm text-slate-900':'text-slate-500 hover:text-slate-700')+'">'+name+(n?' <span class="text-[11px] '+(act?'text-brand-600':'text-slate-400')+' tabular-nums">'+n+'</span>':'')+'</button>'; };
+      fEl.innerHTML=FOLDERS.map(f=>btn(f.k,f.name,folderCount(f.k))).join('')+btn('all','ทั้งหมด',CONV.filter(inMb).length);
+    }
+    const main=document.getElementById('inboxMain'); if(main) main.innerHTML = openConvId? convDetailHTML(CONV.find(c=>c.id===openConvId)) : convListHTML();
+    lucide.createIcons();
+  }
+  function convListHTML(){
+    const rows=convRows();
+    if(!rows.length) return '<div class="flex-1 grid place-items-center text-sm text-slate-400">ไม่มีอีเมลในกล่องนี้</div>';
+    const cols='grid grid-cols-[22px_minmax(0,1fr)_56px] sm:grid-cols-[22px_minmax(0,1.3fr)_minmax(0,3fr)_72px_72px] items-center gap-3';
+    const thead='<div class="hidden sm:grid sm:grid-cols-[22px_minmax(0,1.3fr)_minmax(0,3fr)_72px_72px] items-center gap-3 px-4 py-2.5 border-b border-slate-200 text-xs text-slate-400"><span></span><span>ลูกค้า</span><span>เรื่อง</span><span>เลขที่</span><span>รอแล้ว</span></div>';
+    const body=rows.map(c=>{
+      const tag = selMailbox==='all' ? '<span class="inline-block w-1.5 h-1.5 rounded-full '+mbBy(c.mb).dot+' mr-1.5 align-middle"></span>' : '';
+      const att = c.attach?'<i data-lucide="paperclip" class="w-3.5 h-3.5 text-slate-400 shrink-0"></i>':'';
+      return '<div onclick="openConv('+c.id+')" class="'+cols+' px-4 py-3 border-b border-slate-100 hover:bg-slate-50 cursor-pointer">'
+        +'<input type="checkbox" onclick="event.stopPropagation()" class="rounded border-slate-300 w-4 h-4 sm:order-1">'
+        +'<div class="min-w-0 sm:contents">'
+          +'<div class="text-[11px] font-medium text-slate-500 truncate sm:order-2 sm:text-sm sm:font-semibold sm:text-slate-800">'+c.cust+'</div>'
+          +'<div class="min-w-0 sm:order-3"><div class="text-sm font-semibold text-slate-800 truncate flex items-center gap-1.5">'+c.subj+att+'</div><div class="text-xs text-slate-500 truncate">'+tag+c.prev+'</div></div>'
+        +'</div>'
+        +'<div class="hidden sm:block sm:order-4 text-sm text-slate-400 tabular-nums">'+c.id+'</div>'
+        +'<div class="text-[11px] sm:text-sm text-slate-400 text-right sm:text-left whitespace-nowrap sm:order-5">'+c.wait+'</div>'
+      +'</div>';
+    }).join('');
+    return thead+'<div class="flex-1 overflow-y-auto">'+body+'</div>';
+  }
+  function convDetailHTML(c){
+    if(!c) return convListHTML();
+    const mb=mbBy(c.mb);
+    const cc = c.cc? '<div class="text-xs text-slate-400 mt-0.5"><span>Cc</span> '+c.cc+'</div>' : '';
+    const files=(c.files||[]).map(f=>'<div class="inline-flex items-center gap-2 border border-slate-200 rounded-lg px-3 py-2 text-sm text-brand-700 mt-1 mr-2"><i data-lucide="paperclip" class="w-4 h-4 text-slate-400"></i>'+f+'</div>').join('');
+    const past=(c.past||[]).map(p=>'<a class="flex items-start gap-2 px-2 py-2 rounded-lg hover:bg-slate-50 cursor-pointer text-xs text-slate-600"><i data-lucide="mail" class="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0"></i><span class="line-clamp-2">'+p+'</span></a>').join('');
+    const pastMore = c.pastCount? '<a class="flex items-center gap-1.5 px-2 py-2 text-xs text-brand-600 hover:underline cursor-pointer">ดูทั้งหมด '+c.pastCount+'</a>' : '';
+    return '<div class="flex-1 min-h-0 flex">'
+      +'<div class="flex-1 min-w-0 flex flex-col">'
+        +'<div class="px-4 py-3 border-b border-slate-200 flex items-center gap-2">'
+          +'<button onclick="backToList()" class="w-8 h-8 grid place-items-center rounded-lg hover:bg-slate-100 text-slate-500"><i data-lucide="arrow-left" class="w-4 h-4"></i></button>'
+          +'<div class="font-semibold text-slate-900 truncate flex-1">'+c.subj+'</div>'
+          +'<button class="flex items-center gap-1 text-sm bg-amber-100 text-amber-700 rounded-full px-3 py-1.5">รอตอบ <i data-lucide="chevron-down" class="w-3.5 h-3.5"></i></button>'
+          +'<button title="มอบหมาย" class="w-8 h-8 grid place-items-center rounded-lg hover:bg-slate-100 text-slate-500"><i data-lucide="user-plus" class="w-4 h-4"></i></button>'
+          +'<button title="ติดแท็ก" class="w-8 h-8 grid place-items-center rounded-lg hover:bg-slate-100 text-slate-500"><i data-lucide="tag" class="w-4 h-4"></i></button>'
+        +'</div>'
+        +'<div class="flex-1 overflow-y-auto p-5 bg-slate-50/40">'
+          +'<div class="bg-white border border-slate-200 rounded-xl p-4 max-w-3xl">'
+            +'<div class="flex items-start justify-between gap-2"><div class="font-semibold text-slate-800">'+c.from+'</div><div class="text-xs text-slate-400 shrink-0">'+c.date+'</div></div>'
+            +'<div class="text-xs text-slate-400 mt-1"><span>ถึง</span> '+c.to+'</div>'+cc
+            +'<hr class="my-3 border-slate-100">'
+            +'<div class="text-sm text-slate-700 whitespace-pre-line leading-relaxed">'+(c.body||c.prev||'')+'</div>'
+            +(files?'<div class="mt-3">'+files+'</div>':'')
+          +'</div>'
+        +'</div>'
+        +'<div class="p-3 border-t border-slate-200">'
+          +'<div class="border border-slate-200 rounded-xl p-3">'
+            +'<div class="text-[11px] text-slate-400 mb-2">ตอบกลับ '+c.email+' · ส่งจาก <span class="text-slate-500">'+(mb?mb.email:'gmail')+'</span></div>'
+            +'<textarea class="w-full h-28 resize-none text-sm focus:outline-none" placeholder="เขียนคำตอบ... (เขียนยาวได้เต็มที่)"></textarea>'
+            +'<div class="flex items-center justify-between pt-1"><div class="flex items-center gap-1 text-slate-400"><button class="w-7 h-7 grid place-items-center rounded hover:bg-slate-100"><i data-lucide="paperclip" class="w-4 h-4"></i></button><button class="w-7 h-7 grid place-items-center rounded hover:bg-slate-100"><i data-lucide="image" class="w-4 h-4"></i></button><button title="โน้ตภายใน" class="w-7 h-7 grid place-items-center rounded hover:bg-slate-100"><i data-lucide="lock" class="w-4 h-4"></i></button></div>'
+              +'<button class="bg-brand-600 text-white text-sm px-4 py-1.5 rounded-lg hover:bg-brand-700 flex items-center gap-1"><i data-lucide="send" class="w-3.5 h-3.5"></i> ส่ง</button></div>'
+          +'</div>'
+        +'</div>'
+      +'</div>'
+      +'<div class="hidden md:block w-72 border-l border-slate-200 p-4 overflow-y-auto shrink-0 bg-white">'
+        +'<div class="flex items-center gap-3"><div class="w-11 h-11 rounded-full bg-gradient-to-br from-sky-200 to-violet-300 shrink-0"></div><div class="min-w-0 font-semibold text-slate-800 truncate">'+(c.company||c.from)+'</div></div>'
+        +'<div class="mt-2"><a class="text-sm text-brand-600 hover:underline break-all">'+c.email+'</a></div>'
+        +'<div class="mt-5"><div class="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1">อีเมลที่ผ่านมา</div>'+(past||'<div class="text-xs text-slate-400 px-2 py-2">— ไม่มี</div>')+pastMore+'</div>'
+      +'</div>'
+    +'</div>';
+  }
+
+  // team activity row
+  function renderTeam(){
+    const el=document.getElementById('teamRow'); if(!el) return;
+    const c={brand:'bg-brand-100 text-brand-700',sky:'bg-sky-100 text-sky-700',violet:'bg-violet-100 text-violet-700',rose:'bg-rose-100 text-rose-700',amber:'bg-amber-100 text-amber-700',teal:'bg-teal-100 text-teal-700',pink:'bg-pink-100 text-pink-700',indigo:'bg-indigo-100 text-indigo-700',lime:'bg-lime-100 text-lime-700',orange:'bg-orange-100 text-orange-700',slate:'bg-slate-100 text-slate-600'};
+    const team=[{n:'เมธ',i:'เม',k:'brand',run:'หน้า Product · ทรัพย์เจริญ',h:3.7,m:70,timer:'3:42'},{n:'ปอนด์',i:'ปอ',k:'sky',run:'checkout · Bloom',h:5.0,m:96,timer:'1:18'},{n:'น้ำ',i:'น้',k:'violet',run:'หน้า About · ทรัพย์เจริญ',h:6.0,m:88.5,timer:'0:54'},{n:'บีม',i:'บี',k:'rose',run:'responsive · ทรัพย์เจริญ',h:4.5,m:102,timer:'2:30'},{n:'กร',i:'กร',k:'indigo',run:'API สินค้า · Bloom',h:5.5,m:90,timer:'4:05'},{n:'เจ',i:'เจ',k:'amber',run:'รายงาน stat · SkillUp',h:3.0,m:78,timer:'0:22'},{n:'ฟ้า',i:'ฟ้',k:'teal',h:2.5,m:70.5},{n:'แพรว',i:'แพ',k:'pink',h:4.0,m:66},{n:'ตูน',i:'ตู',k:'orange',h:1.5,m:64},{n:'มิ้นท์',i:'มิ',k:'lime',h:3.2,m:80},{n:'สมชาย',i:'สม',k:'slate',leave:true,m:40}];
+    el.innerHTML=team.map(p=>{
+      const ring=p.run?' ring-2 ring-brand-400':'';
+      const badge=p.timer?'<span class="absolute -bottom-1 left-1/2 -translate-x-1/2 text-[9px] bg-brand-500 text-white px-1 rounded tabular-nums">'+p.timer+'</span>':'';
+      const st=p.leave?'<div class="text-orange-300">ลาวันนี้</div>':(p.run?'<div class="text-brand-300">⏱ '+p.run+'</div>':'<div class="text-slate-300">ไม่ได้จับเวลา</div>');
+      const today=p.leave?'':'<div class="text-slate-400 mt-1">วันนี้ '+(p.h||0)+' ชม.</div>';
+      const month=(p.m!=null)?'<div class="text-slate-400'+(p.leave?' mt-1':'')+'">เดือนนี้ '+p.m+' ชม.</div>':'';
+      const hrs=today+month;
+      return '<div class="group relative'+(p.leave?' opacity-50':'')+'"><div class="w-11 h-11 rounded-full grid place-items-center text-sm font-semibold '+c[p.k]+ring+'">'+p.i+'</div>'+badge+'<div class="absolute z-20 left-0 top-full mt-2 w-44 bg-slate-900 text-white rounded-xl p-3 text-xs opacity-0 group-hover:opacity-100 pointer-events-none transition shadow-lg"><div class="font-semibold mb-0.5">'+p.n+'</div>'+st+hrs+'</div></div>';
+    }).join('');
+  }
+
+  // team calendar (Date-driven + nav)
+  const DOW=['อา','จ','อ','พ','พฤ','ศ','ส'];
+  const DOWF=['อาทิตย์','จันทร์','อังคาร','พุธ','พฤหัส','ศุกร์','เสาร์'];
+  const THM=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+  const THMF=['มกราคม','กุมภาพันธ์','มีนาคม','เมษายน','พฤษภาคม','มิถุนายน','กรกฎาคม','สิงหาคม','กันยายน','ตุลาคม','พฤศจิกายน','ธันวาคม'];
+  const EV={'4-31':[['วันวิสาขบูชา','green']],'5-1':[['หยุดชดเชย','green']],'5-3':[['วันเฉลิมฯ','green']],'5-5':[['Seed Webinar 14:00','slate'],['ไอซ์ลา','orange']],'5-6':[['ทีม sync 10:00','slate']],'5-8':[['เซ็น MOU 15:30','slate']],'5-11':[['จูน/มาย ไป CM','orange']],'5-24':[['ตัดรอบเงินเดือน','brand']],'5-26':[['จ่ายเงินเดือน','brand']]};
+  const COL={green:'bg-emerald-100 text-emerald-700',orange:'bg-orange-100 text-orange-700',slate:'bg-slate-100 text-slate-600',brand:'bg-brand-100 text-brand-700'};
+  let calView='month';
+  const calToday=new Date(2026,5,6);
+  let calRef=new Date(2026,5,6);
+  const be=y=>y+543;
+  const evOf=dt=> dt.getFullYear()===2026 ? (EV[dt.getMonth()+'-'+dt.getDate()]||[]) : [];
+  const sameDay=(a,b)=>a.getFullYear()===b.getFullYear()&&a.getMonth()===b.getMonth()&&a.getDate()===b.getDate();
+  function monthHTML(){
+    const m=calRef.getMonth(); const start=new Date(calRef.getFullYear(),m,1); start.setDate(1-start.getDay());
+    let h='<div class="grid grid-cols-7 text-[11px] text-slate-400 mb-1">'+DOW.map(d=>'<div class="px-2 py-1">'+d+'</div>').join('')+'</div><div class="grid grid-cols-7 gap-px bg-slate-200 rounded-lg overflow-hidden">';
+    for(let i=0;i<42;i++){ const dt=new Date(start); dt.setDate(start.getDate()+i); const inM=dt.getMonth()===m, today=sameDay(dt,calToday);
+      const evs=evOf(dt).map(e=>'<div class="truncate '+COL[e[1]]+' rounded px-1 mt-0.5 text-[10px]">'+e[0]+'</div>').join('');
+      const num=today?'<span class="bg-rose-500 text-white w-5 h-5 grid place-items-center rounded-full text-[11px]">'+dt.getDate()+'</span>':'<span class="'+(inM?'text-slate-500':'text-slate-300')+' text-[11px] px-1">'+dt.getDate()+'</span>';
+      h+='<div class="'+(inM?'bg-white':'bg-slate-50/60')+' min-h-[58px] p-1">'+num+evs+'</div>';
+    }
+    return h+'</div>';
+  }
+  function weekHTML(){
+    const start=new Date(calRef); start.setDate(calRef.getDate()-calRef.getDay());
+    let h='<div class="grid grid-cols-7 gap-px bg-slate-200 rounded-lg overflow-hidden">';
+    for(let i=0;i<7;i++){ const dt=new Date(start); dt.setDate(start.getDate()+i); const today=sameDay(dt,calToday);
+      const evs=evOf(dt).map(e=>'<div class="'+COL[e[1]]+' rounded px-1.5 py-1 mt-1 text-[11px]">'+e[0]+'</div>').join('');
+      h+='<div class="bg-white min-h-[150px] p-1.5"><div class="flex items-center gap-1 mb-1"><span class="text-[10px] text-slate-400">'+DOW[i]+'</span>'+(today?'<span class="bg-rose-500 text-white w-5 h-5 grid place-items-center rounded-full text-[11px]">'+dt.getDate()+'</span>':'<span class="text-slate-600 text-sm">'+dt.getDate()+'</span>')+'</div>'+evs+'</div>';
+    }
+    return h+'</div>';
+  }
+  function dayHTML(){
+    const evs=evOf(calRef);
+    const list=evs.length?evs.map(e=>'<div class="'+COL[e[1]]+' rounded-lg px-3 py-2 mb-1.5 text-sm">'+e[0]+'</div>').join(''):'<div class="text-sm text-slate-400 py-8 text-center">ไม่มีกิจกรรม</div>';
+    return '<div class="border border-slate-200 rounded-lg p-3"><div class="text-sm font-semibold text-slate-700 mb-2">'+DOWF[calRef.getDay()]+' '+calRef.getDate()+' '+THMF[calRef.getMonth()]+'</div>'+list+'</div>';
+  }
+  function calLabelText(){
+    if(calView==='month') return THMF[calRef.getMonth()]+' '+be(calRef.getFullYear());
+    if(calView==='day') return DOWF[calRef.getDay()]+' '+calRef.getDate()+' '+THM[calRef.getMonth()]+' '+be(calRef.getFullYear());
+    const s=new Date(calRef); s.setDate(calRef.getDate()-calRef.getDay()); const e=new Date(s); e.setDate(s.getDate()+6);
+    return s.getDate()+' '+THM[s.getMonth()]+' – '+e.getDate()+' '+THM[e.getMonth()]+' '+be(e.getFullYear());
+  }
+  function renderCalendar(){ const g=document.getElementById('calGrid'); if(!g)return; g.innerHTML = calView==='month'?monthHTML():calView==='week'?weekHTML():dayHTML(); const l=document.getElementById('calLabel'); if(l)l.textContent=calLabelText(); }
+  function navCal(dir){ if(calView==='month') calRef.setMonth(calRef.getMonth()+dir); else if(calView==='week') calRef.setDate(calRef.getDate()+dir*7); else calRef.setDate(calRef.getDate()+dir); renderCalendar(); }
+  function calGoToday(){ calRef=new Date(2026,5,6); renderCalendar(); }
+  function setCalView(v){ calView=v; ['day','week','month'].forEach(k=>{ const b=document.getElementById('cv-'+k); if(!b)return; if(k===v){b.classList.add('bg-white','shadow-sm','text-brand-700');b.classList.remove('text-slate-500');}else{b.classList.remove('bg-white','shadow-sm','text-brand-700');b.classList.add('text-slate-500');} }); renderCalendar(); }
+  function toggleCalMenu(){ document.getElementById('calMenu').classList.toggle('hidden'); }
+
+  // สรุปงานประจำวัน (all 9) — project คั่น, งานเป็นลิงก์; toggle เมื่อวาน
+  function renderStandup(){
+    const el=document.getElementById('standupGrid'); if(!el)return;
+    const showY = !!(document.getElementById('toggleYest') && document.getElementById('toggleYest').checked);
+    const C={sky:'bg-sky-100 text-sky-700',violet:'bg-violet-100 text-violet-700',rose:'bg-rose-100 text-rose-700',amber:'bg-amber-100 text-amber-700',teal:'bg-teal-100 text-teal-700',orange:'bg-orange-100 text-orange-700',pink:'bg-pink-100 text-pink-700',indigo:'bg-indigo-100 text-indigo-700',lime:'bg-lime-100 text-lime-700'};
+    const ppl=[
+      {n:'ปอนด์',i:'ปอ',k:'sky',yh:7.5,today:[{p:'Bloom store',t:['ทำหน้า checkout','เชื่อม payment API']}],yest:[{p:'Bloom store',t:['payment gateway · 5.0 ชม.','fix checkout bug · 2.5 ชม.']}]},
+      {n:'น้ำ',i:'น้',k:'violet',yh:8.0,today:[{p:'ทรัพย์เจริญ',t:['หน้า About + ทีม']}],yest:[{p:'ทรัพย์เจริญ',t:['Hero section · 8.0 ชม.']}]},
+      {n:'บีม',i:'บี',k:'rose',yh:7.0,today:[{p:'ทรัพย์เจริญ',t:['ปรับ responsive']},{p:'Bloom store',t:['fix checkout bug']}],yest:[{p:'ทรัพย์เจริญ',t:['responsive มือถือ · 7.0 ชม.']}]},
+      {n:'เจ',i:'เจ',k:'amber',yh:6.5,today:[{p:'SkillUp',t:['ทำรายงาน stat']}],yest:[{p:'SkillUp',t:['รายงาน stat · 6.5 ชม.']}]},
+      {n:'ฟ้า',i:'ฟ้',k:'teal',yh:5.5,today:[{p:'Bloom store',t:['ออกแบบ landing']}],yest:[{p:'Bloom store',t:['ออกแบบ concept · 5.5 ชม.']}]},
+      {n:'ตูน',i:'ตู',k:'orange',yh:4.0,today:[{p:'คลินิกหมอฟัน',t:['แก้ฟอร์มจองคิว']}],yest:[{p:'คลินิกหมอฟัน',t:['ฟอร์มจองคิว · 4.0 ชม.']}]},
+      {n:'แพรว',i:'แพ',k:'pink',yh:6.0,today:[{p:'ทรัพย์เจริญ',t:['เขียน content หน้าแรก']}],yest:[{p:'ทรัพย์เจริญ',t:['content หน้าบริการ · 6.0 ชม.']}]},
+      {n:'กร',i:'กร',k:'indigo',yh:7.0,today:[{p:'Bloom store',t:['API สินค้า']}],yest:[{p:'Bloom store',t:['API ตะกร้า · 7.0 ชม.']}]},
+      {n:'มิ้นท์',i:'มิ',k:'lime',yh:5.0,today:[{p:'ภายใน',t:['วางแผน sprint','รีวิว PR']}],yest:[{p:'ภายใน',t:['ประชุม + รีวิว · 5.0 ชม.']}]},
+    ];
+    const grp=(arr,linky)=>arr.map(gr=>'<div class="mt-1.5"><div class="text-[11px] text-slate-400">'+gr.p+'</div>'+gr.t.map(tk=>linky?'<a onclick="openTask()" class="block text-sm text-slate-700 hover:text-brand-600 hover:underline cursor-pointer">'+tk+'</a>':'<div class="text-sm text-slate-500">'+tk+'</div>').join('')+'</div>').join('');
+    el.innerHTML=ppl.map(p=>{
+      const lbl='inline-block text-[10px] font-medium text-slate-400 border border-slate-200 px-1.5 py-0.5 rounded';
+      const yestHtml=showY?'<div><span class="'+lbl+'">เมื่อวาน · '+p.yh+' ชม.</span>'+grp(p.yest,false)+'</div>':'';
+      const todayHtml=(showY?'<div class="mt-3"><span class="'+lbl+'">วันนี้</span>'+grp(p.today,true)+'</div>':grp(p.today,true));
+      return '<div class="bg-white p-3"><div class="flex items-center gap-2 mb-1"><div class="w-6 h-6 rounded-full grid place-items-center text-[10px] font-semibold '+C[p.k]+'">'+p.i+'</div><span class="font-medium text-sm">'+p.n+'</span></div>'+yestHtml+todayHtml+'</div>';
+    }).join('');
+  }
+
+  // projects: timeline + cards
+  function renderProjects(){
+    const tl=document.getElementById('projTimeline'), cardsEl=document.getElementById('projCards');
+    if(!tl||!cardsEl) return;
+    const fmtK=n=>'฿'+Math.round(n/1000)+'K';
+    const MON=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.','ต.ค.','พ.ย.','ธ.ค.'];
+    const ST={Dev:'bg-orange-100 text-orange-700',Design:'bg-amber-100 text-amber-800',Staging:'bg-yellow-100 text-yellow-800','Go Live':'bg-violet-100 text-violet-700',MA:'bg-emerald-100 text-emerald-700'};
+    const HC={green:'bg-emerald-500',amber:'bg-orange-400',red:'bg-rose-500'};
+    const HT={green:'งบงวดนี้ปกติ',amber:'งวดนี้ใกล้เต็มงบ',red:'งวดนี้เกินงบ'};
+    const AV={brand:'bg-brand-100 text-brand-700',sky:'bg-sky-100 text-sky-700',violet:'bg-violet-100 text-violet-700',rose:'bg-rose-100 text-rose-700',amber:'bg-amber-100 text-amber-700',teal:'bg-teal-100 text-teal-700',indigo:'bg-indigo-100 text-indigo-700',slate:'bg-slate-200 text-slate-600'};
+    const P=[
+      {logo:'🏢',name:'เว็บไซต์ ทรัพย์เจริญ',budget:180000,s:1,e:7,range:'1 ม.ค. – 30 มิ.ย.',status:'Staging',paid:50,health:'amber',usage:90,team:[['เม','brand'],['น้','violet'],['ปอ','sky']]},
+      {logo:'🛍️',name:'ร้านค้าออนไลน์ Bloom',budget:250000,s:3,e:9,range:'1 มี.ค. – 31 ส.ค.',status:'Dev',paid:30,health:'green',usage:55,team:[['ปอ','sky'],['กร','indigo'],['ฟ้','teal']]},
+      {logo:'🦷',name:'ระบบจองคิว คลินิกหมอฟัน',budget:220000,s:2,e:7,range:'1 ก.พ. – 30 มิ.ย.',status:'Staging',paid:70,health:'red',usage:110,team:[['ตู','amber'],['สม','slate']]},
+      {logo:'📚',name:'คอร์สออนไลน์ SkillUp',budget:300000,s:5,e:8,range:'1 พ.ค. – 31 ก.ค.',status:'Dev',paid:0,health:'green',usage:35,team:[['เจ','amber'],['กร','indigo']]},
+      {logo:'📰',name:'แพลตฟอร์มข่าว BrightMedia',budget:700000,s:1,e:7,range:'1 ม.ค. – 30 มิ.ย.',status:'Go Live',paid:20,health:'amber',usage:85,team:[['น้','violet'],['บี','rose']]},
+      {logo:'🎓',name:'พอร์ทัลนักศึกษา CampusLink',budget:240000,s:1,e:5,range:'1 ม.ค. – 30 เม.ย.',status:'MA',paid:100,health:'green',usage:48,team:[['เม','brand'],['มิ','teal']]},
+    ];
+    const today=((6+5/30)-1)/12*100;
+    let head='<div class="flex text-[11px] text-slate-400 mb-1"><div class="w-56 shrink-0 sticky left-0 bg-white z-20"></div><div class="flex-1 flex">'+MON.map(m=>'<div class="flex-1 text-center">'+m+'</div>').join('')+'</div></div>';
+    let rows=P.map(p=>{
+      const L=(p.s-1)/12*100, W=(p.e-p.s)/12*100;
+      return '<div class="flex items-center py-1">'
+        +'<div class="w-56 shrink-0 sticky left-0 bg-white z-20 flex items-center gap-2 text-sm pr-3"><span>'+p.logo+'</span><span onclick="showSection(\'project\')" class="font-medium text-slate-700 truncate hover:text-brand-600 hover:underline cursor-pointer">'+p.name+'</span><span data-roles="owner,member" class="ml-auto text-xs text-slate-400 tabular-nums shrink-0">'+fmtK(p.budget)+'</span></div>'
+        +'<div class="relative flex-1 h-7 bg-slate-50 rounded-md">'
+          +'<div class="absolute top-0 bottom-0 w-px bg-rose-400 z-10" style="left:'+today+'%"></div>'
+          +'<div class="group absolute inset-y-1 rounded-md '+ST[p.status]+'" style="left:'+L+'%;width:'+W+'%">'
+            +'<div class="flex items-center h-full px-2 text-[11px] font-medium truncate">'+p.status+'</div>'
+            +'<div class="absolute left-2 bottom-full mb-1 whitespace-nowrap bg-slate-900 text-white text-[11px] rounded-lg px-2 py-1 opacity-0 group-hover:opacity-100 pointer-events-none transition shadow-lg z-30">'+p.range+'</div>'
+          +'</div>'
+        +'</div></div>';
+    }).join('');
+    tl.innerHTML=head+rows;
+
+    cardsEl.innerHTML=P.map(p=>{
+      const av=p.team.map(a=>'<div class="w-6 h-6 rounded-full grid place-items-center text-[10px] font-semibold ring-2 ring-white '+AV[a[1]]+'">'+a[0]+'</div>').join('');
+      return '<div onclick="showSection(\'project\')" class="bg-white rounded-lg shadow-sm p-5 cursor-pointer hover:shadow transition">'
+        +'<div class="flex items-center gap-2">'
+          +'<span class="text-lg leading-none">'+p.logo+'</span>'
+          +'<div class="flex-1 min-w-0 font-semibold text-slate-800 truncate">'+p.name+'</div>'
+        +'</div>'
+        +'<div class="flex items-center gap-2 mt-2.5">'
+          +'<span class="text-[11px] px-2 py-0.5 rounded-full '+ST[p.status]+'">'+p.status+'</span>'
+          +'<span data-roles="owner,member" class="text-xs text-slate-500 tabular-nums">'+p.paid+'% <span class="text-slate-400">จ่ายแล้ว</span></span>'
+          +'<span data-roles="owner,member" class="group relative"><span class="block w-2.5 h-2.5 rounded-full '+HC[p.health]+'"></span><span class="absolute left-0 top-full mt-1 w-44 bg-slate-900 text-white text-[11px] rounded-lg p-2 opacity-0 group-hover:opacity-100 pointer-events-none transition shadow-lg z-20">ลูกค้าจ่าย '+p.paid+'% · งวดนี้ใช้งบ '+p.usage+'% · '+HT[p.health]+'</span></span>'
+        +'</div>'
+        +'<div class="flex items-center mt-3 -space-x-1.5">'+av+'</div>'
+        +'</div>';
+    }).join('');
+  }
+
+  // งานต่อเนื่อง (recurring) — แสดงทุกราย, คลิกได้
+  function renderMA(){
+    const el=document.getElementById('maBody'); if(!el)return;
+    const AV={violet:'bg-violet-100 text-violet-700',teal:'bg-teal-100 text-teal-700',indigo:'bg-indigo-100 text-indigo-700',pink:'bg-pink-100 text-pink-700',amber:'bg-amber-100 text-amber-700'};
+    const withTodo=[
+      {l:'☕',n:'ร้านกาแฟ บ้านสวน',t:'อัปเดตเมนูหน้าร้าน',due:'พรุ่งนี้',dc:'bg-rose-100 text-rose-600',w:['น้','violet','น้ำ']},
+      {l:'💄',n:'คลินิกความงาม Glow',t:'แก้แบนเนอร์โปรโมชัน',due:'9 มิ.ย.',dc:'bg-amber-100 text-amber-700',w:['ฟ้','teal','ฟ้า']},
+      {l:'🚚',n:'บจก. สมหวัง Logistics',t:'ต่ออายุ SSL + domain',due:'12 มิ.ย.',dc:'bg-slate-100 text-slate-500',w:['กร','indigo','กร']},
+      {l:'🏫',n:'โรงเรียนอนุบาลดาวเด่น',t:'เพิ่มข่าวรับสมัคร',due:'15 มิ.ย.',dc:'bg-slate-100 text-slate-500',w:['แพ','pink','แพรว']},
+      {l:'🏋️',n:'ฟิตเนส FitZone',t:'แก้ตารางคลาส',due:'18 มิ.ย.',dc:'bg-slate-100 text-slate-500',w:['ตู','amber','ตูน']},
+    ];
+    const noTodo=['🍜 ร้านอาหารครัวคุณยาย','🏨 โรงแรมเขาใหญ่วิว','🦷 คลินิกทันตกรรมยิ้มสวย','🌸 ร้านดอกไม้ Bloom & Co','📷 สตูดิโอถ่ายภาพ Frame','🏥 คลินิกกายภาพ ReCare','🚗 อู่ซ่อมรถ ช.เจริญยนต์','🧁 ร้านเบเกอรี่ Sweet Day','⚖️ สนง.กฎหมาย ธรรมนิติ','🏡 บ้านสวยพร็อพเพอร์ตี้','💊 ร้านขายยา เภสัชภัณฑ์','🐶 รพ.สัตว์ เพ็ทแคร์','🎓 สถาบันกวดวิชา BrainUp','🍔 แฟรนไชส์ Burger Lab','🏦 สหกรณ์ออมทรัพย์รุ่งเรือง'];
+    let h=withTodo.map(p=>'<tr onclick="openTask()" class="hover:bg-slate-50 cursor-pointer"><td class="px-5 py-3 text-slate-700">'+p.l+' '+p.n+'</td><td class="px-3 text-slate-700">'+p.t+'</td><td class="px-3"><span class="text-[11px] '+p.dc+' px-2 py-0.5 rounded-full">'+p.due+'</span></td><td class="px-5"><span class="inline-flex items-center gap-1.5"><span class="w-5 h-5 rounded-full '+AV[p.w[1]]+' grid place-items-center text-[9px] font-semibold">'+p.w[0]+'</span><span class="text-xs text-slate-500">'+p.w[2]+'</span></span></td></tr>').join('');
+    h+=noTodo.map(x=>'<tr onclick="showSection(\'project\')" class="hover:bg-slate-50 cursor-pointer"><td class="px-5 py-3 text-slate-500">'+x+'</td><td class="px-3 text-slate-300">— ไม่มี todo ค้าง</td><td class="px-3 text-slate-300 text-xs">—</td><td class="px-5"></td></tr>').join('');
+    el.innerHTML=h;
+  }
+
+  // project detail: task-group timeline + reorder toggle (grip ซ่อนปกติ กันลากโดน)
+  let reorderOn=false;
+  function toggleReorder(){
+    reorderOn=!reorderOn;
+    document.querySelectorAll('#section-project .grip').forEach(g=>g.classList.toggle('hidden', !reorderOn));
+    const b=document.getElementById('reorderBtn'); if(!b) return;
+    if(reorderOn){ b.classList.add('bg-brand-50','border-brand-200','text-brand-700'); b.classList.remove('text-slate-500','border-slate-200'); }
+    else { b.classList.remove('bg-brand-50','border-brand-200','text-brand-700'); b.classList.add('text-slate-500','border-slate-200'); }
+  }
+  function renderProjectDetail(){
+    reorderOn=false;
+    document.querySelectorAll('#section-project .grip').forEach(g=>g.classList.add('hidden'));
+    const b=document.getElementById('reorderBtn'); if(b){ b.classList.remove('bg-brand-50','border-brand-200','text-brand-700'); b.classList.add('text-slate-500','border-slate-200'); }
+    renderProjGroupsTimeline();
+  }
+  function renderProjGroupsTimeline(){
+    const el=document.getElementById('projGroupTl'); if(!el) return;
+    const MON=['ม.ค.','ก.พ.','มี.ค.','เม.ย.','พ.ค.','มิ.ย.','ก.ค.','ส.ค.','ก.ย.'];
+    const N=MON.length;
+    const G=[
+      {name:'Design',s:1,e:2.5,c:'bg-amber-400',range:'1 ม.ค. – 14 ก.พ.'},
+      {name:'Frontend',s:2,e:4.5,c:'bg-brand-500',range:'1 ก.พ. – 15 เม.ย.'},
+      {name:'Backend',s:2.3,e:4.7,c:'bg-sky-500',range:'10 ก.พ. – 21 เม.ย.'},
+      {name:'Staging',s:4.5,e:5.3,c:'bg-violet-500',range:'16 เม.ย. – 9 พ.ค.'},
+      {name:'UAT',s:5.2,e:5.7,c:'bg-orange-400',range:'7 – 21 พ.ค.'},
+      {name:'Go Live',s:5.7,e:6.05,c:'bg-rose-500',range:'21 – 31 พ.ค.'},
+      {name:'MA',s:6.05,e:9,c:'bg-emerald-500',range:'1 มิ.ย. – 31 ส.ค. · ฟรี 3 เดือน'},
+    ];
+    const today=((6+5/30)-1)/N*100;
+    const head='<div class="flex text-[11px] text-slate-400 mb-1"><div class="w-44 shrink-0 sticky left-0 bg-white z-20"></div><div class="flex-1 flex">'+MON.map(m=>'<div class="flex-1 text-center">'+m+'</div>').join('')+'</div></div>';
+    const rows=G.map(g=>{
+      const L=(g.s-1)/N*100, W=(g.e-g.s)/N*100;
+      return '<div class="flex items-center py-1">'
+        +'<div class="w-44 shrink-0 sticky left-0 bg-white z-20 text-sm pr-3 truncate"><span class="font-medium text-slate-700">'+g.name+'</span></div>'
+        +'<div class="relative flex-1 h-7 bg-slate-50 rounded-md">'
+          +'<div class="absolute top-0 bottom-0 w-px bg-rose-400 z-10" style="left:'+today+'%"></div>'
+          +'<div class="group absolute inset-y-1 rounded-md '+g.c+'" style="left:'+L+'%;width:'+W+'%">'
+            +'<div class="absolute left-1 bottom-full mb-1 whitespace-nowrap bg-slate-900 text-white text-[11px] rounded-lg px-2 py-1 opacity-0 group-hover:opacity-100 pointer-events-none transition shadow-lg z-30">'+g.range+'</div>'
+          +'</div>'
+        +'</div></div>';
+    }).join('');
+    el.innerHTML=head+rows;
+  }
+
+  renderTeam(); renderStandup(); renderProjects(); renderMA(); setCalView('month'); setRole('owner'); showSection('dashboard');
+</script>
+</body>
+</html>
