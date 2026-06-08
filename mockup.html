@@ -696,6 +696,19 @@
   </div>
 </div>
 
+<!-- generic search modal (ลูกค้า / เอกสาร / อีเมลกลาง) -->
+<div id="searchBackdrop" onclick="closeSearch()" class="fixed inset-0 bg-slate-900/40 hidden z-50"></div>
+<div id="searchModal" class="fixed inset-0 z-50 hidden flex items-start justify-center pt-20 px-4 pointer-events-none">
+  <div class="pointer-events-auto w-full max-w-xl bg-white rounded-2xl shadow-2xl overflow-hidden">
+    <div class="flex items-center gap-2.5 px-4 py-3 border-b border-slate-200">
+      <i data-lucide="search" class="w-4 h-4 text-slate-400"></i>
+      <input id="searchInput" oninput="renderSearch()" placeholder="ค้นหา..." class="flex-1 text-sm bg-transparent focus:outline-none placeholder:text-slate-400">
+      <kbd class="text-[10px] text-slate-400 border border-slate-200 rounded px-1.5 py-0.5">esc</kbd>
+    </div>
+    <div id="searchResults" class="max-h-[52vh] overflow-y-auto p-2"></div>
+  </div>
+</div>
+
 <!-- ===== QUICK ADD TASK MODAL ===== -->
 <div id="qaBackdrop" onclick="closeQuickAdd()" class="fixed inset-0 bg-slate-900/30 hidden z-40"></div>
 <div id="qaModal" class="fixed inset-0 z-50 hidden flex items-start justify-center pt-24 px-4 pointer-events-none">
@@ -784,10 +797,10 @@
   const PRIMARY='flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-3.5 py-2 rounded-lg';
   const ACTIONS = {
     projects:'<div class="flex items-center gap-2"><button onclick="openProjSearch()" title="ค้นหา (⌘K)" class="w-9 h-9 grid place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"><i data-lucide="search" class="w-4 h-4"></i></button><button class="'+PRIMARY+'"><i data-lucide="plus" class="w-4 h-4"></i> โปรเจกต์ใหม่</button></div>',
-    inbox:()=>'<div class="flex items-center gap-2"><button title="เขียนอีเมลใหม่" class="w-9 h-9 grid place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"><i data-lucide="pen-line" class="w-4 h-4"></i></button>'+mbSelectorHTML()+'</div>',
+    inbox:()=>'<div class="flex items-center gap-2"><button onclick="openSearch()" title="ค้นหา (⌘K)" class="w-9 h-9 grid place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"><i data-lucide="search" class="w-4 h-4"></i></button><button title="เขียนอีเมลใหม่" class="w-9 h-9 grid place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"><i data-lucide="pen-line" class="w-4 h-4"></i></button>'+mbSelectorHTML()+'</div>',
     admin:'<button class="'+PRIMARY+'"><i data-lucide="user-plus" class="w-4 h-4"></i> เพิ่มผู้ใช้</button>',
-    docs:'<button class="'+PRIMARY+'"><i data-lucide="file-plus" class="w-4 h-4"></i> เอกสารใหม่</button>',
-    clients:'<button class="'+PRIMARY+'"><i data-lucide="plus" class="w-4 h-4"></i> เพิ่มลูกค้า</button>',
+    docs:'<div class="flex items-center gap-2"><button onclick="openSearch()" title="ค้นหา (⌘K)" class="w-9 h-9 grid place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"><i data-lucide="search" class="w-4 h-4"></i></button><button class="'+PRIMARY+'"><i data-lucide="file-plus" class="w-4 h-4"></i> เอกสารใหม่</button></div>',
+    clients:'<div class="flex items-center gap-2"><button onclick="openSearch()" title="ค้นหา (⌘K)" class="w-9 h-9 grid place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"><i data-lucide="search" class="w-4 h-4"></i></button><button class="'+PRIMARY+'"><i data-lucide="plus" class="w-4 h-4"></i> เพิ่มลูกค้า</button></div>',
   };
   let currentRole='owner', currentSection='dashboard';
 
@@ -859,7 +872,7 @@
   // quick add task (modal — chosen over inline: dashboard has no fixed project/group context)
   function openQuickAdd(){ document.getElementById('qaBackdrop').classList.remove('hidden'); document.getElementById('qaModal').classList.remove('hidden'); }
   function closeQuickAdd(){ document.getElementById('qaBackdrop').classList.add('hidden'); document.getElementById('qaModal').classList.add('hidden'); }
-  document.addEventListener('keydown', e=>{ const t=(document.activeElement.tagName||'').toLowerCase(); const typing=t==='input'||t==='textarea'||t==='select'; if((e.key==='n'||e.key==='N') && !typing){ e.preventDefault(); openQuickAdd(); } if((e.metaKey||e.ctrlKey)&&(e.key==='k'||e.key==='K')){ e.preventDefault(); openProjSearch(); } if(e.key==='/' && !typing){ e.preventDefault(); openProjSearch(); } if(e.key==='Escape'){ closeQuickAdd(); closeTask(); closeProjSearch(); closeMbMenu(); closeNav(); } });
+  document.addEventListener('keydown', e=>{ const t=(document.activeElement.tagName||'').toLowerCase(); const typing=t==='input'||t==='textarea'||t==='select'; if((e.key==='n'||e.key==='N') && !typing){ e.preventDefault(); openQuickAdd(); } if((e.metaKey||e.ctrlKey)&&(e.key==='k'||e.key==='K')){ e.preventDefault(); openSearchForCurrent(); } if(e.key==='/' && !typing){ e.preventDefault(); openSearchForCurrent(); } if(e.key==='Escape'){ closeQuickAdd(); closeTask(); closeProjSearch(); closeSearch(); closeMbMenu(); closeNav(); } });
 
   // project search (command palette) — active + archived + filter
   let projFilter='all';
@@ -1452,6 +1465,20 @@
   function setClientTab(t){ clientTab=t; renderClients(); }
   function openClient(id){ selClientId=id; renderClients(); }
   function clientsBack(){ selClientId=null; renderClients(); }
+
+  // ===== ค้นหา (ลูกค้า/เอกสาร/อีเมลกลาง) — ไอคอน search → modal (สไตล์เดียวกับโปรเจกต์) =====
+  function flattenDocs(nodes,trail){ nodes=nodes||DOCS; trail=trail||[]; let out=[]; nodes.forEach(n=>{ const t=trail.concat(n.title); out.push({id:n.id,title:n.title,icon:n.icon,path:t.slice(0,-1).join(' / ')}); if(n.children) out=out.concat(flattenDocs(n.children,t)); }); return out; }
+  const SEARCH_CFG={
+    clients:{ph:'ค้นหาลูกค้า (ชื่อ/อีเมล)...',empty:'ไม่พบลูกค้า',items:()=>CLIENTS.map(c=>({icon:c.logo,label:c.name,meta:c.contact.email,q:c.name+' '+c.contact.email,go:()=>{showSection('clients');openClient(c.id);}}))},
+    docs:{ph:'ค้นหาเอกสาร...',empty:'ไม่พบเอกสาร',items:()=>flattenDocs().map(n=>({icon:n.icon,useFile:!n.icon,label:n.title,meta:n.path,q:n.title,go:()=>{showSection('docs');selectDoc(n.id);}}))},
+    inbox:{ph:'ค้นหาอีเมล (เรื่อง/ผู้ส่ง)...',empty:'ไม่พบอีเมล',items:()=>CONV.map(c=>({icon:'✉️',label:c.subj,meta:c.cust,q:c.subj+' '+c.cust+' '+(c.email||''),go:()=>{showSection('inbox');openConv(c.id);}}))},
+  };
+  let searchSection=null, searchHits=[];
+  function openSearchForCurrent(){ if(currentSection==='projects'||currentSection==='project') openProjSearch(); else if(SEARCH_CFG[currentSection]) openSearch(); }
+  function openSearch(){ if(!SEARCH_CFG[currentSection]) return; searchSection=currentSection; document.getElementById('searchBackdrop').classList.remove('hidden'); document.getElementById('searchModal').classList.remove('hidden'); const i=document.getElementById('searchInput'); i.value=''; i.placeholder=SEARCH_CFG[currentSection].ph; renderSearch(); setTimeout(()=>i.focus(),0); }
+  function closeSearch(){ document.getElementById('searchBackdrop').classList.add('hidden'); document.getElementById('searchModal').classList.add('hidden'); }
+  function renderSearch(){ const cfg=SEARCH_CFG[searchSection]; if(!cfg) return; const q=(document.getElementById('searchInput').value||'').trim().toLowerCase(); searchHits=cfg.items().filter(it=>!q||it.q.toLowerCase().includes(q)); const el=document.getElementById('searchResults'); el.innerHTML=searchHits.length?searchHits.map((it,idx)=>'<div onclick="pickSearch('+idx+')" class="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 cursor-pointer text-sm">'+(it.useFile?'<i data-lucide="file-text" class="w-4 h-4 text-slate-400 shrink-0"></i>':'<span class="text-lg leading-none w-5 text-center shrink-0">'+(it.icon||'•')+'</span>')+'<span class="flex-1 min-w-0 truncate text-slate-800">'+it.label+'</span>'+(it.meta?'<span class="text-[11px] text-slate-400 truncate max-w-[40%] shrink-0">'+it.meta+'</span>':'')+'</div>').join(''):'<div class="text-sm text-slate-400 text-center py-8">'+cfg.empty+'</div>'; lucide.createIcons(); }
+  function pickSearch(idx){ const it=searchHits[idx]; closeSearch(); if(it&&it.go) it.go(); }
 
   renderTeam(); renderStandup(); renderProjects(); renderMA(); setCalView('month'); setRole('owner'); showSection('dashboard');
 </script>
