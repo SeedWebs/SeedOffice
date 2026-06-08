@@ -49,6 +49,7 @@
     <nav class="flex-1 p-3 space-y-0.5 text-sm">
       <a data-section="dashboard" data-roles="owner,member,vendor" onclick="showSection('dashboard')" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer"><i data-lucide="layout-dashboard" class="w-[18px] h-[18px]"></i> ภาพรวม</a>
       <a data-section="projects" data-roles="owner,member,vendor" onclick="showSection('projects')" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer"><i data-lucide="folder-kanban" class="w-[18px] h-[18px]"></i> โปรเจกต์</a>
+      <a data-section="clients" data-roles="owner,member" onclick="showSection('clients')" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer"><i data-lucide="building-2" class="w-[18px] h-[18px]"></i> ลูกค้า</a>
       <a data-section="docs" data-roles="owner,member" onclick="showSection('docs')" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer"><i data-lucide="notebook-text" class="w-[18px] h-[18px]"></i> เอกสาร</a>
       <a data-section="inbox" data-roles="owner,member" onclick="showSection('inbox')" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer"><i data-lucide="inbox" class="w-[18px] h-[18px]"></i> อีเมลกลาง</a>
       <a data-section="payroll" data-roles="owner,member" onclick="showSection('payroll')" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer"><i data-lucide="wallet" class="w-[18px] h-[18px]"></i> ค่าตอบแทน</a>
@@ -637,6 +638,11 @@
 
       <!-- (Standup page removed — รวมอยู่ใน "สรุปงานวันนี้" + ตารางชั่วโมงทีม บนหน้าแรก) -->
 
+      <!-- ===== CLIENTS (ลูกค้า / CRM) — list + detail, ยอดขาย/ค้างชำระ/ต่ออายุ ===== -->
+      <section id="section-clients" data-section-panel data-allow="owner,member" class="hidden">
+        <div id="clientsRoot"></div>
+      </section>
+
       <!-- ===== DOCS (เอกสาร) — tree + WYSIWYG (ของจริงเก็บเป็น markdown ผ่าน Tiptap) ===== -->
       <section id="section-docs" data-section-panel data-allow="owner,member" class="hidden">
         <div id="docsRoot" class="flex gap-4 sm:gap-5 h-[74vh]"></div>
@@ -774,13 +780,14 @@
 
 <script>
   lucide.createIcons();
-  const titles = { dashboard:'ภาพรวม', projects:'โปรเจกต์', project:'โปรเจกต์', docs:'เอกสาร', inbox:'อีเมลกลาง', payroll:'ค่าตอบแทน', expenses:'เงินสดย่อย', admin:'ตั้งค่า' };
+  const titles = { dashboard:'ภาพรวม', projects:'โปรเจกต์', project:'โปรเจกต์', clients:'ลูกค้า', docs:'เอกสาร', inbox:'อีเมลกลาง', payroll:'ค่าตอบแทน', expenses:'เงินสดย่อย', admin:'ตั้งค่า' };
   const PRIMARY='flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-3.5 py-2 rounded-lg';
   const ACTIONS = {
     projects:'<div class="flex items-center gap-2"><button onclick="openProjSearch()" title="ค้นหา (⌘K)" class="w-9 h-9 grid place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"><i data-lucide="search" class="w-4 h-4"></i></button><button class="'+PRIMARY+'"><i data-lucide="plus" class="w-4 h-4"></i> โปรเจกต์ใหม่</button></div>',
     inbox:()=>'<div class="flex items-center gap-2"><button title="เขียนอีเมลใหม่" class="w-9 h-9 grid place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"><i data-lucide="pen-line" class="w-4 h-4"></i></button>'+mbSelectorHTML()+'</div>',
     admin:'<button class="'+PRIMARY+'"><i data-lucide="user-plus" class="w-4 h-4"></i> เพิ่มผู้ใช้</button>',
     docs:'<button class="'+PRIMARY+'"><i data-lucide="file-plus" class="w-4 h-4"></i> เอกสารใหม่</button>',
+    clients:'<button class="'+PRIMARY+'"><i data-lucide="plus" class="w-4 h-4"></i> เพิ่มลูกค้า</button>',
   };
   let currentRole='owner', currentSection='dashboard';
 
@@ -802,6 +809,7 @@
     const _act=ACTIONS[id]; document.getElementById('pageAction').innerHTML = (typeof _act==='function'?_act():_act)||'';
     if(id==='inbox') renderInbox();
     if(id==='project') renderProjectDetail();
+    if(id==='clients'){ selClientId=null; clientTab='all'; renderClients(); }
     if(id==='docs') renderDocs();
     lucide.createIcons();
   }
@@ -1328,6 +1336,122 @@
   function selectDoc(id){ selDocId=id; const f=findDoc(id); if(f&&f.node.children) docExpanded.add(id); docView='doc'; renderDocs(); }
   function toggleDocNode(id){ docExpanded.has(id)?docExpanded.delete(id):docExpanded.add(id); renderDocs(); }
   function docBackToTree(){ docView='tree'; renderDocs(); }
+
+  // ===== ลูกค้า (CRM) — list/detail · ยอดขาย/ค้างชำระ/บริการต่อเนื่อง+ต่ออายุ · (อีเมลล่าสุด=รอ inbox P3) =====
+  const CLIENTS=[
+    {id:'learnpro',logo:'📚',name:'บริษัท เลิร์นโปร',contact:{name:'คุณวิรัตน์',email:'finance@learnpro.co.th',phone:'02-118-2200'},note:'ลูกค้าหลัก งานระบบ LMS',notes:[{text:'วางบิลทุกวันที่ 7 ของเดือน',by:'เมธ',at:'12 พ.ค. 69'},{text:'ส่งใบกำกับภาษีไปที่ accounting@learnpro.co.th ด้วยทุกครั้ง',by:'ปอนด์',at:'2 มิ.ย. 69'}],
+      projects:[{name:'ระบบ LMS เลิร์นโปร',status:'Go Live',quoted:450000,won:'2569'}],
+      services:[{label:'Hosting + ดูแลระบบ',cat:'hosting',period:'m',amount:2500,next:'1 ก.ค. 69',days:23},{label:'โดเมน .co.th',cat:'domain',period:'y',amount:856,next:'15 มี.ค. 70',days:280}],
+      payments:[{label:'งวด 1 · มัดจำ 40%',amount:180000,due:'15 ม.ค. 69',paid:true},{label:'งวด 2 · 30%',amount:135000,due:'15 เม.ย. 69',paid:true},{label:'งวด 3 · 30% (ส่งมอบ)',amount:135000,due:'27 พ.ค. 69',paid:false,overdue:true}]},
+    {id:'brightmedia',logo:'📰',name:'BrightMedia',contact:{name:'คุณบี',email:'b@brightmedia.co.th',phone:'02-555-0199'},note:'',notes:[{text:'ต้องมีใบ PO ก่อนเริ่มงานทุกครั้ง',by:'เมธ',at:'20 ก.พ. 69'}],
+      projects:[{name:'แพลตฟอร์มข่าว BrightMedia',status:'Go Live',quoted:700000,won:'2568'}],
+      services:[{label:'Server (VPS) + ดูแล',cat:'server',period:'m',amount:8000,next:'20 มิ.ย. 69',days:12}],
+      payments:[{label:'งวด 1 · 20%',amount:140000,due:'1 ก.พ. 69',paid:true},{label:'งวด 2 · 40% (UAT)',amount:280000,due:'20 พ.ค. 69',paid:false,overdue:true}]},
+    {id:'dentcare',logo:'🦷',name:'คลินิกทันตกรรม ยิ้มสวย',contact:{name:'หมอแอน',email:'ann@dentcare.co.th',phone:'02-712-3030'},note:'',notes:[{text:'ติดต่อทางไลน์เป็นหลัก อีเมลตอบช้า',by:'น้ำ',at:'8 มี.ค. 69'}],
+      projects:[{name:'ระบบจองคิว คลินิกหมอฟัน',status:'Staging',quoted:220000,won:'2569'}],
+      services:[{label:'ดูแลระบบรายเดือน (MA)',cat:'ma',period:'m',amount:5000,next:'10 ก.ค. 69',days:32}],
+      payments:[{label:'งวด 1 · 40%',amount:88000,due:'1 มี.ค. 69',paid:true},{label:'งวด 2 · 30%',amount:66000,due:'1 พ.ค. 69',paid:true},{label:'งวด 3 · 30%',amount:66000,due:'24 พ.ค. 69',paid:false,overdue:true}]},
+    {id:'sapcharoen',logo:'🏢',name:'ทรัพย์เจริญ พร็อพเพอร์ตี้',contact:{name:'คุณสมพร',email:'somporn@sapcharoen.com',phone:'02-444-7788'},note:'',
+      projects:[{name:'เว็บไซต์ ทรัพย์เจริญ',status:'Staging',quoted:180000,won:'2568'}],
+      services:[{label:'Hosting',cat:'hosting',period:'m',amount:1500,next:'5 ก.ค. 69',days:27}],
+      payments:[{label:'งวด 1 · 50%',amount:90000,due:'1 ก.พ. 69',paid:true},{label:'งวด 2 · 50% (ส่งมอบ)',amount:90000,due:'30 มิ.ย. 69',paid:false}]},
+    {id:'bloom',logo:'🛍️',name:'Bloom Studio',contact:{name:'คุณแนน',email:'nan@bloom.co',phone:'089-111-2233'},note:'',
+      projects:[{name:'ร้านค้าออนไลน์ Bloom',status:'Dev',quoted:250000,won:'2569'}],services:[],
+      payments:[{label:'งวด 1 · มัดจำ 30%',amount:75000,due:'1 มี.ค. 69',paid:true}]},
+    {id:'skillup',logo:'🎓',name:'SkillUp Academy',contact:{name:'คุณเจษ',email:'jed@skillup.com',phone:'086-700-4545'},note:'เพิ่งเริ่มงาน',
+      projects:[{name:'คอร์สออนไลน์ SkillUp',status:'Dev',quoted:300000,won:'2569'}],services:[],
+      payments:[{label:'งวด 1 · มัดจำ 30%',amount:90000,due:'12 มิ.ย. 69',paid:false}]},
+    {id:'somwang',logo:'🚚',name:'บจก. สมหวัง Logistics',contact:{name:'คุณวิทย์',email:'wit@somwang.co.th',phone:'02-390-6611'},note:'งานต่อเนื่องรายปี',notes:[{text:'ส่งเอกสารตัวจริงไปสำนักงานใหญ่ (คนละที่กับที่จดทะเบียน)',by:'เมธ',at:'1 มิ.ย. 69'},{text:'ต่อสัญญา MA ทุกเดือน มิ.ย.',by:'เมธ',at:'1 มิ.ย. 69'}],
+      projects:[],services:[{label:'สัญญาดูแลระบบ (MA) รายปี',cat:'ma',period:'y',amount:24000,next:'12 มิ.ย. 69',days:4},{label:'SSL Certificate',cat:'ssl',period:'y',amount:1200,next:'30 มิ.ย. 69',days:22}],payments:[]},
+    {id:'baansuan',logo:'☕',name:'ร้านกาแฟ บ้านสวน',contact:{name:'คุณฝน',email:'fon@baansuan.cafe',phone:'081-234-5678'},note:'',notes:[{text:'เจ้าของร้านเช็กไลน์ช่วงบ่าย',by:'น้ำ',at:'15 พ.ค. 69'}],
+      projects:[],services:[{label:'ดูแลเว็บรายเดือน (MA)',cat:'ma',period:'m',amount:3500,next:'1 ก.ค. 69',days:23},{label:'โดเมน .com',cat:'domain',period:'y',amount:900,next:'10 มิ.ย. 69',days:2}],payments:[]},
+    {id:'daoden',logo:'🏫',name:'โรงเรียนอนุบาลดาวเด่น',contact:{name:'ครูแอน',email:'ann@daoden.ac.th',phone:'02-901-2345'},note:'',
+      projects:[],services:[{label:'ดูแลเว็บไซต์ (MA)',cat:'ma',period:'m',amount:3000,next:'1 ก.ย. 69',days:120},{label:'โดเมน .ac.th',cat:'domain',period:'y',amount:856,next:'18 มิ.ย. 69',days:10}],payments:[]},
+    {id:'glow',logo:'💄',name:'คลินิกความงาม Glow',contact:{name:'คุณมุก',email:'mook@glow.clinic',phone:'02-660-7700'},note:'',
+      projects:[],services:[{label:'ดูแลระบบ + อัปเดต (MA)',cat:'ma',period:'m',amount:4000,next:'5 ส.ค. 69',days:58}],payments:[]},
+  ];
+  let selClientId=null, clientTab='all';
+  const bt=n=>'฿'+(n||0).toLocaleString('en-US');
+  const CSTC={Dev:'bg-orange-100 text-orange-700',Design:'bg-amber-100 text-amber-800',Staging:'bg-yellow-100 text-yellow-800','Go Live':'bg-violet-100 text-violet-700',MA:'bg-emerald-100 text-emerald-700'};
+  const CAT={hosting:{i:'server',n:'Hosting'},domain:{i:'globe',n:'โดเมน'},ma:{i:'wrench',n:'ดูแลระบบ (MA)'},server:{i:'cpu',n:'เซิร์ฟเวอร์'},ssl:{i:'shield-check',n:'SSL'},other:{i:'package',n:'อื่นๆ'}};
+  const perTxt=p=>p==='m'?'/เดือน':'/ปี';
+  const expCls=d=>d<=7?'text-rose-600 font-medium':d<=30?'text-amber-600':'text-slate-500';
+  function cDerive(c){
+    const quoted=c.projects.reduce((s,p)=>s+p.quoted,0);
+    const paid=c.payments.filter(p=>p.paid).reduce((s,p)=>s+p.amount,0);
+    const chase=c.payments.filter(p=>!p.paid&&p.overdue).reduce((s,p)=>s+p.amount,0);
+    const mrr=Math.round(c.services.reduce((s,x)=>s+(x.period==='m'?x.amount:x.amount/12),0));
+    const svc=c.services.slice().sort((a,b)=>a.days-b.days);
+    const next=svc[0]||null, exp30=c.services.filter(x=>x.days<=30);
+    return {quoted,paid,chase,mrr,pct:quoted?Math.round(paid/quoted*100):0,next,exp30};
+  }
+  function clientsRows(){
+    if(clientTab==='chase') return CLIENTS.map(c=>[c,cDerive(c)]).filter(x=>x[1].chase>0).sort((a,b)=>b[1].chase-a[1].chase);
+    if(clientTab==='expiring') return CLIENTS.map(c=>[c,cDerive(c)]).filter(x=>x[1].exp30.length>0).sort((a,b)=>(a[1].next?a[1].next.days:999)-(b[1].next?b[1].next.days:999));
+    return CLIENTS.map(c=>[c,cDerive(c)]);
+  }
+  function renderClients(){
+    const root=document.getElementById('clientsRoot'); if(!root) return;
+    if(selClientId){ root.innerHTML=clientDetailHTML(CLIENTS.find(c=>c.id===selClientId)); lucide.createIcons(); return; }
+    // summary
+    const D=CLIENTS.map(cDerive);
+    const SALES_YEAR='2569';
+    let salesY=0, paidY=0;
+    CLIENTS.forEach(c=>{ const ty=c.projects.filter(p=>p.won===SALES_YEAR).reduce((s,p)=>s+p.quoted,0); if(ty>0){ salesY+=ty; paidY+=cDerive(c).paid; } });
+    const mrrTot=D.reduce((s,d)=>s+d.mrr,0);
+    const chaseSum=D.reduce((s,d)=>s+d.chase,0), chaseN=D.filter(d=>d.chase>0).length;
+    const expN=D.reduce((s,d)=>s+d.exp30.length,0);
+    const card=(ic,col,label,big,sub)=>'<div class="bg-white rounded-lg shadow-sm p-4 flex items-start gap-3"><div class="w-10 h-10 rounded-lg grid place-items-center '+col+' shrink-0"><i data-lucide="'+ic+'" class="w-5 h-5"></i></div><div class="min-w-0"><div class="text-xs text-slate-500">'+label+'</div><div class="text-xl font-bold text-slate-900 tabular-nums leading-tight mt-0.5">'+big+'</div><div class="text-[11px] text-slate-400 mt-0.5">'+sub+'</div></div></div>';
+    const cards='<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">'
+      +card('trending-up','bg-brand-50 text-brand-600','ยอดขายปีนี้ (ปี 69)',bt(salesY),'เก็บแล้ว '+bt(paidY)+' · '+Math.round(paidY/salesY*100)+'%')
+      +card('repeat','bg-sky-50 text-sky-600','รายได้ต่อเนื่อง',bt(mrrTot)+'<span class="text-sm font-medium text-slate-400">/ด</span>','ARR '+bt(mrrTot*12)+'/ปี')
+      +card('alert-circle','bg-rose-50 text-rose-600','ต้องตามเงิน',bt(chaseSum),chaseN+' ราย เกินกำหนด')
+      +card('calendar-clock','bg-amber-50 text-amber-600','ใกล้หมดอายุ',expN+' บริการ','ต่ออายุภายใน 30 วัน')
+      +'</div>';
+    // tabs
+    const tab=(k,name,n)=>{const a=clientTab===k;return '<button onclick="setClientTab(\''+k+'\')" class="shrink-0 whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium '+(a?'bg-white shadow-sm text-slate-900':'text-slate-500 hover:text-slate-700')+'">'+name+(n!=null?' <span class="text-[11px] '+(a?'text-brand-600':'text-slate-400')+' tabular-nums">'+n+'</span>':'')+'</button>';};
+    const tabs='<div class="flex flex-nowrap items-center gap-1 bg-slate-100 rounded-xl p-1 mb-4 w-full sm:w-fit overflow-x-auto">'+tab('all','ลูกค้าทั้งหมด',CLIENTS.length)+tab('chase','ต้องตามเงิน',chaseN)+tab('expiring','ใกล้หมดอายุ',CLIENTS.map(cDerive).filter(d=>d.exp30.length).length)+'</div>';
+    // table
+    const rows=clientsRows();
+    const th='<thead class="bg-slate-50 text-slate-500 text-xs"><tr><th class="text-left font-medium px-4 py-3">ลูกค้า</th><th class="text-center font-medium px-2 py-3">โปรเจกต์</th><th class="text-right font-medium px-3 py-3">เสนอราคา</th><th class="text-right font-medium px-3 py-3">จ่ายแล้ว</th><th class="text-right font-medium px-3 py-3">ค้างชำระ</th><th class="text-right font-medium px-3 py-3">ต่อเนื่อง</th><th class="text-left font-medium px-4 py-3">ต่ออายุถัดไป</th></tr></thead>';
+    const body=rows.length?rows.map(([c,d])=>'<tr onclick="openClient(\''+c.id+'\')" class="border-t border-slate-100 hover:bg-slate-50 cursor-pointer">'
+        +'<td class="px-4 py-3"><div class="flex items-center gap-2.5"><span class="text-lg leading-none">'+c.logo+'</span><div class="min-w-0"><div class="font-medium text-slate-800 flex items-center gap-1.5 min-w-0"><span class="truncate">'+c.name+'</span>'+(c.notes&&c.notes.length?'<i data-lucide="sticky-note" class="w-3.5 h-3.5 text-amber-400 shrink-0" title="มีโน้ต"></i>':'')+'</div><div class="text-[11px] text-slate-400 truncate">'+c.contact.email+'</div></div></div></td>'
+        +'<td class="px-2 text-center text-slate-600 tabular-nums">'+(c.projects.length||'—')+'</td>'
+        +'<td class="px-3 text-right text-slate-700 tabular-nums">'+(d.quoted?bt(d.quoted):'—')+'</td>'
+        +'<td class="px-3 text-right tabular-nums">'+(d.quoted?'<span class="text-slate-700">'+bt(d.paid)+'</span> <span class="text-[11px] text-slate-400">'+d.pct+'%</span>':'—')+'</td>'
+        +'<td class="px-3 text-right tabular-nums">'+(d.chase>0?'<span class="text-rose-600 font-medium">'+bt(d.chase)+'</span>':'<span class="text-slate-300">—</span>')+'</td>'
+        +'<td class="px-3 text-right tabular-nums '+(d.mrr>0?'text-slate-700':'text-slate-300')+'">'+(d.mrr>0?bt(d.mrr)+'<span class="text-[11px] text-slate-400">/ด</span>':'—')+'</td>'
+        +'<td class="px-4">'+(d.next?'<span class="'+expCls(d.next.days)+'">'+d.next.next+'</span> <span class="text-[11px] text-slate-400">· อีก '+d.next.days+'ว</span>':'<span class="text-slate-300">—</span>')+'</td>'
+      +'</tr>').join(''):'<tr><td colspan="7" class="text-center text-slate-400 py-10 text-sm">ไม่มีลูกค้าในมุมมองนี้</td></tr>';
+    root.innerHTML=cards+tabs+'<div class="bg-white rounded-lg shadow-sm overflow-hidden"><div class="overflow-x-auto"><table class="w-full text-sm min-w-[860px]">'+th+'<tbody>'+body+'</tbody></table></div></div>';
+    lucide.createIcons();
+  }
+  function clientDetailHTML(c){
+    const d=cDerive(c);
+    const sum=(label,val,sub)=>'<div class="bg-slate-50 rounded-lg p-3"><div class="text-[11px] text-slate-500">'+label+'</div><div class="text-lg font-bold text-slate-900 tabular-nums">'+val+'</div>'+(sub?'<div class="text-[11px] text-slate-400">'+sub+'</div>':'')+'</div>';
+    const sec=(title,inner)=>'<div class="bg-white rounded-lg shadow-sm overflow-hidden"><div class="px-5 py-3 border-b border-slate-200 font-semibold text-slate-900 text-sm">'+title+'</div>'+inner+'</div>';
+    // projects
+    const projHTML=c.projects.length?c.projects.map(p=>'<div class="flex items-center gap-3 px-5 py-3 border-t border-slate-100 first:border-t-0"><span class="flex-1 min-w-0 truncate text-slate-700">'+p.name+'</span><span class="text-[11px] px-2 py-0.5 rounded-full '+(CSTC[p.status]||'bg-slate-100 text-slate-500')+'">'+p.status+'</span><span class="text-slate-600 tabular-nums w-24 text-right">'+bt(p.quoted)+'</span></div>').join(''):'<div class="px-5 py-4 text-sm text-slate-400">ไม่มีงานโปรเจกต์ (ลูกค้างานต่อเนื่อง)</div>';
+    // recurring services
+    const svcHTML=c.services.length?c.services.map(s=>'<div class="flex items-center gap-3 px-5 py-3 border-t border-slate-100 first:border-t-0"><span class="w-8 h-8 rounded-lg bg-slate-100 text-slate-500 grid place-items-center shrink-0"><i data-lucide="'+(CAT[s.cat]||CAT.other).i+'" class="w-4 h-4"></i></span><div class="flex-1 min-w-0"><div class="text-slate-700 truncate">'+s.label+'</div><div class="text-[11px] text-slate-400">'+(CAT[s.cat]||CAT.other).n+'</div></div><span class="text-slate-600 tabular-nums">'+bt(s.amount)+'<span class="text-[11px] text-slate-400">'+perTxt(s.period)+'</span></span><span class="w-28 text-right text-sm '+expCls(s.days)+'">ต่อ '+s.next+'<div class="text-[11px] text-slate-400">อีก '+s.days+' วัน</div></span></div>').join(''):'<div class="px-5 py-4 text-sm text-slate-400">ไม่มีบริการต่อเนื่อง</div>';
+    // payments
+    const payBadge=p=>p.paid?'<span class="text-[11px] px-2 py-0.5 rounded-full bg-emerald-100 text-emerald-700">จ่ายแล้ว</span>':(p.overdue?'<span class="text-[11px] px-2 py-0.5 rounded-full bg-rose-100 text-rose-600">เกินกำหนด</span>':'<span class="text-[11px] px-2 py-0.5 rounded-full bg-slate-100 text-slate-500">รอชำระ</span>');
+    const payHTML=c.payments.length?c.payments.map(p=>'<div class="flex items-center gap-3 px-5 py-3 border-t border-slate-100 first:border-t-0"><span class="flex-1 min-w-0 truncate '+(p.paid?'text-slate-500':'text-slate-700')+'">'+p.label+'</span><span class="text-[11px] text-slate-400 w-24 text-right hidden sm:block">กำหนด '+p.due+'</span>'+payBadge(p)+'<span class="text-slate-700 tabular-nums w-24 text-right">'+bt(p.amount)+'</span></div>').join(''):'<div class="px-5 py-4 text-sm text-slate-400">ไม่มีงวดชำระ (เก็บค่าบริการต่อเนื่อง)</div>';
+    const notesArr=c.notes||[];
+    const notesBody=notesArr.length?notesArr.map(n=>'<div class="flex items-start gap-2.5 px-5 py-3 bg-amber-50/40 border-t border-amber-100 first:border-t-0"><i data-lucide="pin" class="w-4 h-4 text-amber-500 mt-0.5 shrink-0"></i><div class="min-w-0 flex-1"><div class="text-slate-700">'+n.text+'</div><div class="text-[11px] text-slate-400 mt-0.5">'+n.by+' · '+n.at+'</div></div></div>').join(''):'<div class="px-5 py-4 text-sm text-slate-400">ยังไม่มีโน้ต — กด "เพิ่มโน้ต" เพื่อแปะข้อควรจำ (เช่น วันวางบิล, ที่อยู่ส่งเอกสาร)</div>';
+    const notesCard='<div class="bg-white rounded-lg shadow-sm overflow-hidden mb-4"><div class="px-5 py-3 border-b border-slate-200 flex items-center justify-between"><span class="font-semibold text-slate-900 text-sm flex items-center gap-2"><i data-lucide="sticky-note" class="w-4 h-4 text-amber-500"></i> โน้ต / ข้อควรจำ</span><button class="text-xs text-brand-700 font-medium flex items-center gap-1 hover:text-brand-800"><i data-lucide="plus" class="w-3.5 h-3.5"></i> เพิ่มโน้ต</button></div>'+notesBody+'</div>';
+    return '<div class="mb-4 flex items-center gap-2"><button onclick="clientsBack()" class="flex items-center gap-1.5 text-sm text-slate-500 hover:text-slate-800"><i data-lucide="arrow-left" class="w-4 h-4"></i> กลับ</button></div>'
+      +'<div class="bg-white rounded-lg shadow-sm p-5 mb-4"><div class="flex items-start gap-4"><span class="text-3xl leading-none">'+c.logo+'</span><div class="flex-1 min-w-0"><div class="text-xl font-bold text-slate-900">'+c.name+'</div><div class="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-slate-500 mt-1"><span class="flex items-center gap-1.5"><i data-lucide="user" class="w-3.5 h-3.5"></i>'+c.contact.name+'</span><span class="flex items-center gap-1.5"><i data-lucide="mail" class="w-3.5 h-3.5"></i>'+c.contact.email+'</span><span class="flex items-center gap-1.5"><i data-lucide="phone" class="w-3.5 h-3.5"></i>'+c.contact.phone+'</span></div>'+(c.note?'<div class="text-sm text-slate-400 mt-1.5">'+c.note+'</div>':'')+'</div></div>'
+        +'<div class="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-4">'+sum('เสนอราคารวม',bt(d.quoted))+sum('รับชำระแล้ว',bt(d.paid),d.pct+'%')+sum('ค้างชำระ',d.chase>0?'<span class="text-rose-600">'+bt(d.chase)+'</span>':bt(0))+sum('รายได้ต่อเนื่อง',d.mrr>0?bt(d.mrr)+'/ด':'—',d.mrr>0?bt(d.mrr*12)+'/ปี':'')+'</div></div>'
+      +notesCard
+      +'<div class="grid grid-cols-1 lg:grid-cols-2 gap-4">'
+        +'<div class="space-y-4">'+sec('โปรเจกต์',projHTML)+sec('การชำระเงิน',payHTML)+'</div>'
+        +'<div class="space-y-4">'+sec('บริการต่อเนื่อง',svcHTML)+sec('อีเมลที่ผ่านมา','<div class="px-5 py-6 text-center text-sm text-slate-400"><i data-lucide="mail" class="w-6 h-6 mx-auto mb-2 text-slate-300"></i>จะเชื่อมประวัติอีเมลเมื่อเปิดใช้ <span class="font-medium text-slate-500">อีเมลกลาง</span> (P3)</div>')+'</div>'
+      +'</div>';
+  }
+  function setClientTab(t){ clientTab=t; renderClients(); }
+  function openClient(id){ selClientId=id; renderClients(); }
+  function clientsBack(){ selClientId=null; renderClients(); }
 
   renderTeam(); renderStandup(); renderProjects(); renderMA(); setCalView('month'); setRole('owner'); showSection('dashboard');
 </script>
