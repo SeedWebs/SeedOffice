@@ -1,8 +1,8 @@
 # SeedOffice — P1 Implementation Plan
 
 > เป้าหมาย: ส่ง **ลูปเงิน P1** (task → time → money) ให้ทีม SeedWebs ลงมือทีละ slice
-> อ้างอิง: [SPEC.md](../SPEC.md) (v0.7) · prototype: [mockup.html](../mockup.html) (ครบทุกหน้าหลักแล้ว)
-> สถานะ: **Draft v2** — refresh ให้ตรง SPEC v0.7 · รอ review ก่อนเริ่ม T01
+> อ้างอิง: [SPEC.md](../SPEC.md) (v0.8) · prototype: [mockup.html](../mockup.html) (ครบทุกหน้าหลัก + เอกสาร + ลูกค้า)
+> สถานะ: **Draft v3** — ตรง SPEC v0.8 · + Phase 6 (Docs/CRM · P1.x · mockup เสร็จ)
 
 ---
 
@@ -89,3 +89,23 @@ T12 + T08 + T14 + T03 ─────── T17 project P&L (cost/profit + miles
 - **เพิ่ม `tasks.startDate`** (คู่ `dueDate`) — จำเป็นต่อไทม์ไลน์ต่อ task group (T09: บาร์ = `min(start)`→`max(due)`)
 - **T08 cards**: %จ่าย ติดใน **T14** · จุดสีกำไร/health ติดใน **T17** → T08 ทำ card shell + ส่วนที่ไม่ใช่เงินก่อน (placeholder)
 - **Polish ตัดเป็น v1.1 ได้ถ้าเวลาบีบ** (ไม่กระทบลูปเงิน): timeline ภาพรวม (T08), timeline ต่อกลุ่ม (T09), ภาพรวม/dashboard (T11) — ทำเป็นงานท้ายเฟส
+
+---
+
+## 6. Parallel tracks — Docs + Clients/CRM (P1.x)
+
+> 2 ฟีเจอร์เพิ่มทีหลัง — **mockup เสร็จ + deploy แล้ว** (ดู mockup.html: เมนู เอกสาร + ลูกค้า) · ทำขนานหลัง P1 foundation, ไม่แตะ core การเงิน · รายละเอียด task ใน [todo.md](./todo.md)
+
+### Docs (เอกสาร) — deps: T02 (db), T06 (role-guard), reuse R2 ของ T10 · เริ่มหลัง **CP1**
+- **D1** `docs`(parentId tree, soft-delete) + `doc_images` + CRUD API (Zod · role-guard owner/member · audit)
+- **D2** UI tree + Tiptap (`starter-kit`+`link`+`task-list`+`@tiptap/markdown`) + autosave · เก็บ markdown
+- **D3** อัปรูป R2 (upload+serve endpoint · paste/drop/เลือกไฟล์ → `![](/api/docs/images/:key)`) · ไม่รับ SVG
+
+### Clients/CRM (ลูกค้า) — deps: T08 (projects), T14 (payments) · หน้า CRM หลัง **CP4**
+- **(ใน T08)** สร้าง `clients` entity + project ผูก `clientId` แต่แรก (เลี่ยง refactor ภายหลัง)
+- **C1** `recurring_services` + **core aggregations (pure, TDD)**: totalQuoted/paid/outstanding · MRR/ARR · nextExpiry (รับ `today` เข้า ไม่มี Date.now)
+- **C2** Clients API: `/api/clients` (list+aggregates, detail) · `/api/recurring-services` CRUD · `/api/client-notes` · role-guard owner/member (vendor 403) · audit
+- **C3** Clients UI: nav + list (การ์ดสรุป + แท็บ + ตาราง + search ⌘K) + detail (โปรเจกต์/payments/บริการต่อเนื่อง/โน้ต)
+- **(P3)** ผูก client ↔ inbox threads → คอลัมน์/แท็บ "อีเมลล่าสุด"
+
+> **DoD** = เท่า task อื่น (`typecheck + lint + test` เขียว + verify + CF preview) · **privacy gate vendor = 403 ทุก endpoint** (ข้อมูลยอดขาย/เอกสารภายใน)

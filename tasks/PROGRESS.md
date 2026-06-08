@@ -2,22 +2,23 @@
 > สำหรับ resume session ใหม่ (เขียนระหว่างทำ mockup)
 
 ## สถานะ
-- **SPEC.md = Draft v0.7** — source of truth, sync กับ mockup แล้ว (coherent)
+- **SPEC.md = Draft v0.8** — source of truth, sync กับ mockup แล้ว (coherent · + เอกสาร §4.16 + ลูกค้า/CRM §4.17)
 - **mockup.html = artifact ออกแบบหลัก** (clickable prototype)
   - รัน preview: `preview_start` ชื่อ **"mockup"** (มี `.claude/launch.json`, port 4321) → เปิด `/mockup.html`
   - มี **role switcher** (Owner/Member/Vendor) บน top bar ดำ ไว้เช็ค permission
   - verify การเปลี่ยนด้วย `preview_eval` (เช็ค DOM/computed style) + `preview_console_logs` (errors) + `preview_screenshot`
   - ✅ **รองรับมือถือแล้ว** (มิ.ย. 2569): drawer เมนูเลื่อนจาก**ขวา** + hamburger ในแถบขาว (real chrome ไม่ใช่แถบ MOCKUP) · dashboard "งานวันนี้" ซ้อน 2 บรรทัด · อีเมลกลาง single-pane · ตารางกว้าง scroll · padding มือถือ 12px — desktop เหมือนเดิม (ใช้ `sm:contents`/`sm:order`, จุดยุบ `lg`)
   - 🌐 **deploy แล้ว:** GitHub Pages → **https://seedwebs.github.io/SeedOffice/** (auto-deploy ทุก push เข้า `main` · มี `index.html` redirect → mockup)
-- **tasks/plan.md + tasks/todo.md = แผน P1** — ✅ **refresh ตรง SPEC v0.7 แล้ว** · P1 = **T01–T17** (5 เฟส · 4 checkpoint) — **พร้อมเริ่ม build**
+- **tasks/plan.md + tasks/todo.md = แผน P1** — P1 = **T01–T17** (5 เฟส · 4 CP) + **Phase 6 (parallel): Docs D1–D3 + Clients/CRM C1–C3 (P1.x)** — **พร้อมเริ่ม build**
 - **repo = public แล้ว** (github.com/SeedWebs/SeedOffice) + **MIT license** + README ใหม่ · ⚠️ ข้อมูล mockup **anonymize แล้ว**: ใช้ `owner@seedwebs.com` (ไม่ใช่ m@) + persona `@example.com` · git author = `...@users.noreply.github.com` (**อย่า commit ด้วย m@seedwebs.com**) · history squash เป็น commit เดียวตอนเปิด public
 
 ## หน้าใน mockup
 - ✅ **ขัดเกลาแล้ว**: ภาพรวม (dashboard), โปรเจกต์ (timeline + cards + งานต่อเนื่อง + search ⌘K + project detail: ไทม์ไลน์ต่อ group + reorder toggle), **อีเมลกลาง** (Help Scout style: กล่อง multi-company + folder bar + list/detail + พาเนลอีเมลที่ผ่านมา + reply-from), **ค่าตอบแทน** (self 2 คอลัมน์ เวลา|เงิน + owner table รายได้/หัก/สุทธิ + CSV/ปิดงวด), **task detail** (checkbox เสร็จ + timer + ไฟล์ + comment + activity log)
 - ✅ **ครบทุกหน้าหลัก** — **เงินสดย่อย** + **ตั้งค่า/admin** โครง OK (เจ้าของผ่านแล้ว) · *team hub/ปฏิทิน = P2, อีเมลกลาง = P3 (ทำตอนเฟสนั้น)*
+- ✅ **เพิ่มใหม่ (P1.x · deploy แล้ว):** **เอกสาร** (tree sub-page + WYSIWYG เก็บ markdown + อัปรูป R2) · **ลูกค้า/CRM** (ยอดขายปีนี้/MRR/ค้างชำระ/ใกล้หมดอายุ + บริการต่อเนื่อง + โน้ตข้อควรจำ) · **search ⌘K** เพิ่มใน ลูกค้า/เอกสาร/อีเมลกลาง
 
 ## ขั้นต่อไป
-- ✅ mockup ครบ + **รองรับมือถือ + deploy GitHub Pages** · ✅ SPEC v0.7 (coherent) · ✅ แผน P1 refresh (T01–T17)
+- ✅ mockup ครบ (+ เอกสาร/ลูกค้า) + **รองรับมือถือ + deploy GitHub Pages** · ✅ **SPEC + tasks sync แล้ว** (เพิ่ม §4.16 เอกสาร, §4.17 ลูกค้า/CRM, data model: docs/doc_images/clients/recurring_services/client_notes, Phase 6 tasks)
 - ▶ **เริ่ม build P1 ที่ T01** (monorepo scaffold) — stack: Cloudflare Workers + Hono + D1 + Drizzle + R2 · React + Vite + React Router + Tailwind (pnpm workspaces: apps/web, apps/api, packages/db, packages/core)
 - ตรรกะการเงินทำใน `packages/core` (TDD) ก่อนเสมอ · review กับเจ้าของทุก checkpoint (CP1–CP4)
 

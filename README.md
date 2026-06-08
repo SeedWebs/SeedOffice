@@ -8,7 +8,7 @@
 
 🎨 **ช่วงออกแบบ** — ยังไม่เริ่มเขียนโค้ดจริง
 
-- ✅ สเปก (v0.7) — [SPEC.md](./SPEC.md)
+- ✅ สเปก (v0.8) — [SPEC.md](./SPEC.md)
 - ✅ Mockup กดได้จริง + รองรับมือถือ → **[ดู Live ▸](https://seedwebs.github.io/SeedOffice/)**
 - ✅ แผน P1 (T01–T17) — [tasks/plan.md](./tasks/plan.md) · [tasks/todo.md](./tasks/todo.md)
 - ⏳ ถัดไป: เริ่ม build P1 (monorepo scaffold)
