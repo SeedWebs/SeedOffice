@@ -1,9 +1,22 @@
-@tailwind base;
-@tailwind components;
-@tailwind utilities;
+@import 'tailwindcss';
+
+/* ธีมตรงกับ mockup.html (source of truth ของดีไซน์) — mockup เขียนด้วย v3:
+   ตอน copy class ให้แปลง shadow-sm→shadow-xs · shadow→shadow-sm ·
+   outline-none→outline-hidden · bg-gradient-*→bg-linear-* (ดู CLAUDE.md) */
+@theme {
+  --font-sans: 'Inter', 'Noto Sans Thai', sans-serif;
+
+  --color-brand-50: #ecfdf5;
+  --color-brand-100: #d1fae5;
+  --color-brand-200: #a7f3d0;
+  --color-brand-400: #34d399;
+  --color-brand-500: #10b981;
+  --color-brand-600: #059669;
+  --color-brand-700: #047857;
+  --color-brand-800: #065f46;
+}
 
 body {
-  font-family: 'Inter', 'Noto Sans Thai', sans-serif;
   background: #f5f5f7;
 }
 

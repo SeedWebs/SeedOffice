@@ -14,7 +14,7 @@ function Home() {
 
   return (
     <div className="min-h-dvh grid place-items-center p-6">
-      <div className="bg-white rounded-lg shadow-sm p-8 max-w-sm w-full text-center">
+      <div className="bg-white rounded-lg shadow-xs p-8 max-w-sm w-full text-center">
         <div className="w-12 h-12 rounded-xl bg-brand-600 grid place-items-center text-white text-2xl mx-auto">
           🌱
         </div>
