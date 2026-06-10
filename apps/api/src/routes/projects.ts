@@ -210,14 +210,4 @@ export const projectRoutes = new Hono<AppEnv>()
     return c.json(serialize(updated[0] as Project, c.get('user').role))
   })
 
-/** รายชื่อลูกค้า (picker) — owner+member */
-export const clientPickerRoutes = new Hono<AppEnv>().get('/', teamOnly, async (c) => {
-  const db = createDb(c.env.DB)
-  return c.json(
-    await db
-      .select({ id: clients.id, name: clients.name, logo: clients.logo })
-      .from(clients)
-      .where(eq(clients.status, 'active'))
-      .orderBy(asc(clients.name)),
-  )
-})
+// (picker ลูกค้าย้ายไปใช้ GET /api/clients ของ CRM — routes/clients.ts)

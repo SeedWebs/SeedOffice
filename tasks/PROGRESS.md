@@ -20,6 +20,7 @@
 - ✅ **review รอบ มิ.ย. 69:** vendor เห็นเมนู **ค่าตอบแทน (ของตัวเอง)** แล้ว (ค่าจ้าง − WHT 3% — ตรง SPEC §2) · pin CDN (`tailwindcss 3.4.17` + `lucide 1.17.0`) กัน mockup พังเอง
 
 ## ขั้นต่อไป
+- ✅ **P1.x เสร็จด้วย (10 มิ.ย. 69): เอกสาร D1–D3 + ลูกค้า/CRM C1–C3** — Docs = tree + Tiptap 3 (`@tiptap/markdown` official, autosave 800ms, รูป R2 ไม่รับ SVG) · CRM = list (การ์ดสรุป 4 ใบ/แท็บ/⌘K) + detail (เงิน derived สด/บริการต่อเนื่อง/โน้ต) — ยอดขายปีนี้นิยามจาก startDate ปีปัจจุบัน
 - ✅ **P1 BUILD เสร็จทั้งหมด (10 มิ.ย. 69): T01–T18 · CP1–CP4** — ลูปเงินครบ: auth+role → users/rates/config → projects/clients/tasks (timeline/⌘K/drawer/R2/activity) → stars/QuickAdd/dashboard → timer+manual+เพดาน+integrity → milestones/payments → ค่าตอบแทน self+owner+CSV+ปิดงวด(ล็อกย้อนหลัง) → P&L+health → backup D1→R2 (cron 03:00) 
   - stack จริง: Vite 8 · React 19 · React Router 7 · **Tailwind 4.3** (ตารางแปลง class v3→v4 ใน CLAUDE.md) · Hono 4 · Drizzle 0.45 · wrangler 4.99 (jsonc) · vitest-pool-workers 0.16 (vitest 4 API ใหม่ — **ไม่มี isolated storage ต่อเทสต์แล้ว** เทสต์ต้องล้างตารางเอง)
   - เทสต์: core 36 unit + api 56 integration (workerd+D1 จริง) + e2e Playwright 5 (login 3 + ลูปเงิน 2) — เขียวครบ · CI เขียว

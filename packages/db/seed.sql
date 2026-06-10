@@ -101,6 +101,26 @@ INSERT OR REPLACE INTO payments (id, project_id, installment_no, label, amount_s
   ('pay_dent_2','p_dent',2,'งวด 2 · 30%',6600000,'2026-05-01','2026-05-02',1767200000000),
   ('pay_dent_3','p_dent',3,'งวด 3 · 30%',6600000,'2026-05-24',NULL,1767200000000);
 
+-- recurring services + client notes (ตรง mockup CRM)
+INSERT OR REPLACE INTO recurring_services (id, client_id, project_id, label, category, period, amount_satang, next_due_date, status, note, created_at) VALUES
+  ('rs_sap_host','c_sapcharoen','p_sap','Hosting','hosting','monthly',150000,'2026-07-05','active',NULL,1767200000000),
+  ('rs_bright_server','c_bright','p_bright','Server (VPS) + ดูแล','server','monthly',800000,'2026-06-20','active',NULL,1767200000000),
+  ('rs_dent_ma','c_dentcare','p_dent','ดูแลระบบรายเดือน (MA)','ma','monthly',500000,'2026-07-10','active',NULL,1767200000000),
+  ('rs_somwang_ma','c_somwang',NULL,'สัญญาดูแลระบบ (MA) รายปี','ma','yearly',2400000,'2026-06-12','active',NULL,1767200000000),
+  ('rs_somwang_ssl','c_somwang',NULL,'SSL Certificate','ssl','yearly',120000,'2026-06-30','active',NULL,1767200000000),
+  ('rs_baansuan_ma','c_baansuan','p_baansuan','ดูแลเว็บรายเดือน (MA)','ma','monthly',350000,'2026-07-01','active',NULL,1767200000000),
+  ('rs_baansuan_domain','c_baansuan',NULL,'โดเมน .com','domain','yearly',90000,'2026-06-12','active',NULL,1767200000000),
+  ('rs_daoden_ma','c_daoden','p_daoden','ดูแลเว็บไซต์ (MA)','ma','monthly',300000,'2026-09-01','active',NULL,1767200000000),
+  ('rs_daoden_domain','c_daoden',NULL,'โดเมน .ac.th','domain','yearly',85600,'2026-06-18','active',NULL,1767200000000),
+  ('rs_glow_ma','c_glow','p_glow','ดูแลระบบ + อัปเดต (MA)','ma','monthly',400000,'2026-08-05','active',NULL,1767200000000);
+
+INSERT OR REPLACE INTO client_notes (id, client_id, body, created_by, created_at) VALUES
+  ('cn_sap_1','c_sapcharoen','วางบิลทุกสิ้นเดือน ส่งใบกำกับให้คุณสมพรทางอีเมล','u_owner',1767200000000),
+  ('cn_somwang_1','c_somwang','ส่งเอกสารตัวจริงไปสำนักงานใหญ่ (คนละที่กับที่จดทะเบียน)','u_owner',1767210000000),
+  ('cn_somwang_2','c_somwang','ต่อสัญญา MA ทุกเดือน มิ.ย.','u_owner',1767220000000),
+  ('cn_baansuan_1','c_baansuan','เจ้าของร้านเช็กไลน์ช่วงบ่าย','u_nam',1767200000000),
+  ('cn_dent_1','c_dentcare','ติดต่อทางไลน์เป็นหลัก อีเมลตอบช้า','u_nam',1767200000000);
+
 -- rates (สตางค์/ชั่วโมง) — ตรง mockup: เมธ ฿450 · ปอนด์ ฿400 · น้ำ ฿350 · ตูน ฿200 · สมชาย ฿350
 INSERT OR REPLACE INTO rates (id, user_id, rate_satang_per_hour, effective_from, note, created_at) VALUES
   ('r_owner_1',  'u_owner',  45000, '2026-01-01', 'rate ตั้งต้น', 1767200000000),

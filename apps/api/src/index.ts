@@ -8,7 +8,9 @@ import { financeRoutes } from './routes/finance'
 import { overviewRoutes } from './routes/overview'
 import { payrollAdminRoutes } from './routes/payroll-admin'
 import { payrollRoutes } from './routes/payroll'
-import { clientPickerRoutes, projectRoutes } from './routes/projects'
+import { clientRoutes } from './routes/clients'
+import { crmItemRoutes } from './routes/crm-items'
+import { projectRoutes } from './routes/projects'
 import { taskDetailRoutes } from './routes/task-detail'
 import { taskRoutes } from './routes/tasks'
 import { timeRoutes } from './routes/time'
@@ -31,8 +33,13 @@ app.route('/api', userRoutes)
 app.use('/api/projects/*', requireAuth)
 app.use('/api/projects', requireAuth)
 app.route('/api/projects', projectRoutes)
-app.use('/api/clients', requireAuth)
-app.route('/api/clients', clientPickerRoutes)
+// ลูกค้า/CRM: owner+member เท่านั้น (SPEC §4.17)
+app.use('/api/clients', requireAuth, teamOnly)
+app.use('/api/clients/*', requireAuth, teamOnly)
+app.use('/api/services/*', requireAuth, teamOnly)
+app.use('/api/notes/*', requireAuth, teamOnly)
+app.route('/api/clients', clientRoutes)
+app.route('/api', crmItemRoutes)
 app.use('/api/groups/*', requireAuth)
 app.use('/api/tasks/*', requireAuth)
 app.use('/api/attachments/*', requireAuth)

@@ -33,8 +33,8 @@ describe('T08 — projects + clients', () => {
     expect(p.quotedSatang).toBe(10_000_000)
 
     const clientsRes = await app.request('/api/clients', { headers: { cookie: member } }, env)
-    const list = (await clientsRes.json()) as { name: string }[]
-    expect(list.some((cl) => cl.name === 'ลูกค้าทดสอบ จำกัด')).toBe(true)
+    const list = (await clientsRes.json()) as { rows: { name: string }[] }
+    expect(list.rows.some((cl) => cl.name === 'ลูกค้าทดสอบ จำกัด')).toBe(true)
   })
 
   it('vendor: ดูลิสต์ได้ แต่ quotedSatang ถูกตัดออกที่ server · สร้าง/แก้ = 403 · /api/clients = 403', async () => {

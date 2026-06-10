@@ -164,20 +164,20 @@
 
 > **mockup เสร็จ + deploy แล้ว** (source of truth ดีไซน์ = mockup.html) · ทำขนานกับ P1, ไม่แตะ core การเงิน · vendor = 403 ทุก endpoint
 
-### ☐ D1 — Docs: data model + tree CRUD API
+### ☑ D1 — Docs: data model + tree CRUD API
 **deps:** T02, T06
 - `docs` (parentId→docs, sortOrder, title, contentMarkdown, createdBy/updatedBy, soft-delete `deletedAt`) + `doc_images`; routes: list-tree / get / create / update(autosave) / move(reparent+reorder) / delete(soft subtree); Zod + role-guard owner/member + audit
 - **AC:** CRUD + nesting ผ่าน parentId + reorder/move persist; vendor → 403; soft-delete subtree; audit มี record
 - **Verify:** สร้างหน้าซ้อน 2–3 ชั้น + reorder → reload คงอยู่; vendor ยิง API → 403
 
-### ☐ D2 — Docs UI: tree + Tiptap (markdown) + autosave
+### ☑ D2 — Docs UI: tree + Tiptap (markdown) + autosave
 **deps:** D1, T05
 - nav "เอกสาร" (owner/member) + route 2 ฝั่ง (tree บนพื้นหน้า / editor การ์ดขาว); Tiptap = `starter-kit` + `link` + `task-list/item` + `placeholder` + **`@tiptap/markdown`**; โหลด md→parse, เซฟ `getMarkdown()` → **autosave debounce** + สถานะ
 - scope: หัวข้อ **h2–h4** (title=h1), bold/italic/strike, bullet/ordered, checklist, blockquote, code, link (ตาราง = v1.1)
 - **AC:** เมนูเห็นเฉพาะ owner/member; สร้าง/เปิด/แก้หน้า+หน้าย่อย; **markdown round-trip** (พิมพ์ rich → reload เหมือนเดิม); autosave + ตัวบอกสถานะ
 - **Verify (preview):** สร้างหน้า+หน้าย่อย → พิมพ์ format → รอ autosave → reload เนื้อหาอยู่; row ใน D1 เป็น markdown; vendor ไม่มีเมนู
 
-### ☐ D3 — Docs: image upload → R2
+### ☑ D3 — Docs: image upload → R2
 **deps:** D2 (สร้าง/ใช้ร่วม `apps/api/src/lib/r2.ts` กับ T10)
 - `POST /api/docs/images` (multipart → validate mime/ขนาด → R2 → `{url}`) + `GET /api/docs/images/:key` (stream, auth-gate); Tiptap image + handler paste/drop/เลือกไฟล์ → insert `![](/api/docs/images/:key)`
 - **AC:** วาง/ลาก/เลือกรูป → ขึ้น R2 → โผล่ใน editor → markdown มี URL → reload เห็นรูป; **ไม่รับ SVG** + เกินขนาด = reject; vendor → 403
@@ -189,19 +189,19 @@
 **deps:** —
 - เพิ่ม `clients` table + เปลี่ยน `projects.clientName` → `clientId→clients` ตั้งแต่ตอนทำ T08 (เลี่ยง refactor) · seed ลูกค้าจาก mockup
 
-### ☐ C1 — recurring_services + core aggregations (TDD)
+### ☑ C1 — recurring_services + core aggregations (TDD)
 **deps:** T08 (clients), T14 (payments), T03
 - `recurring_services` (clientId, projectId?, category, period, amountSatang, nextDueDate, status); **pure fn ใน `packages/core`**: `totalQuoted/totalPaid/outstanding`, `mrr/arr`, `nextExpiry` (รับ `today` เข้า)
 - **AC:** ทุก fn pure (ไม่มี Date.now); coverage edge (overdue, ใกล้หมดอายุ ≤30, ปี); ยอด integer สตางค์
 - **Verify:** `pnpm test packages/core` เขียว; เทียบยอด 1 ลูกค้ากับ mockup
 
-### ☐ C2 — Clients API (list/detail) + recurring/notes CRUD
+### ☑ C2 — Clients API (list/detail) + recurring/notes CRUD
 **deps:** C1, T06
 - `GET /api/clients` (list + aggregates), `GET /api/clients/:id` (detail: โปรเจกต์/payments/recurring/notes); `recurring-services` + `client_notes` CRUD; Zod + role-guard owner/member + audit
 - **AC:** list/detail รวมยอดถูก (quoted/paid/outstanding/MRR/nextExpiry); **vendor → 403** ทุก endpoint; เพิ่ม/แก้ recurring + note ได้
 - **Verify:** เทียบ aggregate กับ core; vendor ยิง → 403; เพิ่ม note → เห็นใน detail
 
-### ☐ C3 — Clients UI (CRM)
+### ☑ C3 — Clients UI (CRM)
 **deps:** C2, T05
 - nav "ลูกค้า" (owner/member) + **list**: การ์ดสรุป (ยอดขายปีนี้ · MRR/ARR · ต้องตามเงิน · ใกล้หมดอายุ) + แท็บ (ทั้งหมด/ต้องตามเงิน/ใกล้หมดอายุ) + ตาราง + **search (⌘K)**; **detail**: ติดต่อ + สรุปเงิน + โปรเจกต์ + บริการต่อเนื่อง (วันต่ออายุสี) + payments (overdue แดง) + **โน้ต/ข้อควรจำ** + อีเมล (placeholder → P3)
 - **AC:** เมนู owner/member (vendor ไม่เห็น); list/detail ตรง core; overdue แดง · ใกล้หมดอายุส้ม; search เจอ + คลิกไปถูก

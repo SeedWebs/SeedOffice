@@ -3,6 +3,8 @@ import { createBrowserRouter, Navigate, RouterProvider } from 'react-router'
 import { Layout } from './components/Layout'
 import { AuthProvider, useAuth, type Me } from './lib/auth'
 import { AdminPage } from './pages/Admin'
+import { ClientDetailPage } from './pages/ClientDetail'
+import { ClientsPage } from './pages/Clients'
 import { DashboardPage } from './pages/Dashboard'
 import { DocsPage } from './pages/Docs'
 import { Login } from './pages/Login'
@@ -34,6 +36,22 @@ const router = createBrowserRouter([
       { index: true, element: <DashboardPage /> },
       { path: 'projects', element: <ProjectsPage /> },
       { path: 'projects/:id', element: <ProjectDetailPage /> },
+      {
+        path: 'clients',
+        element: (
+          <Protected roles={['owner', 'member']}>
+            <ClientsPage />
+          </Protected>
+        ),
+      },
+      {
+        path: 'clients/:id',
+        element: (
+          <Protected roles={['owner', 'member']}>
+            <ClientDetailPage />
+          </Protected>
+        ),
+      },
       {
         path: 'docs',
         element: (

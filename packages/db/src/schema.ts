@@ -293,6 +293,50 @@ export const timerSessions = sqliteTable('timer_sessions', {
   startedAt: integer('started_at').notNull(),
 })
 
+export const SERVICE_CATEGORIES = ['hosting', 'domain', 'ma', 'server', 'ssl', 'other'] as const
+
+/** บริการต่อเนื่อง (SPEC §4.17) → MRR/ARR + ใกล้หมดอายุ */
+export const recurringServices = sqliteTable(
+  'recurring_services',
+  {
+    id: id(),
+    clientId: text('client_id')
+      .notNull()
+      .references(() => clients.id),
+    projectId: text('project_id').references(() => projects.id),
+    label: text('label').notNull(),
+    category: text('category', { enum: SERVICE_CATEGORIES }).notNull().default('other'),
+    period: text('period', { enum: ['monthly', 'yearly'] }).notNull(),
+    amountSatang: integer('amount_satang').notNull(),
+    nextDueDate: text('next_due_date'), // YYYY-MM-DD วันต่ออายุถัดไป
+    status: text('status', { enum: ['active', 'cancelled'] }).notNull().default('active'),
+    note: text('note'),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [index('recurring_client_idx').on(t.clientId, t.status)],
+)
+
+/** โน้ต/ข้อควรจำต่อลูกค้า (วันวางบิล/ที่อยู่ส่งเอกสาร ฯลฯ) */
+export const clientNotes = sqliteTable(
+  'client_notes',
+  {
+    id: id(),
+    clientId: text('client_id')
+      .notNull()
+      .references(() => clients.id),
+    body: text('body').notNull(),
+    createdBy: text('created_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [index('client_notes_client_idx').on(t.clientId)],
+)
+
 /** เอกสาร/wiki tree (SPEC §4.16) — sub-page ลึกได้ · เก็บ markdown · soft-delete ทั้ง subtree */
 export const docs = sqliteTable(
   'docs',
@@ -475,3 +519,5 @@ export type PayNote = typeof payNotes.$inferSelect
 export type Payslip = typeof payslips.$inferSelect
 export type Doc = typeof docs.$inferSelect
 export type DocImage = typeof docImages.$inferSelect
+export type RecurringService = typeof recurringServices.$inferSelect
+export type ClientNote = typeof clientNotes.$inferSelect

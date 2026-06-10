@@ -224,7 +224,8 @@ function SearchModal({ rows, onClose }: { rows: ProjectRow[]; onClose: () => voi
 }
 
 function NewProjectModal({ onClose, onCreated }: { onClose: () => void; onCreated: () => void }) {
-  const { data: clientList } = useLoad<{ id: string; name: string }[]>(() => api.get('/api/clients'))
+  const { data: clientsRes } = useLoad<{ rows: { id: string; name: string }[] }>(() => api.get('/api/clients'))
+  const clientList = clientsRes?.rows
   const [form, setForm] = useState({
     name: '', logo: '', type: 'project' as 'project' | 'recurring', clientId: '', clientName: '',
     budgetBaht: '', startDate: '', dueDate: '', recurringPeriod: 'monthly' as 'monthly' | 'yearly',
