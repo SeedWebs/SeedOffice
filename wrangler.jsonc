@@ -1,0 +1,38 @@
+// SeedOffice — worker เดียวเสิร์ฟทั้ง /api/* (Hono) และ static assets ของ SPA
+// SPEC §6/§8 · ห้ามใส่ secret ในไฟล์นี้ (ใช้ `wrangler secret put` / .dev.vars)
+{
+  "$schema": "node_modules/wrangler/config-schema.json",
+  "name": "seedoffice",
+  "main": "apps/api/src/index.ts",
+  "compatibility_date": "2026-06-10",
+  "compatibility_flags": ["nodejs_compat"],
+
+  // SPA: ทุก path ที่ไม่ใช่ไฟล์จริง → index.html · /api/* วิ่งเข้า worker ก่อนเสมอ
+  "assets": {
+    "directory": "apps/web/dist",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
+
+  "observability": {
+    "enabled": true,
+    "head_sampling_rate": 1
+  },
+
+  // D1: ใช้ local ได้เลย · database_id จริงสร้างตอน T02 (`wrangler d1 create seedoffice`)
+  "d1_databases": [
+    {
+      "binding": "DB",
+      "database_name": "seedoffice",
+      "database_id": "TODO-T02-d1-create"
+    }
+  ],
+
+  // R2: ไฟล์แนบ task/ใบเสร็จ/รูปเอกสาร (T10/D3) · bucket จริงสร้างก่อน deploy
+  "r2_buckets": [
+    {
+      "binding": "FILES",
+      "bucket_name": "seedoffice-files"
+    }
+  ]
+}

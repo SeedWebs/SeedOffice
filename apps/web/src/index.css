@@ -1,0 +1,17 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+body {
+  font-family: 'Inter', 'Noto Sans Thai', sans-serif;
+  background: #f5f5f7;
+}
+
+/* ซ่อน scrollbar ทุกจุด (สไตล์ macOS) ยัง scroll ได้ — ตาม mockup */
+*::-webkit-scrollbar {
+  display: none;
+}
+* {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}

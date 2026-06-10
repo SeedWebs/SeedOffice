@@ -1,0 +1,34 @@
+{
+  "name": "seedoffice",
+  "private": true,
+  "packageManager": "pnpm@10.33.3",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "dev": "mkdir -p apps/web/dist && concurrently -n web,api -c auto \"pnpm --filter @seedoffice/web dev\" \"wrangler dev\"",
+    "build": "pnpm --filter @seedoffice/web build",
+    "deploy": "pnpm build && wrangler deploy",
+    "lint": "eslint .",
+    "typecheck": "pnpm -r --if-present run typecheck",
+    "test": "vitest run",
+    "cf-typegen": "wrangler types"
+  },
+  "devDependencies": {
+    "@eslint/js": "^10.0.1",
+    "@types/node": "^25.9.2",
+    "concurrently": "^10.0.3",
+    "eslint": "^10.4.1",
+    "typescript": "^6.0.3",
+    "typescript-eslint": "^8.61.0",
+    "vitest": "^4.1.8",
+    "wrangler": "^4.99.0"
+  },
+  "pnpm": {
+    "onlyBuiltDependencies": [
+      "esbuild",
+      "workerd",
+      "sharp"
+    ]
+  }
+}

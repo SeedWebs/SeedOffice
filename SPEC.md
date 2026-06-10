@@ -340,7 +340,7 @@ seedoffice/
 ├─ packages/
 │  ├─ db/                  # Drizzle schema + migrations + seed
 │  └─ core/                # โดเมนล้วน: payroll/cost calc, money & time utils (pure, test ง่าย)
-├─ wrangler.toml          # bindings: D1, R2, vars, routes
+├─ wrangler.jsonc         # bindings: D1 (DB), R2 (FILES) · assets = SPA dist · ฟีเจอร์ใหม่เป็น JSON-only
 ├─ SPEC.md
 └─ package.json           # pnpm workspaces
 ```

@@ -20,8 +20,10 @@
 - ✅ **review รอบ มิ.ย. 69:** vendor เห็นเมนู **ค่าตอบแทน (ของตัวเอง)** แล้ว (ค่าจ้าง − WHT 3% — ตรง SPEC §2) · pin CDN (`tailwindcss 3.4.17` + `lucide 1.17.0`) กัน mockup พังเอง
 
 ## ขั้นต่อไป
-- ✅ mockup ครบ (+ เอกสาร/ลูกค้า) + **รองรับมือถือ + deploy GitHub Pages** · ✅ **SPEC + tasks sync แล้ว** (เพิ่ม §4.16 เอกสาร, §4.17 ลูกค้า/CRM, data model: docs/doc_images/clients/recurring_services/client_notes, Phase 6 tasks)
-- ▶ **เริ่ม build P1 ที่ T01** (monorepo scaffold) — stack: Cloudflare Workers + Hono + D1 + Drizzle + R2 · React + Vite + React Router + Tailwind (pnpm workspaces: apps/web, apps/api, packages/db, packages/core)
+- ✅ mockup ครบ + deploy · ✅ SPEC v0.9 sync · ✅ **T01 เสร็จ (10 มิ.ย. 69)** — monorepo รันได้จริง: `pnpm dev` = vite :5173 (proxy /api) + `wrangler dev` :8787; worker เสิร์ฟ SPA dist + `/api/health` 200; lint/typecheck/test + CI เขียว
+  - stack จริง: Vite 8 · React 19 · React Router 7 · **Tailwind 3.4.17 (ตรึงให้ตรง mockup — ค่อยคุย v4 หลัง P1)** · Hono 4 · Drizzle 0.45 · wrangler 4.99 (**wrangler.jsonc** แทน .toml)
+  - preview config: `dev` (pnpm dev, port 5173) ใน .claude/launch.json · pnpm 10 ต้องมี `onlyBuiltDependencies` (esbuild/workerd/sharp)
+- ▶ **ต่อที่ T02** (DB foundation: users/sessions/rates/company_config + migration + seed — ต้อง `wrangler d1 create seedoffice` ใส่ database_id จริง) **+ T03** (core money/time/cycle math, TDD — จุดยืนยันสูตรปัดเศษกับเจ้าของ)
 - ตรรกะการเงินทำใน `packages/core` (TDD) ก่อนเสมอ · review กับเจ้าของทุก checkpoint (CP1–CP4)
 
 ## วิธีทำงานกับ user (สำคัญ)

@@ -7,13 +7,13 @@
 
 ## Phase 0 — Foundation
 
-### ☐ T01 — Monorepo scaffold + tooling
+### ☑ T01 — Monorepo scaffold + tooling ✅ (10 มิ.ย. 69)
 **deps:** —
-- pnpm workspaces: `apps/web` (Vite+React+React Router+Tailwind), `apps/api` (Hono Worker), `packages/db` (Drizzle), `packages/core` (pure)
-- `wrangler.toml` + bindings: D1, R2, vars; worker เสิร์ฟ `/api/*` + static assets ของ SPA
-- runners: ESLint, `tsc --noEmit`, Vitest; scripts `dev/build/deploy/lint/typecheck/test`
-- **AC:** `pnpm dev` เปิด SPA + `GET /api/health` → 200 `{ok:true}`; `pnpm test` รันได้
-- **Verify:** เปิด localhost เห็น SPA, curl /api/health ได้ ok; CI (lint/typecheck/test) เขียว
+- pnpm workspaces: `apps/web` (Vite 8+React 19+React Router 7+Tailwind 3.4.17 ตรง mockup), `apps/api` (Hono 4 Worker), `packages/db` (Drizzle 0.45), `packages/core` (pure + formatSatang/minutesToHoursLabel + 7 tests)
+- `wrangler.jsonc` (แทน .toml — ฟีเจอร์ใหม่ JSON-only) + bindings: D1 `DB` (id จริง = T02), R2 `FILES`; assets เสิร์ฟ SPA dist + `run_worker_first: ["/api/*"]` + SPA fallback; `nodejs_compat` + observability; `wrangler types` → `worker-configuration.d.ts` (commit ไว้)
+- runners: ESLint 10 (flat) + TS 6 strict + Vitest 4; scripts `dev/build/deploy/lint/typecheck/test/cf-typegen`; CI GitHub Actions (lint/typecheck/test)
+- **AC:** `pnpm dev` เปิด SPA + `GET /api/health` → 200 `{ok:true}`; `pnpm test` รันได้ ✓
+- **Verify ✓:** SPA ขึ้นทั้ง :5173 (vite) และ :8787 (worker เสิร์ฟ dist + deep link 200); /api/health = `{"ok":true}` ทั้งสองพอร์ต; lint/typecheck/test เขียวครบ
 
 ### ☐ T02 — DB foundation (Drizzle + D1) + config + seed
 **deps:** T01
