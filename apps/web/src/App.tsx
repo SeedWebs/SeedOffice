@@ -4,8 +4,9 @@ import { Layout } from './components/Layout'
 import { AuthProvider, useAuth, type Me } from './lib/auth'
 import { AdminPage } from './pages/Admin'
 import { Login } from './pages/Login'
+import { ProjectDetailPage } from './pages/ProjectDetail'
 import { ProjectsPage } from './pages/Projects'
-import { DashboardPage, PayrollPage, ProjectDetailPage } from './pages/placeholders'
+import { DashboardPage, PayrollPage } from './pages/placeholders'
 
 function Protected({ children, roles }: { children: ReactNode; roles?: Me['role'][] }) {
   const { user, loading } = useAuth()

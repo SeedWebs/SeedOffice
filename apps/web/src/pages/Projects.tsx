@@ -97,7 +97,16 @@ function Cards({ rows, showMoney }: { rows: ProjectRow[]; showMoney: boolean }) 
 
 function RecurringTable({ rows }: { rows: ProjectRow[] }) {
   const navigate = useNavigate()
-  const list = rows.filter((p) => p.type === 'recurring' && p.status !== 'archived')
+  // เรียงตาม todo ที่ต้องส่งก่อน — รายที่ไม่มี todo ค้างไหลลงล่าง (SPEC §4.3B)
+  const list = rows
+    .filter((p) => p.type === 'recurring' && p.status !== 'archived')
+    .sort((a, b) => (a.openTodo?.dueDate ?? '9999') < (b.openTodo?.dueDate ?? '9999') ? -1 : 1)
+  const today = new Date(Date.now() + 7 * 3_600_000).toISOString().slice(0, 10)
+  const dueChip = (d: string | null) => {
+    if (!d) return 'bg-slate-100 text-slate-500'
+    if (d <= today) return 'bg-rose-100 text-rose-600'
+    return 'bg-amber-100 text-amber-700'
+  }
   return (
     <div className="bg-white rounded-lg shadow-xs overflow-x-auto">
       <table className="w-full text-sm min-w-[600px]">
@@ -106,7 +115,7 @@ function RecurringTable({ rows }: { rows: ProjectRow[] }) {
             <th className="text-left font-medium px-5 py-3">โปรเจกต์</th>
             <th className="text-left font-medium px-3 py-3">Todo ที่เปิดอยู่</th>
             <th className="text-left font-medium px-3 py-3 w-28">กำหนดส่ง</th>
-            <th className="text-left font-medium px-5 py-3 w-28">รอบ</th>
+            <th className="text-left font-medium px-5 py-3 w-28">ค้างที่</th>
           </tr>
         </thead>
         <tbody className="divide-y divide-slate-100">
@@ -115,10 +124,20 @@ function RecurringTable({ rows }: { rows: ProjectRow[] }) {
           )}
           {list.map((p) => (
             <tr key={p.id} onClick={() => navigate(`/projects/${p.id}`)} className="hover:bg-slate-50 cursor-pointer">
-              <td className="px-5 py-3 text-slate-700">{p.logo ?? '📁'} {p.name}</td>
-              <td className="px-3 text-slate-300">— เชื่อม todo เมื่อมีระบบงาน (T09)</td>
-              <td className="px-3 text-slate-300 text-xs">—</td>
-              <td className="px-5 text-xs text-slate-500">{p.recurringPeriod === 'yearly' ? 'รายปี' : 'รายเดือน'}</td>
+              <td className={`px-5 py-3 ${p.openTodo ? 'text-slate-700' : 'text-slate-500'}`}>{p.logo ?? '📁'} {p.name}</td>
+              {p.openTodo ? (
+                <>
+                  <td className="px-3 text-slate-700">{p.openTodo.title}</td>
+                  <td className="px-3"><span className={`text-[11px] px-2 py-0.5 rounded-full ${dueChip(p.openTodo.dueDate)}`}>{fmtThaiDate(p.openTodo.dueDate)}</span></td>
+                  <td className="px-5 text-xs text-slate-500">{p.openTodo.assigneeName ?? '—'}</td>
+                </>
+              ) : (
+                <>
+                  <td className="px-3 text-slate-300">— ไม่มี todo ค้าง</td>
+                  <td className="px-3 text-slate-300 text-xs">—</td>
+                  <td className="px-5"></td>
+                </>
+              )}
             </tr>
           ))}
         </tbody>

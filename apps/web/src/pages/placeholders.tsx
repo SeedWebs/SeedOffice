@@ -26,5 +26,4 @@ export function DashboardPage() {
   )
 }
 
-export const ProjectDetailPage = () => <Coming title="โปรเจกต์" task="T09 (จัดการงานในโปรเจกต์)" />
 export const PayrollPage = () => <Coming title="ค่าตอบแทน" task="T15" />

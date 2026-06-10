@@ -47,6 +47,42 @@ INSERT OR REPLACE INTO projects (id, code, name, logo, client_id, type, status, 
   ('p_thairung',NULL,'เว็บเก่า บจก. ไทยรุ่งเรือง', '🗂️',NULL,'project','archived',    9000000,'fixed',NULL,'2024-01-01','2024-06-30',1767200000000),
   ('p_songkran',NULL,'Landing แคมเปญ Songkran 67','🎪',NULL,'project','archived',     3500000,'fixed',NULL,'2024-03-01','2024-04-15',1767200000000);
 
+-- task groups + tasks ของ ทรัพย์เจริญ (ตาม mockup project detail)
+INSERT OR REPLACE INTO task_groups (id, project_id, name, sort_order) VALUES
+  ('g_sap_design','p_sap','Design',0),
+  ('g_sap_fe','p_sap','Frontend',1),
+  ('g_sap_be','p_sap','Backend',2),
+  ('g_sap_stg','p_sap','Staging',3),
+  ('g_sap_uat','p_sap','UAT',4),
+  ('g_sap_live','p_sap','Go Live',5),
+  ('g_sap_ma','p_sap','MA',6),
+  ('g_bloom_fe','p_bloom','Frontend',0),
+  ('g_bloom_be','p_bloom','Backend',1),
+  ('g_baansuan_ma','p_baansuan','งานประจำ',0),
+  ('g_glow_ma','p_glow','งานประจำ',0),
+  ('g_somwang_ma','p_somwang','งานประจำ',0),
+  ('g_daoden_ma','p_daoden','งานประจำ',0);
+
+INSERT OR REPLACE INTO tasks (id, project_id, group_id, sort_order, title, description, assignee_id, status, priority, estimate_minutes, start_date, due_date, created_by, created_at, completed_at) VALUES
+  ('t_sap_hero','p_sap','g_sap_design',0,'Hero section',NULL,'u_nam','done','normal',1320,'2026-01-05','2026-02-10','u_owner',1767200000000,1767300000000),
+  ('t_sap_about','p_sap','g_sap_design',1,'หน้า About + ทีม',NULL,'u_nam','doing','normal',480,'2026-02-01','2026-06-11','u_owner',1767200000000,NULL),
+  ('t_sap_product','p_sap','g_sap_fe',0,'หน้า Product','ทำหน้า product listing + filter ตาม design ใน Figma รองรับ responsive','u_owner','doing','high',1860,'2026-02-10','2026-06-15','u_owner',1767200000000,NULL),
+  ('t_sap_api','p_sap','g_sap_fe',1,'เชื่อม API สินค้า',NULL,'u_pond','todo','normal',NULL,'2026-03-01','2026-06-10','u_owner',1767200000000,NULL),
+  ('t_sap_resp','p_sap','g_sap_fe',2,'ปรับ responsive มือถือ',NULL,'u_beam','todo','normal',720,'2026-03-15','2026-06-12','u_owner',1767200000000,NULL),
+  ('t_sap_setup','p_sap','g_sap_be',0,'เซ็ตอัพ API + DB schema',NULL,'u_korn','done','normal',1680,'2026-02-10','2026-03-15','u_owner',1767200000000,1767300000000),
+  ('t_sap_auth','p_sap','g_sap_be',1,'ระบบสมาชิก / auth',NULL,'u_korn','done','normal',1440,'2026-03-01','2026-04-01','u_owner',1767200000000,1767300000000),
+  ('t_sap_pay','p_sap','g_sap_be',2,'เชื่อม payment gateway',NULL,'u_pond','doing','high',1200,'2026-04-01','2026-06-13','u_owner',1767200000000,NULL),
+  ('t_sap_stg1','p_sap','g_sap_stg',0,'ขึ้น staging server',NULL,'u_korn','done','normal',360,'2026-04-16','2026-05-01','u_owner',1767200000000,1767300000000),
+  ('t_sap_stg2','p_sap','g_sap_stg',1,'ทดสอบ regression',NULL,'u_beam','doing','normal',720,'2026-05-01','2026-06-20','u_owner',1767200000000,NULL),
+  ('t_sap_uat1','p_sap','g_sap_uat',0,'ลูกค้าทดสอบ + เก็บ feedback',NULL,'u_owner','todo','normal',NULL,'2026-05-07','2026-06-21','u_owner',1767200000000,NULL),
+  ('t_sap_live1','p_sap','g_sap_live',0,'ย้ายขึ้น production',NULL,'u_korn','todo','high',NULL,'2026-06-21','2026-06-30','u_owner',1767200000000,NULL),
+  ('t_bloom_checkout','p_bloom','g_bloom_fe',0,'ทำหน้า checkout',NULL,'u_pond','doing','high',2400,'2026-04-01','2026-06-30','u_owner',1767200000000,NULL),
+  ('t_bloom_api','p_bloom','g_bloom_be',0,'API สินค้า',NULL,'u_korn','doing','normal',1800,'2026-04-01','2026-07-15','u_owner',1767200000000,NULL),
+  ('t_baansuan_menu','p_baansuan','g_baansuan_ma',0,'อัปเดตเมนูหน้าร้าน',NULL,'u_nam','todo','normal',120,NULL,'2026-06-11','u_owner',1767200000000,NULL),
+  ('t_glow_banner','p_glow','g_glow_ma',0,'แก้แบนเนอร์โปรโมชัน',NULL,'u_fah','todo','normal',90,NULL,'2026-06-09','u_owner',1767200000000,NULL),
+  ('t_somwang_ssl','p_somwang','g_somwang_ma',0,'ต่ออายุ SSL + domain',NULL,'u_korn','todo','normal',60,NULL,'2026-06-12','u_owner',1767200000000,NULL),
+  ('t_daoden_news','p_daoden','g_daoden_ma',0,'เพิ่มข่าวรับสมัคร',NULL,'u_praew','todo','normal',60,NULL,'2026-06-15','u_owner',1767200000000,NULL);
+
 -- rates (สตางค์/ชั่วโมง) — ตรง mockup: เมธ ฿450 · ปอนด์ ฿400 · น้ำ ฿350 · ตูน ฿200 · สมชาย ฿350
 INSERT OR REPLACE INTO rates (id, user_id, rate_satang_per_hour, effective_from, note, created_at) VALUES
   ('r_owner_1',  'u_owner',  45000, '2026-01-01', 'rate ตั้งต้น', 1767200000000),

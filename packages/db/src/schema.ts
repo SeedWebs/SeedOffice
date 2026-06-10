@@ -106,6 +106,56 @@ export const projects = sqliteTable(
   (t) => [index('projects_type_idx').on(t.type, t.status), index('projects_client_idx').on(t.clientId)],
 )
 
+/** กลุ่มงานในโปรเจกต์ (SPEC §4.4) — เรียงด้วย sortOrder */
+export const taskGroups = sqliteTable(
+  'task_groups',
+  {
+    id: id(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id),
+    name: text('name').notNull(),
+    sortOrder: integer('sort_order').notNull().default(0),
+  },
+  (t) => [index('task_groups_project_idx').on(t.projectId, t.sortOrder)],
+)
+
+export const TASK_STATUSES = ['todo', 'doing', 'done'] as const
+
+export const tasks = sqliteTable(
+  'tasks',
+  {
+    id: id(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id),
+    groupId: text('group_id')
+      .notNull()
+      .references(() => taskGroups.id),
+    sortOrder: integer('sort_order').notNull().default(0),
+    title: text('title').notNull(),
+    description: text('description'),
+    assigneeId: text('assignee_id').references(() => users.id),
+    status: text('status', { enum: TASK_STATUSES }).notNull().default('todo'),
+    priority: text('priority', { enum: ['low', 'normal', 'high'] }).notNull().default('normal'),
+    estimateMinutes: integer('estimate_minutes'),
+    startDate: text('start_date'), // YYYY-MM-DD → ไทม์ไลน์ต่อกลุ่ม
+    dueDate: text('due_date'),
+    createdBy: text('created_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    completedAt: integer('completed_at', { mode: 'timestamp_ms' }),
+  },
+  (t) => [
+    index('tasks_project_idx').on(t.projectId),
+    index('tasks_group_idx').on(t.groupId, t.sortOrder),
+    index('tasks_assignee_idx').on(t.assigneeId, t.status),
+  ],
+)
+
 /** log การเปลี่ยนข้อมูลการเงิน/เวลา (SPEC §11: ทุก manual/แก้/ลบ + การเงิน) — meta เก็บ before→after */
 export const auditLogs = sqliteTable(
   'audit_logs',
@@ -135,3 +185,5 @@ export type CompanyConfig = typeof companyConfig.$inferSelect
 export type AuditLog = typeof auditLogs.$inferSelect
 export type Client = typeof clients.$inferSelect
 export type Project = typeof projects.$inferSelect
+export type TaskGroup = typeof taskGroups.$inferSelect
+export type Task = typeof tasks.$inferSelect

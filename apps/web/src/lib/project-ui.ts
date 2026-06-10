@@ -13,6 +13,7 @@ export interface ProjectRow {
   recurringPeriod: 'monthly' | 'yearly' | null
   startDate: string | null
   dueDate: string | null
+  openTodo: { title: string; dueDate: string | null; assigneeName: string | null } | null
 }
 
 export const STATUS_LABEL: Record<ProjectRow['status'], string> = {

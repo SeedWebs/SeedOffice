@@ -1,5 +1,5 @@
-import { clients, createDb, projects, PROJECT_STATUSES, type Project } from '@seedoffice/db'
-import { asc, eq } from 'drizzle-orm'
+import { clients, createDb, projects, PROJECT_STATUSES, tasks, users, type Project } from '@seedoffice/db'
+import { asc, eq, ne } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { writeAudit } from '../lib/audit'
@@ -9,9 +9,9 @@ import type { AppEnv } from '../types'
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
 
 /** vendor ห้ามเห็นการเงินโปรเจกต์ (SPEC §2/§4.8) — ตัดที่ server เสมอ */
-function serialize(p: Project & { clientName?: string | null }, role: string) {
+function serialize<T extends { quotedSatang?: number | null }>(p: T, role: string) {
   if (role === 'vendor') {
-    const rest: Partial<typeof p> = { ...p }
+    const rest: Partial<T> = { ...p }
     delete rest.quotedSatang
     return rest
   }
@@ -21,6 +21,7 @@ function serialize(p: Project & { clientName?: string | null }, role: string) {
 export const projectRoutes = new Hono<AppEnv>()
 
   // ลิสต์ทั้งหมด (รวม archived — lightbox ใช้ค้น) · vendor ถูกตัดข้อมูลเงิน
+  // งานต่อเนื่อง: แนบ todo เปิดอยู่ที่ใกล้กำหนดสุด (ตาราง "เรียงตาม todo ที่ต้องส่งก่อน")
   .get('/', async (c) => {
     const db = createDb(c.env.DB)
     const rows = await db
@@ -28,8 +29,30 @@ export const projectRoutes = new Hono<AppEnv>()
       .from(projects)
       .leftJoin(clients, eq(projects.clientId, clients.id))
       .orderBy(asc(projects.name))
+    const openTasks = await db
+      .select({
+        projectId: tasks.projectId,
+        title: tasks.title,
+        dueDate: tasks.dueDate,
+        assigneeName: users.name,
+      })
+      .from(tasks)
+      .leftJoin(users, eq(tasks.assigneeId, users.id))
+      .where(ne(tasks.status, 'done'))
+    const firstOpen = new Map<string, (typeof openTasks)[number]>()
+    for (const t of openTasks) {
+      const cur = firstOpen.get(t.projectId)
+      if (!cur || (t.dueDate ?? '9999') < (cur.dueDate ?? '9999')) firstOpen.set(t.projectId, t)
+    }
     const role = c.get('user').role
-    return c.json(rows.map((r) => serialize({ ...r.project, clientName: r.clientName }, role)))
+    return c.json(
+      rows.map((r) =>
+        serialize(
+          { ...r.project, clientName: r.clientName, openTodo: firstOpen.get(r.project.id) ?? null },
+          role,
+        ),
+      ),
+    )
   })
 
   .get('/:id', async (c) => {
