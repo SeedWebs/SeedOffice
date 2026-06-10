@@ -31,13 +31,13 @@ const guardedWithAuthRoutes = new Hono<AppEnv>()
 
 describe('requireRole — privacy gate ที่ server (SPEC §2)', () => {
   it('owner-only: owner ✓ · member 403 · vendor 403', async () => {
-    expect(await statusFor('/owner-only', 'owner@seedwebs.com')).toBe(200)
-    expect(await statusFor('/owner-only', 'pond@seedwebs.com')).toBe(403)
+    expect(await statusFor('/owner-only', 'owner@example-co.test')).toBe(200)
+    expect(await statusFor('/owner-only', 'pond@example-co.test')).toBe(403)
     expect(await statusFor('/owner-only', 'somchai@example.com')).toBe(403)
   })
   it('team-only (vendor ❌ การเงิน/P&L): owner ✓ member ✓ vendor 403', async () => {
-    expect(await statusFor('/team-only', 'owner@seedwebs.com')).toBe(200)
-    expect(await statusFor('/team-only', 'pond@seedwebs.com')).toBe(200)
+    expect(await statusFor('/team-only', 'owner@example-co.test')).toBe(200)
+    expect(await statusFor('/team-only', 'pond@example-co.test')).toBe(200)
     expect(await statusFor('/team-only', 'somchai@example.com')).toBe(403)
   })
   it('ไม่ login → 401 (ไม่ใช่ 403)', async () => {
@@ -74,7 +74,7 @@ describe('presence WS guards (P2)', () => {
     const { app } = await import('../src/index')
     const vendorCookie = await loginAs(app, 'somchai@example.com')
     expect((await app.request('/api/presence/ws', { headers: { cookie: vendorCookie } }, env)).status).toBe(403)
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     expect((await app.request('/api/presence/ws', { headers: { cookie: m } }, env)).status).toBe(426)
   })
 })

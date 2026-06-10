@@ -15,7 +15,7 @@ beforeEach(async () => {
 
 describe('T14 — milestones + payments', () => {
   it('เพิ่มงวดจ่าย + ติ๊กรับเงิน → %จ่ายคำนวณถูก + โผล่บน projects list', async () => {
-    const m = await loginAs(app, 'owner@seedwebs.com')
+    const m = await loginAs(app, 'owner@example-co.test')
     const p = (await (await app.request('/api/projects', json(m, { name: 'Pay P', type: 'project', quotedSatang: 20_000_000 }), env)).json()) as { id: string }
 
     await app.request(`/api/projects/${p.id}/payments`, json(m, { label: 'งวด 1 · มัดจำ', amountSatang: 10_000_000, dueDate: '2026-06-01' }), env)
@@ -36,7 +36,7 @@ describe('T14 — milestones + payments', () => {
   })
 
   it('vendor: finance ทุก endpoint = 403 + ไม่เห็น paidPct ใน list', async () => {
-    const m = await loginAs(app, 'owner@seedwebs.com')
+    const m = await loginAs(app, 'owner@example-co.test')
     const p = (await (await app.request('/api/projects', json(m, { name: 'Sec P', type: 'project' }), env)).json()) as { id: string }
     await app.request(`/api/projects/${p.id}/payments`, json(m, { amountSatang: 5_000_000 }), env)
 
@@ -50,7 +50,7 @@ describe('T14 — milestones + payments', () => {
   })
 
   it('milestones: เพิ่ม + เปลี่ยนสถานะ + งบต่องวด (→ P&L T17) + audit การเงิน', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     const p = (await (await app.request('/api/projects', json(m, { name: 'MS P', type: 'project' }), env)).json()) as { id: string }
     const ms = (await (
       await app.request(`/api/projects/${p.id}/milestones`, json(m, { name: 'งวด 1 · ออกแบบ', budgetSatang: 6_000_000, dueDate: '2026-07-01' }), env)

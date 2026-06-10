@@ -22,7 +22,7 @@ beforeEach(async () => {
 
 describe('T13 — team-hours + manual% integrity', () => {
   it('manual% นิยามทั้งงวด + flag เกิน 10% + นับครั้งแก้', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     const p = (await (await app.request('/api/projects', json(m, { name: 'P', type: 'project' }), env)).json()) as { id: string }
     const g = (await (await app.request(`/api/projects/${p.id}/groups`, json(m, { name: 'G' }), env)).json()) as { id: string }
     const t = (await (await app.request(`/api/groups/${g.id}/tasks`, json(m, { title: 'X' }), env)).json()) as { id: string }
@@ -52,7 +52,7 @@ describe('T13 — team-hours + manual% integrity', () => {
     const v = await loginAs(app, 'somchai@example.com')
     expect((await app.request('/api/team-hours', { headers: { cookie: v } }, env)).status).toBe(403)
 
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     const p = (await (await app.request('/api/projects', json(m, { name: 'P2', type: 'project' }), env)).json()) as { id: string }
     const g = (await (await app.request(`/api/projects/${p.id}/groups`, json(m, { name: 'G' }), env)).json()) as { id: string }
     const t = (await (await app.request(`/api/groups/${g.id}/tasks`, json(m, { title: 'Y' }), env)).json()) as { id: string }

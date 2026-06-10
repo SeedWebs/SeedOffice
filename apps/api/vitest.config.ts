@@ -16,6 +16,8 @@ export default defineConfig(async () => {
             APP_URL: 'http://localhost:5173',
             GOOGLE_CLIENT_ID: 'test-client-id',
             GOOGLE_CLIENT_SECRET: 'test-client-secret',
+            // base64 ของ 32 bytes คงที่ — ใช้แค่ในเทสต์
+            INBOX_ENC_KEY: 'AAECAwQFBgcICQoLDA0ODxAREhMUFRYXGBkaGxwdHh8=',
           },
         },
       }),

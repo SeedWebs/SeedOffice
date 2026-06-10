@@ -25,7 +25,7 @@ const BASE = {
 
 describe('P2 — เงินสดย่อย', () => {
   it('member ลงค่าใช้จ่าย + ใบเสร็จ → owner อนุมัติ → คืนเงิน · ยอดค้างคืนถูกต้องตามขั้น', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     const created = await app.request(
       '/api/expenses',
       { method: 'POST', headers: { cookie: m }, body: expenseForm(BASE, new File([new Uint8Array([255, 216, 255])], 'bill.jpg', { type: 'image/jpeg' })) },
@@ -41,7 +41,7 @@ describe('P2 — เงินสดย่อย', () => {
     expect(list.rows).toHaveLength(1)
     expect(list.owedSatang).toBe(0)
 
-    const o = await loginAs(app, 'owner@seedwebs.com')
+    const o = await loginAs(app, 'owner@example-co.test')
     // คืนเงินก่อนอนุมัติ = 409
     expect(
       (await app.request(`/api/expenses/${exp.id}/status`, { method: 'PATCH', headers: { cookie: o, 'content-type': 'application/json' }, body: JSON.stringify({ status: 'reimbursed' }) }, env)).status,
@@ -57,8 +57,8 @@ describe('P2 — เงินสดย่อย', () => {
   })
 
   it('member เห็นเฉพาะของตัวเอง · เปลี่ยนสถานะได้เฉพาะ owner · vendor 403 ทุกเส้น', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
-    const m2 = await loginAs(app, 'nam@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
+    const m2 = await loginAs(app, 'nam@example-co.test')
     await app.request('/api/expenses', { method: 'POST', headers: { cookie: m }, body: expenseForm(BASE) }, env)
     await app.request('/api/expenses', { method: 'POST', headers: { cookie: m2 }, body: expenseForm({ ...BASE, description: 'ของน้ำ' }) }, env)
 
@@ -66,7 +66,7 @@ describe('P2 — เงินสดย่อย', () => {
     expect(mine.rows).toHaveLength(1)
     expect(mine.rows[0]?.description).toBe('Stock photo')
 
-    const o = await loginAs(app, 'owner@seedwebs.com')
+    const o = await loginAs(app, 'owner@example-co.test')
     const all = (await (await app.request('/api/expenses?month=2026-06', { headers: { cookie: o } }, env)).json()) as { rows: unknown[] }
     expect(all.rows).toHaveLength(2)
 
@@ -81,7 +81,7 @@ describe('P2 — เงินสดย่อย', () => {
   })
 
   it('payroll/me โชว์รอเบิก (pending+approved ที่จ่ายเอง) · CSV export มีแถว', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     await env.DB.prepare("INSERT OR REPLACE INTO rates (id, user_id, rate_satang_per_hour, effective_from, created_at) VALUES ('r_pond','u_pond',40000,'2026-01-01',0)").run()
     await env.DB.prepare('INSERT OR REPLACE INTO company_config (id, cutoff_day, work_hour_cap_minutes) VALUES (1, 25, 480)').run()
     await app.request('/api/expenses', { method: 'POST', headers: { cookie: m }, body: expenseForm(BASE) }, env)
@@ -91,7 +91,7 @@ describe('P2 — เงินสดย่อย', () => {
     expect(me.pendingReimburseSatang).toBe(270000) // เฉพาะที่จ่ายเอง
     expect(me.pendingReimburseItems).toHaveLength(1)
 
-    const o = await loginAs(app, 'owner@seedwebs.com')
+    const o = await loginAs(app, 'owner@example-co.test')
     const csv = await app.request('/api/expenses/export?month=2026-06', { headers: { cookie: o } }, env)
     expect(csv.headers.get('content-type')).toContain('text/csv')
     const text = await csv.text()

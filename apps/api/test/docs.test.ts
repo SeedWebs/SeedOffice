@@ -23,7 +23,7 @@ async function makeDoc(cookie: string, title: string, parentId?: string) {
 
 describe('D1 — docs tree CRUD', () => {
   it('สร้างซ้อน 3 ชั้น → tree ครบ · autosave content คงอยู่ · vendor = 403', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     const root = await makeDoc(m, 'คู่มือพนักงานใหม่')
     const child = await makeDoc(m, 'ตั้งค่าเครื่อง', root.id)
     const grand = await makeDoc(m, 'ติดตั้ง dev tools', child.id)
@@ -42,7 +42,7 @@ describe('D1 — docs tree CRUD', () => {
   })
 
   it('move: ย้าย+เรียงได้ · ย้ายลงใต้ลูกตัวเอง = 409 cycle', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     const a = await makeDoc(m, 'A')
     const b = await makeDoc(m, 'B', a.id)
     const c0 = await makeDoc(m, 'C')
@@ -58,7 +58,7 @@ describe('D1 — docs tree CRUD', () => {
   })
 
   it('ลบ root = soft-delete ทั้ง subtree (row ยังอยู่ใน DB)', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     const a = await makeDoc(m, 'A')
     const b = await makeDoc(m, 'B', a.id)
     await makeDoc(m, 'C', b.id)
@@ -77,7 +77,7 @@ describe('D1 — docs tree CRUD', () => {
 
 describe('D3 — docs images', () => {
   it('อัป png → ได้ url → โหลดได้ · SVG = 415', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     const fd = new FormData()
     fd.append('file', new File([new Uint8Array([137, 80, 78, 71])], 'pic.png', { type: 'image/png' }))
     const up = await app.request('/api/docs/images', { method: 'POST', headers: { cookie: m }, body: fd }, env)

@@ -15,7 +15,7 @@ const json = (cookie: string, body: unknown) => ({
 
 describe('T11 — stars + overview', () => {
   it('ติดดาว → ขึ้น "งานวันนี้" เฉพาะของคนติด · ถอนดาว → หาย', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     const p = (await (await app.request('/api/projects', json(m, { name: 'P', type: 'project' }), env)).json()) as { id: string }
     const g = (await (await app.request(`/api/projects/${p.id}/groups`, json(m, { name: 'G' }), env)).json()) as { id: string }
     const t = (await (await app.request(`/api/groups/${g.id}/tasks`, json(m, { title: 'งานดาว' }), env)).json()) as { id: string }
@@ -25,7 +25,7 @@ describe('T11 — stars + overview', () => {
     expect(ov.today.map((x) => x.title)).toContain('งานดาว')
 
     // คนอื่นไม่เห็นดาวของเรา
-    const o = await loginAs(app, 'owner@seedwebs.com')
+    const o = await loginAs(app, 'owner@example-co.test')
     const ovOwner = (await (await app.request('/api/overview', { headers: { cookie: o } }, env)).json()) as { today: unknown[] }
     expect(ovOwner.today).toHaveLength(0)
 
@@ -35,7 +35,7 @@ describe('T11 — stars + overview', () => {
   })
 
   it('งานเร็วๆ นี้: เฉพาะที่มอบหมายให้ฉัน ยังไม่เสร็จ เรียงตาม due ≤5 รายการ', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     const p = (await (await app.request('/api/projects', json(m, { name: 'P', type: 'project' }), env)).json()) as { id: string }
     const g = (await (await app.request(`/api/projects/${p.id}/groups`, json(m, { name: 'G' }), env)).json()) as { id: string }
     for (let i = 1; i <= 7; i++) {
@@ -51,7 +51,7 @@ describe('T11 — stars + overview', () => {
   })
 
   it('board ส่ง starredToday ของฉันมาด้วย', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     const p = (await (await app.request('/api/projects', json(m, { name: 'P', type: 'project' }), env)).json()) as { id: string }
     const g = (await (await app.request(`/api/projects/${p.id}/groups`, json(m, { name: 'G' }), env)).json()) as { id: string }
     const t = (await (await app.request(`/api/groups/${g.id}/tasks`, json(m, { title: 'ดาวบนบอร์ด' }), env)).json()) as { id: string }

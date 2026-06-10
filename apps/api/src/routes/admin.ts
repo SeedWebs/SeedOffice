@@ -143,6 +143,14 @@ export const adminRoutes = new Hono<AppEnv>()
       .object({
         cutoffDay: z.number().int().min(1).max(28).optional(),
         workHourCapMinutes: z.number().int().min(60).max(1440).optional(),
+        // โดเมน auto-provision member — ต้องขึ้นต้น @ มีจุดอย่างน้อย 1 จุด · '' = ปิด auto-provision
+        memberDomain: z
+          .string()
+          .trim()
+          .toLowerCase()
+          .max(64)
+          .regex(/^(@[a-z0-9-]+(\.[a-z0-9-]+)+)?$/, 'ต้องเป็นรูปแบบ @example.com หรือเว้นว่าง')
+          .optional(),
       })
       .safeParse(await c.req.json())
     if (!body.success) return c.json({ error: 'invalid' }, 400)

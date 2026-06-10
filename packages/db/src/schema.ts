@@ -64,6 +64,8 @@ export const companyConfig = sqliteTable('company_config', {
   id: integer('id').primaryKey().default(1),
   cutoffDay: integer('cutoff_day').notNull().default(25), // งวด 25→24 จ่าย 26
   workHourCapMinutes: integer('work_hour_cap_minutes').notNull().default(480), // 8 ชม./วัน
+  // โดเมน auto-provision member (SPEC §4.1) — '' = ปิด · default ตอน migrate กัน production เดิมพัง
+  memberDomain: text('member_domain').notNull().default('@seedwebs.com'),
 })
 
 /** ลูกค้า (CRM §4.17 — entity จริงตั้งแต่ T08 เลี่ยง refactor) */
@@ -529,6 +531,48 @@ export const calendarEvents = sqliteTable(
   (t) => [index('calendar_events_date_idx').on(t.startDate)],
 )
 
+/**
+ * [P3 §4.12] OAuth client (Internal) ของอีเมลกลาง — ต่อบริษัท/Workspace
+ * เพิ่มผ่านหน้า ตั้งค่า เท่านั้น (repo public — ห้าม hardcode/seed) · secret เข้ารหัส AES-GCM ก่อนเก็บ
+ */
+export const inboxGoogleClients = sqliteTable('inbox_google_clients', {
+  id: id(),
+  label: text('label').notNull(), // ชื่อเรียก เช่นชื่อบริษัท — ใช้เลือกตอนเพิ่มกล่อง
+  clientId: text('client_id').notNull(),
+  clientSecretEnc: text('client_secret_enc').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  deletedAt: integer('deleted_at', { mode: 'timestamp_ms' }), // soft-delete (SPEC §9)
+})
+
+/**
+ * [P3 §4.12] กล่องเมลที่เชื่อม — สร้างผ่าน ตั้งค่า แล้วกด "เชื่อม Gmail"
+ * emailAddress/gmailAccountId มาจากบัญชีที่ consent จริง (ไม่ให้พิมพ์เอง) · refresh token เข้ารหัส
+ */
+export const inboxMailboxes = sqliteTable(
+  'inbox_mailboxes',
+  {
+    id: id(),
+    clientId: text('client_id')
+      .notNull()
+      .references(() => inboxGoogleClients.id),
+    companyLabel: text('company_label').notNull(), // text อิสระ ไม่ใช่ enum — จัดกลุ่ม dropdown กล่อง
+    name: text('name').notNull(), // ชื่อกล่องที่ทีมเห็น
+    emailAddress: text('email_address'),
+    gmailAccountId: text('gmail_account_id'),
+    refreshTokenEnc: text('refresh_token_enc'),
+    status: text('status', { enum: ['connected', 'disconnected', 'disabled'] })
+      .notNull()
+      .default('disconnected'),
+    connectedAt: integer('connected_at', { mode: 'timestamp_ms' }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [index('inbox_mailboxes_status_idx').on(t.status)],
+)
+
 /** log การเปลี่ยนข้อมูลการเงิน/เวลา (SPEC §11: ทุก manual/แก้/ลบ + การเงิน) — meta เก็บ before→after */
 export const auditLogs = sqliteTable(
   'audit_logs',
@@ -576,3 +620,5 @@ export type RecurringService = typeof recurringServices.$inferSelect
 export type ClientNote = typeof clientNotes.$inferSelect
 export type Expense = typeof expenses.$inferSelect
 export type CalendarEvent = typeof calendarEvents.$inferSelect
+export type InboxGoogleClient = typeof inboxGoogleClients.$inferSelect
+export type InboxMailbox = typeof inboxMailboxes.$inferSelect

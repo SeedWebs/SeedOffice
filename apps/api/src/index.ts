@@ -8,6 +8,7 @@ import { docRoutes } from './routes/docs'
 import { expenseRoutes } from './routes/expenses'
 import { teamActivityRoutes } from './routes/team-activity'
 import { financeRoutes } from './routes/finance'
+import { inboxSettingsRoutes } from './routes/inbox-settings'
 import { overviewRoutes } from './routes/overview'
 import { payrollAdminRoutes } from './routes/payroll-admin'
 import { payrollRoutes } from './routes/payroll'
@@ -81,6 +82,10 @@ app.use('/api/calendar/*', requireAuth, teamOnly)
 app.route('/api/calendar', calendarRoutes)
 app.use('/api/team-activity', requireAuth, teamOnly)
 app.route('/api/team-activity', teamActivityRoutes)
+// อีเมลกลาง (SPEC §4.12) — E1 มีแต่การติดตั้ง: owner เท่านั้น
+// (E2/E3 threads ค่อยแยก: ตั้งค่า/เชื่อมกล่อง = owner · ใช้งาน inbox = owner+member)
+app.use('/api/inbox/*', requireAuth, ownerOnly)
+app.route('/api/inbox', inboxSettingsRoutes)
 
 // presence WebSocket (SPEC §4.15 realtime) — owner+member · ส่งต่อให้ DO พร้อมตัวตนที่ auth แล้ว
 app.get('/api/presence/ws', requireAuth, teamOnly, async (c) => {

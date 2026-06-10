@@ -55,7 +55,7 @@ export function Login() {
           เข้าสู่ระบบด้วย Google
         </a>
         <p className="text-[11px] text-slate-400 mt-3 text-center">
-          สำหรับทีม @seedwebs.com และ vendor ที่ได้รับเชิญ
+          สำหรับทีมงานและ vendor ที่ได้รับเชิญ
         </p>
 
         {dev?.enabled && (

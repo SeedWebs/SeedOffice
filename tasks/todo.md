@@ -227,4 +227,25 @@
 ### ☑ P2-6 — PWA
 - manifest + icon (svg+png) + theme-color → add to homescreen ได้
 
-> คงเหลือใน P2 backlog: แจ้งเตือนภายใน (ใกล้ตัดรอบ/overdue/ใกล้หมดอายุ) — รอเคาะ email provider พร้อมกับแจ้งเตือนชนเพดาน
+> คงเหลือใน P2 backlog: แจ้งเตือนภายใน (ใกล้ตัดรอบ/overdue/ใกล้หมดอายุ) — รอเคาะ email provider พร้อมกับแจ้งเตือนชนเพดาน (ตัวเลือกใหม่: ส่งผ่าน Gmail API หลัง E1 เชื่อมกล่องแล้ว)
+
+---
+
+## Phase P3 — อีเมลกลาง (Shared Inbox บน Gmail · SPEC §4.12)
+
+> สถาปัตยกรรมเคาะ 10 มิ.ย. 69 (SPEC §5): OAuth ราย mailbox · client Internal ต่อบริษัท (SW/SG คนละ Workspace) · scope `gmail.modify` · **ติดตั้งทั้งหมดผ่าน ตั้งค่า — ไม่มีอีเมล/credential ในโค้ด** (repo public)
+
+### ☑ E1 — ติดตั้ง: schema + ตั้งค่า → อีเมลกลาง + OAuth connect flow ✅ (10 มิ.ย. 69)
+**deps:** —
+- schema: `inbox_google_clients` (secret เข้ารหัส) + `inbox_mailboxes` (token เข้ารหัส · status connected/disconnected/disabled) + migration
+- lib crypto: encrypt/decryptSecret (AES-GCM 256, key = `INBOX_ENC_KEY` wrangler secret)
+- API (owner เท่านั้น + Zod): GET /api/inbox/settings · POST/DELETE clients (soft — กันลบตอนมีกล่องใช้) · POST/PATCH mailboxes + disable/enable · GET mailboxes/:id/connect → Google (`gmail.modify` + offline + consent) · GET google/callback → refresh token เข้ารหัสลง D1 + email จากบัญชีที่ consent จริง
+- UI ตั้งค่า: section อีเมลกลาง — client + กล่อง + ปุ่มเชื่อม/เชื่อมใหม่ + สถานะ + empty/loading
+- **AC:** member/vendor 403 ทุก endpoint · secret/token ไม่หลุดใน response ใดๆ · เชื่อมบัญชีเดิมซ้ำข้ามกล่อง → error · scope โดน untick → error ชัดเจน
+- **Verify ✓:** typecheck+lint+test เขียว (เทสต์ inbox 16 + crypto 5) + manual ผ่าน preview (เพิ่ม client/กล่องผ่าน UI จริง · connect 302 → Google · banner error) · เพิ่มจาก AC: PATCH ย้ายกล่องไป client ใหม่ได้ (กันค้างกับ client ที่ลบ) · migration 0012
+
+### ☐ E2 — Sync ขาเข้า: Cron polling (History API) → threads/messages ลง D1 (+body ใหญ่/แนบ → R2)
+### ☐ E3 — UI inbox: list ตาราง + detail + folder bar + ตัวเลือกกล่อง + unread badge
+### ☐ E4 — ตอบ/compose ผ่าน Gmail API (reply-from ตามกล่อง + threading References/In-Reply-To) + canned replies
+### ☐ E5 — assign/สถานะ/tags + โน้ตภายใน + collision detection (DO) + ⌘K
+### ☐ E6 — GCal sync (calendar.readonly ผ่าน client SW) + ICS feed

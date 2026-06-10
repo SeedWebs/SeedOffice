@@ -1,0 +1,1 @@
+ALTER TABLE `company_config` ADD `member_domain` text DEFAULT '@seedwebs.com' NOT NULL;

@@ -1,6 +1,7 @@
 import { formatSatang } from '@seedoffice/core'
 import { UserPlus, X } from 'lucide-react'
-import { useState } from 'react'
+import { Fragment, useState } from 'react'
+import { InboxSettings } from '../components/InboxSettings'
 import { PageHeader } from '../components/PageHeader'
 import { api } from '../lib/api'
 import { useLoad } from '../lib/useLoad'
@@ -16,6 +17,7 @@ interface AdminUser {
 interface Config {
   cutoffDay: number
   workHourCapMinutes: number
+  memberDomain: string
 }
 interface RateRow {
   id: string
@@ -35,7 +37,7 @@ const todayISO = () => {
   return d.toISOString().slice(0, 10)
 }
 
-function AddUserForm({ onDone }: { onDone: () => void }) {
+function AddUserForm({ memberDomain, onDone }: { memberDomain?: string; onDone: () => void }) {
   const [form, setForm] = useState({ email: '', name: '', role: 'member', rateBaht: '' })
   const [error, setError] = useState('')
   const submit = async () => {
@@ -96,7 +98,10 @@ function AddUserForm({ onDone }: { onDone: () => void }) {
         </button>
       </div>
       <p className="text-[11px] text-slate-400">
-        member = โดเมน seedwebs.com (login ได้เองอยู่แล้ว) · vendor = allowlist อีเมลภายนอก
+        {memberDomain
+          ? `member = โดเมน ${memberDomain} (login ได้เองอยู่แล้ว)`
+          : 'member = ยังไม่ตั้งโดเมน auto-provision (ตั้งได้ที่ ค่าบริษัท)'}{' '}
+        · vendor = allowlist อีเมลภายนอก
       </p>
     </div>
   )
@@ -211,6 +216,7 @@ export function AdminPage() {
       <div className="p-3 sm:p-6 space-y-5">
         {adding && (
           <AddUserForm
+            memberDomain={cfg?.memberDomain}
             onDone={() => {
               setAdding(false)
               void reload()
@@ -238,9 +244,8 @@ export function AdminPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-100">
                   {(usersList ?? []).map((u) => (
-                    <>
+                    <Fragment key={u.id}>
                       <tr
-                        key={u.id}
                         onClick={() => setRateUser(rateUser?.id === u.id ? null : u)}
                         className={`hover:bg-slate-50 cursor-pointer ${u.status === 'disabled' ? 'opacity-40' : ''}`}
                       >
@@ -282,7 +287,7 @@ export function AdminPage() {
                           </td>
                         </tr>
                       )}
-                    </>
+                    </Fragment>
                   ))}
                 </tbody>
               </table>
@@ -326,13 +331,31 @@ export function AdminPage() {
                   className="w-24 text-sm shadow-xs bg-white rounded-lg px-3 py-2 text-right tabular-nums"
                 />
               </label>
+              <label className="flex items-center justify-between gap-3">
+                <span className="text-slate-600">โดเมน auto-provision member (ว่าง = ปิด)</span>
+                <input
+                  type="text"
+                  placeholder="@example.com"
+                  defaultValue={cfg.memberDomain}
+                  onBlur={(e) => {
+                    const v = e.target.value.trim().toLowerCase()
+                    if (v !== cfg.memberDomain) void saveCfg({ memberDomain: v })
+                  }}
+                  className="w-44 text-sm shadow-xs bg-white rounded-lg px-3 py-2"
+                />
+              </label>
               <p className="text-[11px] text-slate-400">
                 ตอนนี้: งวด {cfg.cutoffDay} → {cfg.cutoffDay - 1} · เพดาน{' '}
                 {(cfg.workHourCapMinutes / 60).toFixed(1)} ชม./วัน (ชนเพดาน = timer หยุด + บล็อก)
+                {cfg.memberDomain
+                  ? ` · อีเมล ${cfg.memberDomain} login ได้เองเป็น member`
+                  : ' · auto-provision member ปิดอยู่ — เพิ่มผู้ใช้เองเท่านั้น'}
               </p>
             </div>
           )}
         </div>
+
+        <InboxSettings />
       </div>
     </>
   )

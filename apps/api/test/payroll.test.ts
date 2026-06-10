@@ -49,7 +49,7 @@ const days = (total: number, startDay: number): { workDate: string; minutes: num
 
 describe('T15 — payroll self view', () => {
   it('base/net ตรง core: ปอนด์ 96 ชม. ×฿400 + adjustments จาก mockup = สุทธิ ฿42,950', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     await seedEntries(m, 'u_pond', 40000, days(5760, 1)) // 96 ชม. (12 วัน × 8) ในงวด 25 พ.ค.–24 มิ.ย.
 
     // owner ใส่ adjustments เหมือน mockup (ผ่าน SQL — endpoint owner มาใน T16)
@@ -82,7 +82,7 @@ describe('T15 — payroll self view', () => {
 
   it('vendor เห็นค่าจ้างตัวเอง (หัก ณ ที่จ่าย) · เห็นเฉพาะของตัวเอง', async () => {
     const v = await loginAs(app, 'somchai@example.com')
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     // โปรเจกต์สร้างโดย member · entries เป็นของ vendor
     const { t } = await seedEntries(m, 'u_somchai', 35000, days(2400, 1)) // 40 ชม. (5 วัน × 8)
     await env.DB.prepare(
@@ -104,7 +104,7 @@ describe('T15 — payroll self view', () => {
   })
 
   it('ไม่มีเส้นทางดูค่าตอบแทนของคนอื่น (มีแค่ /payroll/me — owner overview เป็น T16 ownerOnly)', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     expect((await app.request('/api/payroll/u_nam', { headers: { cookie: m } }, env)).status).toBe(404)
   })
 })

@@ -6,3 +6,6 @@ DEV_AUTH=1
 # จาก Google Cloud Console → OAuth client (Web) · redirect URI = {APP_URL}/api/auth/callback
 GOOGLE_CLIENT_ID=
 GOOGLE_CLIENT_SECRET=
+
+# อีเมลกลาง (P3): key เข้ารหัส secret/token ใน D1 — สร้างด้วย `openssl rand -base64 32` (production = wrangler secret put)
+INBOX_ENC_KEY=

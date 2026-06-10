@@ -22,7 +22,7 @@ async function makeTask(cookie: string) {
 
 describe('T10 — task detail: comments + attachments + activity', () => {
   it('comment ได้ทุก role รวม vendor · เรียงเวลา · ขึ้นใน activity', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     const t = await makeTask(m)
     const v = await loginAs(app, 'somchai@example.com')
 
@@ -39,7 +39,7 @@ describe('T10 — task detail: comments + attachments + activity', () => {
   })
 
   it('อัปโหลดไฟล์ → R2 → ดาวน์โหลดได้ byte ตรง · ไฟล์ inline เฉพาะรูป · vendor อัปไม่ได้', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     const t = await makeTask(m)
 
     const fd = new FormData()
@@ -68,7 +68,7 @@ describe('T10 — task detail: comments + attachments + activity', () => {
   })
 
   it('SVG ถูกบังคับดาวน์โหลด (กัน XSS) · ลบไฟล์ได้เฉพาะคนอัป/owner', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     const t = await makeTask(m)
     const fd = new FormData()
     fd.append('file', new File(['<svg onload="alert(1)"/>'], 'evil.svg', { type: 'image/svg+xml' }))
@@ -79,13 +79,13 @@ describe('T10 — task detail: comments + attachments + activity', () => {
     expect(dl.headers.get('content-type')).toBe('application/octet-stream')
     expect(dl.headers.get('content-disposition')).toContain('attachment')
 
-    const owner = await loginAs(app, 'owner@seedwebs.com')
+    const owner = await loginAs(app, 'owner@example-co.test')
     expect((await app.request(`/api/attachments/${att.id}`, { method: 'DELETE', headers: { cookie: owner } }, env)).status).toBe(200)
     expect((await app.request(`/api/attachments/${att.id}`, { headers: { cookie: m } }, env)).status).toBe(404)
   })
 
   it('activity ไล่ลำดับ: create → status → assign', async () => {
-    const m = await loginAs(app, 'owner@seedwebs.com')
+    const m = await loginAs(app, 'owner@example-co.test')
     const t = await makeTask(m)
     await app.request(`/api/tasks/${t.id}`, { ...json(m, { status: 'done' }), method: 'PATCH' }, env)
     await app.request(`/api/tasks/${t.id}`, { ...json(m, { assigneeId: 'u_pond' }), method: 'PATCH' }, env)

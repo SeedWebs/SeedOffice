@@ -56,7 +56,7 @@ async function seedClient(cookie: string) {
 
 describe('C2 — clients API', () => {
   it('list: aggregates ตรง core (จ่าย 70% · overdue ฿135k · MRR ฿2,571) + summary การ์ด', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     await seedClient(m)
     const res = (await (await app.request('/api/clients', { headers: { cookie: m } }, env)).json()) as {
       rows: Record<string, unknown>[]
@@ -81,7 +81,7 @@ describe('C2 — clients API', () => {
   })
 
   it('detail: โปรเจกต์/payments/services/notes ครบ · เพิ่มโน้ตแล้วโผล่', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     const { cl } = await seedClient(m)
     await app.request(`/api/clients/${cl.id}/notes`, json(m, { body: 'วางบิลทุกวันที่ 7 ของเดือน' }), env)
 
@@ -96,7 +96,7 @@ describe('C2 — clients API', () => {
   })
 
   it('แก้บริการ (เลื่อนวันต่อ/ยกเลิก) → audit · vendor 403 ทุกเส้นทาง CRM', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     const { cl } = await seedClient(m)
     const detail = (await (await app.request(`/api/clients/${cl.id}`, { headers: { cookie: m } }, env)).json()) as { services: { id: string }[] }
     const svc = detail.services[0]!

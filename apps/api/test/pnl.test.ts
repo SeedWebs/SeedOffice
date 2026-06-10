@@ -33,7 +33,7 @@ async function setup(cookie: string) {
 
 describe('T17 — project P&L', () => {
   it('cost/profit/margin ตรง core + breakdown รายคนเป็นชั่วโมง (ไม่มีเงินรายคน)', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     const p = await setup(m)
     const res = (await (
       await app.request(`/api/projects/${p.id}/pnl`, { headers: { cookie: m } }, env)
@@ -56,7 +56,7 @@ describe('T17 — project P&L', () => {
   })
 
   it('health: ไม่มี milestone → เทียบ quoted (29% = เขียว) · งวด active ใช้เกิน → แดง + จุดสีโผล่ใน list', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     const p = await setup(m)
     let pnl = (await (
       await app.request(`/api/projects/${p.id}/pnl`, { headers: { cookie: m } }, env)
@@ -76,7 +76,7 @@ describe('T17 — project P&L', () => {
   })
 
   it('vendor: pnl = 403 · list ไม่มี health/usagePct', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     const p = await setup(m)
     const v = await loginAs(app, 'somchai@example.com')
     expect((await app.request(`/api/projects/${p.id}/pnl`, { headers: { cookie: v } }, env)).status).toBe(403)

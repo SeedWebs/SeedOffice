@@ -1,7 +1,5 @@
-import { createDb, users, type User } from '@seedoffice/db'
+import { companyConfig, createDb, users, type User } from '@seedoffice/db'
 import { eq } from 'drizzle-orm'
-
-const MEMBER_DOMAIN = '@seedwebs.com'
 
 export interface GoogleProfile {
   sub: string
@@ -13,7 +11,8 @@ export interface GoogleProfile {
 /**
  * กฎรับเข้า (SPEC §4.1):
  * - email มีในระบบ + active → ผ่าน (อัปเดต googleSub/ชื่อ/รูปครั้งแรก)
- * - email โดเมน seedwebs.com แต่ยังไม่มีในระบบ → auto-provision เป็น member
+ * - email ตรงโดเมน `memberDomain` ใน company config แต่ยังไม่มีในระบบ → auto-provision เป็น member
+ *   (memberDomain ว่าง = ปิด auto-provision — ทุกคนต้องถูก owner เพิ่มก่อน)
  * - อื่นๆ (vendor ต้องถูก owner เพิ่มก่อน / user ถูกปิด) → null = ปฏิเสธ
  */
 export async function resolveLoginUser(env: Env, profile: GoogleProfile): Promise<User | null> {
@@ -33,7 +32,9 @@ export async function resolveLoginUser(env: Env, profile: GoogleProfile): Promis
     return existing
   }
 
-  if (email.endsWith(MEMBER_DOMAIN)) {
+  const cfg = (await db.select().from(companyConfig).limit(1))[0]
+  const memberDomain = cfg?.memberDomain ?? ''
+  if (memberDomain && email.endsWith(memberDomain)) {
     const inserted = await db
       .insert(users)
       .values({

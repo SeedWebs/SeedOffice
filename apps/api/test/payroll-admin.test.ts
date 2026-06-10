@@ -36,8 +36,8 @@ async function seedWork(cookie: string) {
 
 describe('T16 — payroll owner + CSV + ปิดงวด', () => {
   it('ตารางทีม: ยอดตรง payrollOf · member เปิดไม่ได้ 403', async () => {
-    const o = await loginAs(app, 'owner@seedwebs.com')
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const o = await loginAs(app, 'owner@example-co.test')
+    const m = await loginAs(app, 'pond@example-co.test')
     await seedWork(m)
     await app.request(
       '/api/admin/payroll/adjustments',
@@ -55,8 +55,8 @@ describe('T16 — payroll owner + CSV + ปิดงวด', () => {
   })
 
   it('โน้ต upsert → โผล่ใน self view ของเจ้าตัว', async () => {
-    const o = await loginAs(app, 'owner@seedwebs.com')
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const o = await loginAs(app, 'owner@example-co.test')
+    const m = await loginAs(app, 'pond@example-co.test')
     await app.request(
       '/api/admin/payroll/notes',
       { ...json(o, { userId: 'u_pond', cycleStart: '2026-05-25', body: 'เดือนนี้เยี่ยมมาก' }), method: 'PUT' },
@@ -69,8 +69,8 @@ describe('T16 — payroll owner + CSV + ปิดงวด', () => {
   })
 
   it('CSV: text/csv + แถวข้อมูล + ยอดบาททศนิยม', async () => {
-    const o = await loginAs(app, 'owner@seedwebs.com')
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const o = await loginAs(app, 'owner@example-co.test')
+    const m = await loginAs(app, 'pond@example-co.test')
     await seedWork(m)
     const res = await app.request('/api/admin/payroll/export?date=2026-06-10', { headers: { cookie: o } }, env)
     expect(res.headers.get('content-type')).toContain('text/csv')
@@ -81,8 +81,8 @@ describe('T16 — payroll owner + CSV + ปิดงวด', () => {
   })
 
   it('ปิดงวด: สร้าง payslip snapshot + ปิดซ้ำ 409 + ล็อกแก้เวลา/รายการย้อนหลัง', async () => {
-    const o = await loginAs(app, 'owner@seedwebs.com')
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const o = await loginAs(app, 'owner@example-co.test')
+    const m = await loginAs(app, 'pond@example-co.test')
     const { t } = await seedWork(m)
 
     const close = await app.request('/api/admin/payroll/close', json(o, { date: '2026-06-10' }), env)

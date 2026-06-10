@@ -2,20 +2,20 @@
 -- ใช้เฉพาะ dev/preview · production เริ่มว่าง (นโยบาย launch: fresh start)
 -- รัน: pnpm db:seed
 
-INSERT OR REPLACE INTO company_config (id, cutoff_day, work_hour_cap_minutes) VALUES (1, 25, 480);
+INSERT OR REPLACE INTO company_config (id, cutoff_day, work_hour_cap_minutes, member_domain) VALUES (1, 25, 480, '@example-co.test');
 
 -- users — id คงที่ ไว้อ้างในเทสต์/e2e
 INSERT OR REPLACE INTO users (id, email, name, google_sub, role, status, avatar_url, created_at) VALUES
-  ('u_owner', 'owner@seedwebs.com',            'เมธ',    NULL, 'owner',  'active', NULL, 1767200000000),
-  ('u_pond',  'pond@seedwebs.com',             'ปอนด์',  NULL, 'member', 'active', NULL, 1767200000000),
-  ('u_nam',   'nam@seedwebs.com',              'น้ำ',    NULL, 'member', 'active', NULL, 1767200000000),
-  ('u_beam',  'beam@seedwebs.com',             'บีม',    NULL, 'member', 'active', NULL, 1767200000000),
-  ('u_korn',  'korn@seedwebs.com',             'กร',     NULL, 'member', 'active', NULL, 1767200000000),
-  ('u_jay',   'jay@seedwebs.com',              'เจ',     NULL, 'member', 'active', NULL, 1767200000000),
-  ('u_fah',   'fah@seedwebs.com',              'ฟ้า',    NULL, 'member', 'active', NULL, 1767200000000),
-  ('u_praew', 'praew@seedwebs.com',            'แพรว',   NULL, 'member', 'active', NULL, 1767200000000),
-  ('u_toon',  'toon@seedwebs.com',             'ตูน',    NULL, 'member', 'active', NULL, 1767200000000),
-  ('u_mint',  'mint@seedwebs.com',             'มิ้นท์', NULL, 'member', 'active', NULL, 1767200000000),
+  ('u_owner', 'owner@example-co.test',            'เมธ',    NULL, 'owner',  'active', NULL, 1767200000000),
+  ('u_pond',  'pond@example-co.test',             'ปอนด์',  NULL, 'member', 'active', NULL, 1767200000000),
+  ('u_nam',   'nam@example-co.test',              'น้ำ',    NULL, 'member', 'active', NULL, 1767200000000),
+  ('u_beam',  'beam@example-co.test',             'บีม',    NULL, 'member', 'active', NULL, 1767200000000),
+  ('u_korn',  'korn@example-co.test',             'กร',     NULL, 'member', 'active', NULL, 1767200000000),
+  ('u_jay',   'jay@example-co.test',              'เจ',     NULL, 'member', 'active', NULL, 1767200000000),
+  ('u_fah',   'fah@example-co.test',              'ฟ้า',    NULL, 'member', 'active', NULL, 1767200000000),
+  ('u_praew', 'praew@example-co.test',            'แพรว',   NULL, 'member', 'active', NULL, 1767200000000),
+  ('u_toon',  'toon@example-co.test',             'ตูน',    NULL, 'member', 'active', NULL, 1767200000000),
+  ('u_mint',  'mint@example-co.test',             'มิ้นท์', NULL, 'member', 'active', NULL, 1767200000000),
   ('u_somchai','somchai.freelance@example.com','สมชาย',  NULL, 'vendor', 'active', NULL, 1767200000000);
 
 -- clients (ตรง mockup CRM)

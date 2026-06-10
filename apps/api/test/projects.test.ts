@@ -17,7 +17,7 @@ async function createProject(cookie: string, body: Record<string, unknown>) {
 
 describe('T08 — projects + clients', () => {
   it('member สร้างโปรเจกต์ + ลูกค้าใหม่จากชื่อ → client ถูกสร้างและผูกให้', async () => {
-    const member = await loginAs(app, 'pond@seedwebs.com')
+    const member = await loginAs(app, 'pond@example-co.test')
     const res = await createProject(member, {
       name: 'เว็บทดสอบ',
       logo: '🧪',
@@ -38,7 +38,7 @@ describe('T08 — projects + clients', () => {
   })
 
   it('vendor: ดูลิสต์ได้ แต่ quotedSatang ถูกตัดออกที่ server · สร้าง/แก้ = 403 · /api/clients = 403', async () => {
-    const member = await loginAs(app, 'pond@seedwebs.com')
+    const member = await loginAs(app, 'pond@example-co.test')
     await createProject(member, { name: 'งานเงินลับ', type: 'project', quotedSatang: 55_500_000 })
 
     const vendor = await loginAs(app, 'somchai@example.com')
@@ -54,7 +54,7 @@ describe('T08 — projects + clients', () => {
   })
 
   it('recurring: บังคับ billing recurring + default ma + period · patch เปลี่ยนงบมี audit', async () => {
-    const owner = await loginAs(app, 'owner@seedwebs.com')
+    const owner = await loginAs(app, 'owner@example-co.test')
     const res = await createProject(owner, { name: 'MA รายเดือน', type: 'recurring' })
     const p = (await res.json()) as { id: string; billingType: string; status: string; recurringPeriod: string }
     expect(p).toMatchObject({ billingType: 'recurring', status: 'ma', recurringPeriod: 'monthly' })

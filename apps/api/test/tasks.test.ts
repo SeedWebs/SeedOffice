@@ -28,7 +28,7 @@ async function setupProject(cookie: string) {
 
 describe('T09 — groups/tasks/reorder/checkbox/timeline data', () => {
   it('สร้าง group + task → board ออกครบ · เช็คเสร็จ → done + completedAt · ติ๊กออก → todo', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     const { p, g1 } = await setupProject(m)
     const t = (await (
       await app.request(
@@ -54,7 +54,7 @@ describe('T09 — groups/tasks/reorder/checkbox/timeline data', () => {
   })
 
   it('reorder: ย้าย task ข้ามกลุ่ม + สลับลำดับ group → persist หลัง reload', async () => {
-    const m = await loginAs(app, 'owner@seedwebs.com')
+    const m = await loginAs(app, 'owner@example-co.test')
     const { p, g1, g2 } = await setupProject(m)
     const t1 = (await (await app.request(`/api/groups/${g1.id}/tasks`, json(m, { title: 'งาน 1' }), env)).json()) as { id: string }
     const t2 = (await (await app.request(`/api/groups/${g1.id}/tasks`, json(m, { title: 'งาน 2' }), env)).json()) as { id: string }
@@ -82,7 +82,7 @@ describe('T09 — groups/tasks/reorder/checkbox/timeline data', () => {
   })
 
   it('vendor: อ่าน board ได้ แต่สร้าง/แก้/reorder = 403 · ลบ group ที่มีงาน = 409', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     const { p, g1 } = await setupProject(m)
     await app.request(`/api/groups/${g1.id}/tasks`, json(m, { title: 'งานค้าง' }), env)
 
@@ -95,7 +95,7 @@ describe('T09 — groups/tasks/reorder/checkbox/timeline data', () => {
   })
 
   it('recurring openTodo: โผล่ในลิสต์โปรเจกต์ พร้อมชื่อคนรับผิดชอบ', async () => {
-    const m = await loginAs(app, 'owner@seedwebs.com')
+    const m = await loginAs(app, 'owner@example-co.test')
     const p = (await (
       await app.request('/api/projects', json(m, { name: 'MA ร้านกาแฟ', type: 'recurring' }), env)
     ).json()) as { id: string }

@@ -9,9 +9,9 @@ beforeEach(async () => {
 
 describe('T07 — admin users/rates/config', () => {
   it('member/vendor เปิด /api/admin/users ไม่ได้ (403) · owner ได้', async () => {
-    const member = await loginAs(app, 'pond@seedwebs.com')
+    const member = await loginAs(app, 'pond@example-co.test')
     const vendor = await loginAs(app, 'somchai@example.com')
-    const owner = await loginAs(app, 'owner@seedwebs.com')
+    const owner = await loginAs(app, 'owner@example-co.test')
     expect((await app.request('/api/admin/users', { headers: { cookie: member } }, env)).status).toBe(403)
     expect((await app.request('/api/admin/users', { headers: { cookie: vendor } }, env)).status).toBe(403)
     const res = await app.request('/api/admin/users', { headers: { cookie: owner } }, env)
@@ -21,7 +21,7 @@ describe('T07 — admin users/rates/config', () => {
   })
 
   it('owner provision vendor ใหม่ + ตั้ง rate 2 ครั้ง → ประวัติ 2 แถว ไม่ทับของเก่า', async () => {
-    const owner = await loginAs(app, 'owner@seedwebs.com')
+    const owner = await loginAs(app, 'owner@example-co.test')
     const created = await app.request(
       '/api/admin/users',
       {
@@ -59,7 +59,7 @@ describe('T07 — admin users/rates/config', () => {
 
   it('vendor ดู rate ตัวเองได้ แต่ดูของคนอื่น = 403 · member ดูของคนอื่นได้', async () => {
     const vendor = await loginAs(app, 'somchai@example.com')
-    const member = await loginAs(app, 'pond@seedwebs.com')
+    const member = await loginAs(app, 'pond@example-co.test')
     expect(
       (await app.request('/api/users/u_somchai/rates', { headers: { cookie: vendor } }, env)).status,
     ).toBe(200)
@@ -72,22 +72,18 @@ describe('T07 — admin users/rates/config', () => {
   })
 
   it('email ซ้ำ → 409 · แก้ config ได้เฉพาะ owner + persist', async () => {
-    const owner = await loginAs(app, 'owner@seedwebs.com')
+    const owner = await loginAs(app, 'owner@example-co.test')
     const dup = await app.request(
       '/api/admin/users',
       {
         method: 'POST',
         headers: { cookie: owner, 'content-type': 'application/json' },
-        body: JSON.stringify({ email: 'pond@seedwebs.com', name: 'ซ้ำ', role: 'member' }),
+        body: JSON.stringify({ email: 'pond@example-co.test', name: 'ซ้ำ', role: 'member' }),
       },
       env,
     )
     expect(dup.status).toBe(409)
 
-    // config เริ่มต้นยังไม่มีแถว (เทสต์ไม่ได้ seed company_config) — ใส่ก่อน
-    await env.DB.prepare(
-      'INSERT OR REPLACE INTO company_config (id, cutoff_day, work_hour_cap_minutes) VALUES (1, 25, 480)',
-    ).run()
     const patch = await app.request(
       '/api/admin/config',
       {
@@ -101,7 +97,7 @@ describe('T07 — admin users/rates/config', () => {
     const cfg = await app.request('/api/config', { headers: { cookie: owner } }, env)
     expect(await cfg.json()).toMatchObject({ cutoffDay: 25, workHourCapMinutes: 420 })
 
-    const member = await loginAs(app, 'pond@seedwebs.com')
+    const member = await loginAs(app, 'pond@example-co.test')
     expect(
       (
         await app.request(
@@ -115,5 +111,29 @@ describe('T07 — admin users/rates/config', () => {
         )
       ).status,
     ).toBe(403)
+  })
+
+  it('memberDomain: รูปแบบผิด → 400 · ตั้งค่าได้ (trim+lowercase) + persist', async () => {
+    const owner = await loginAs(app, 'owner@example-co.test')
+    const patchCfg = (memberDomain: string) =>
+      app.request(
+        '/api/admin/config',
+        {
+          method: 'PATCH',
+          headers: { cookie: owner, 'content-type': 'application/json' },
+          body: JSON.stringify({ memberDomain }),
+        },
+        env,
+      )
+    expect((await patchCfg('no-at-sign.com')).status).toBe(400) // ไม่มี @
+    expect((await patchCfg('@nodot')).status).toBe(400) // ไม่มีจุด
+
+    expect((await patchCfg(' @New-Co.TEST ')).status).toBe(200)
+    const cfg = await app.request('/api/config', { headers: { cookie: owner } }, env)
+    expect(await cfg.json()).toMatchObject({ memberDomain: '@new-co.test' })
+
+    expect((await patchCfg('')).status).toBe(200) // ว่าง = ปิด auto-provision
+    const cfg2 = await app.request('/api/config', { headers: { cookie: owner } }, env)
+    expect(await cfg2.json()).toMatchObject({ memberDomain: '' })
   })
 })

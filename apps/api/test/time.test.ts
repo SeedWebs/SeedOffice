@@ -39,7 +39,7 @@ afterEach(() => {
 
 describe('T12 — timer + manual + เพดาน + snapshot', () => {
   it('start → stop: ได้ entry source=timer + rateSnapshot ถูกต้อง + task เปลี่ยนเป็น doing', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     const t = await makeTask(m)
 
     vi.useFakeTimers()
@@ -66,7 +66,7 @@ describe('T12 — timer + manual + เพดาน + snapshot', () => {
   })
 
   it('start ตัวที่สอง = ปิดตัวแรกอัตโนมัติ (วิ่งทีละตัว)', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     const t1 = await makeTask(m)
     const t2 = await makeTask(m)
     vi.useFakeTimers()
@@ -83,7 +83,7 @@ describe('T12 — timer + manual + เพดาน + snapshot', () => {
 
   it('ชนเพดาน: ครบโควตาวัน → start ถูกบล็อก 403 · stop ที่วิ่งเกิน → ตัดที่เพดาน + capped', async () => {
     await seedRateAndConfig(120) // เพดาน 2 ชม. ให้เทสต์เร็ว
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     const t = await makeTask(m)
 
     vi.useFakeTimers()
@@ -105,7 +105,7 @@ describe('T12 — timer + manual + เพดาน + snapshot', () => {
   })
 
   it('timer ข้ามคืน: 18:00 → 02:00 BKK แบ่งเป็น 2 entries คนละ workDate', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     const t = await makeTask(m)
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-06-10T11:00:00Z')) // 18:00 BKK
@@ -121,7 +121,7 @@ describe('T12 — timer + manual + เพดาน + snapshot', () => {
   })
 
   it('แก้เวลา: editCount++ + audit before→after · ลบ = soft (หายจากลิสต์แต่ row ยังอยู่)', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     const t = await makeTask(m)
     const created = (await (
       await app.request(`/api/tasks/${t.id}/time`, json(m, { workDate: '2026-06-09', minutes: 120, note: 'ทำ layout' }), env)
@@ -144,7 +144,7 @@ describe('T12 — timer + manual + เพดาน + snapshot', () => {
   })
 
   it('vendor ลงเวลาของตัวเองได้ + เห็นเฉพาะ entries ตัวเอง · แก้ของคนอื่นไม่ได้', async () => {
-    const m = await loginAs(app, 'pond@seedwebs.com')
+    const m = await loginAs(app, 'pond@example-co.test')
     const t = await makeTask(m)
     const mine = (await (
       await app.request(`/api/tasks/${t.id}/time`, json(m, { workDate: '2026-06-09', minutes: 60 }), env)
@@ -164,7 +164,7 @@ describe('T12 — timer + manual + เพดาน + snapshot', () => {
   })
 
   it('ไม่มี rate → start/manual = 409 no_rate', async () => {
-    const m = await loginAs(app, 'owner@seedwebs.com') // owner ไม่ได้ seed rate ในเทสต์นี้
+    const m = await loginAs(app, 'owner@example-co.test') // owner ไม่ได้ seed rate ในเทสต์นี้
     const t = await makeTask(m)
     const res = await app.request(`/api/tasks/${t.id}/timer/start`, json(m, {}), env)
     expect(res.status).toBe(409)
