@@ -4,6 +4,7 @@ import { ownerOnly, teamOnly } from './middleware/roles'
 import { adminRoutes } from './routes/admin'
 import { authRoutes } from './routes/auth'
 import { docRoutes } from './routes/docs'
+import { expenseRoutes } from './routes/expenses'
 import { financeRoutes } from './routes/finance'
 import { overviewRoutes } from './routes/overview'
 import { payrollAdminRoutes } from './routes/payroll-admin'
@@ -66,6 +67,10 @@ app.route('/api', payrollRoutes)
 app.use('/api/docs', requireAuth, teamOnly)
 app.use('/api/docs/*', requireAuth, teamOnly)
 app.route('/api/docs', docRoutes)
+// เงินสดย่อย: owner+member (vendor ❌ — SPEC §2)
+app.use('/api/expenses', requireAuth, teamOnly)
+app.use('/api/expenses/*', requireAuth, teamOnly)
+app.route('/api/expenses', expenseRoutes)
 
 app.get('/api/me', requireAuth, (c) => {
   const u = c.var.user

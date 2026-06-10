@@ -476,6 +476,59 @@ export const payCycleClosures = sqliteTable('pay_cycle_closures', {
     .$defaultFn(() => new Date()),
 })
 
+export const EXPENSE_CATEGORIES = ['hosting', 'travel', 'equipment', 'software', 'other'] as const
+export const EXPENSE_STATUSES = ['pending', 'approved', 'rejected', 'reimbursed'] as const
+
+/** เงินสดย่อย (SPEC §4.9) — pending → approved/rejected → reimbursed (owner อนุมัติ) */
+export const expenses = sqliteTable(
+  'expenses',
+  {
+    id: id(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    expenseDate: text('expense_date').notNull(), // YYYY-MM-DD
+    amountSatang: integer('amount_satang').notNull(),
+    category: text('category', { enum: EXPENSE_CATEGORIES }).notNull().default('other'),
+    description: text('description').notNull(),
+    receiptKey: text('receipt_key'), // R2
+    paidBy: text('paid_by', { enum: ['company', 'self'] }).notNull().default('self'),
+    projectId: text('project_id').references(() => projects.id),
+    status: text('status', { enum: EXPENSE_STATUSES }).notNull().default('pending'),
+    approvedBy: text('approved_by'),
+    approvedAt: integer('approved_at', { mode: 'timestamp_ms' }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [index('expenses_user_idx').on(t.userId, t.status), index('expenses_date_idx').on(t.expenseDate)],
+)
+
+export const CALENDAR_EVENT_TYPES = ['holiday', 'leave', 'meeting', 'deadline', 'other'] as const
+
+/** ปฏิทินทีม (SPEC §4.14) — เก็บเฉพาะ event ที่สร้างเอง · ตัดรอบ/จ่ายเงินเดือน = virtual จาก config */
+export const calendarEvents = sqliteTable(
+  'calendar_events',
+  {
+    id: id(),
+    title: text('title').notNull(),
+    startDate: text('start_date').notNull(), // YYYY-MM-DD (all-day ระบุเวลาในชื่อได้ตามสไตล์ mockup)
+    endDate: text('end_date'), // ช่วงหลายวัน (รวมวันสุดท้าย)
+    type: text('type', { enum: CALENDAR_EVENT_TYPES }).notNull().default('other'),
+    userId: text('user_id').references(() => users.id), // วันลาของใคร → team activity
+    projectId: text('project_id').references(() => projects.id),
+    source: text('source', { enum: ['local', 'gcal'] }).notNull().default('local'), // gcal = P3
+    gcalId: text('gcal_id'),
+    createdBy: text('created_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [index('calendar_events_date_idx').on(t.startDate)],
+)
+
 /** log การเปลี่ยนข้อมูลการเงิน/เวลา (SPEC §11: ทุก manual/แก้/ลบ + การเงิน) — meta เก็บ before→after */
 export const auditLogs = sqliteTable(
   'audit_logs',
@@ -521,3 +574,5 @@ export type Doc = typeof docs.$inferSelect
 export type DocImage = typeof docImages.$inferSelect
 export type RecurringService = typeof recurringServices.$inferSelect
 export type ClientNote = typeof clientNotes.$inferSelect
+export type Expense = typeof expenses.$inferSelect
+export type CalendarEvent = typeof calendarEvents.$inferSelect

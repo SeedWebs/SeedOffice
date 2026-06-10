@@ -5,6 +5,7 @@ import {
   LogOut,
   Menu,
   NotebookText,
+  Receipt,
   Settings,
   Sprout,
   Wallet,
@@ -39,6 +40,7 @@ const NAV: { to: string; label: string; icon: typeof LayoutDashboard; roles: Rol
   { to: '/clients', label: 'ลูกค้า', icon: Building2, roles: ['owner', 'member'] },
   { to: '/docs', label: 'เอกสาร', icon: NotebookText, roles: ['owner', 'member'] },
   { to: '/payroll', label: 'ค่าตอบแทน', icon: Wallet, roles: ['owner', 'member', 'vendor'] },
+  { to: '/expenses', label: 'เงินสดย่อย', icon: Receipt, roles: ['owner', 'member'] },
   { to: '/admin', label: 'ตั้งค่า', icon: Settings, roles: ['owner'] },
 ]
 

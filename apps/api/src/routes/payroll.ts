@@ -1,6 +1,6 @@
 import { bkkDateOf, isManualFlagged } from '@seedoffice/core'
-import { createDb, rates, timeEntries } from '@seedoffice/db'
-import { and, eq, gte, isNull, lte } from 'drizzle-orm'
+import { createDb, expenses, rates, timeEntries } from '@seedoffice/db'
+import { and, eq, gte, inArray, isNull, lte } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { cycleFor, payrollOf } from '../lib/payroll-core'
 import type { AppEnv } from '../types'
@@ -30,7 +30,24 @@ export const payrollRoutes = new Hono<AppEnv>().get('/payroll/me', async (c) => 
     .filter((r) => r.effectiveFrom <= today)
     .sort((a, b) => (a.effectiveFrom < b.effectiveFrom ? 1 : -1))[0]
 
+  // เงินสดย่อยรอเบิกของฉัน (จ่ายเอง · ยังไม่ถูกคืน/ปฏิเสธ) — SPEC §4.7 (vendor ไม่มี petty cash)
+  const myPending =
+    me.role === 'vendor'
+      ? []
+      : await db
+          .select({ amountSatang: expenses.amountSatang, description: expenses.description, status: expenses.status })
+          .from(expenses)
+          .where(
+            and(
+              eq(expenses.userId, me.id),
+              eq(expenses.paidBy, 'self'),
+              inArray(expenses.status, ['pending', 'approved']),
+            ),
+          )
+
   return c.json({
+    pendingReimburseSatang: myPending.reduce((s, e) => s + e.amountSatang, 0),
+    pendingReimburseItems: myPending.map((e) => ({ description: e.description, amountSatang: e.amountSatang, status: e.status })),
     ...data,
     flagged: isManualFlagged(data.manualRatio),
     todayMinutes: todayRows.reduce((s, r) => s + r.minutes, 0),

@@ -22,6 +22,8 @@ export interface SelfPayroll {
   ownerNote: string | null
   currentRateSatangPerHour: number | null
   role: 'owner' | 'member' | 'vendor'
+  pendingReimburseSatang: number
+  pendingReimburseItems: { description: string; amountSatang: number; status: 'pending' | 'approved' }[]
 }
 
 export const KIND_LABEL: Record<AdjustmentKind, string> = {
@@ -140,6 +142,24 @@ function SelfView() {
                 : `เงินพิเศษ + ยอดสุทธิ เห็นเฉพาะคุณกับ owner · จ่าย ${fmtThaiDate(d.cycle.payDate)}`}
             </p>
           </div>
+
+          {/* เงินสดย่อยรอเบิกของฉัน (mockup §4.7) — vendor ไม่มี petty cash */}
+          {!isVendor && (
+            <div className="bg-white rounded-lg shadow-xs p-5">
+              <div className="flex items-center justify-between">
+                <span className="text-sm text-slate-500">เงินสดย่อยรอเบิกของฉัน</span>
+                <span className="text-lg font-bold tabular-nums text-slate-900">{formatSatang(d.pendingReimburseSatang)}</span>
+              </div>
+              <div className="text-xs text-slate-400 mt-1">
+                {d.pendingReimburseItems.length === 0
+                  ? 'ไม่มีรายการรอเบิก'
+                  : d.pendingReimburseItems
+                      .slice(0, 3)
+                      .map((i) => `${i.description} ${formatSatang(i.amountSatang)} · ${i.status === 'pending' ? 'รออนุมัติ' : 'รอคืนเงิน'}`)
+                      .join(' · ')}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     </div>

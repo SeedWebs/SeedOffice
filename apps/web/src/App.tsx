@@ -8,6 +8,7 @@ import { ClientDetailPage } from './pages/ClientDetail'
 import { ClientsPage } from './pages/Clients'
 import { DashboardPage } from './pages/Dashboard'
 import { DocsPage } from './pages/Docs'
+import { ExpensesPage } from './pages/Expenses'
 import { Login } from './pages/Login'
 import { ProjectDetailPage } from './pages/ProjectDetail'
 import { PayrollPage } from './pages/Payroll'
@@ -62,6 +63,14 @@ const router = createBrowserRouter([
         ),
       },
       { path: 'payroll', element: <PayrollPage /> },
+      {
+        path: 'expenses',
+        element: (
+          <Protected roles={['owner', 'member']}>
+            <ExpensesPage />
+          </Protected>
+        ),
+      },
       {
         path: 'admin',
         element: (
