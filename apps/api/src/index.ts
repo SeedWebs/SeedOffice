@@ -3,6 +3,7 @@ import { requireAuth } from './middleware/auth'
 import { ownerOnly } from './middleware/roles'
 import { adminRoutes } from './routes/admin'
 import { authRoutes } from './routes/auth'
+import { clientPickerRoutes, projectRoutes } from './routes/projects'
 import { userRoutes } from './routes/users'
 import type { AppEnv } from './types'
 
@@ -17,6 +18,11 @@ app.use('/api/users/*', requireAuth)
 app.use('/api/users', requireAuth)
 app.use('/api/config', requireAuth)
 app.route('/api', userRoutes)
+app.use('/api/projects/*', requireAuth)
+app.use('/api/projects', requireAuth)
+app.route('/api/projects', projectRoutes)
+app.use('/api/clients', requireAuth)
+app.route('/api/clients', clientPickerRoutes)
 
 app.get('/api/me', requireAuth, (c) => {
   const u = c.var.user

@@ -4,7 +4,8 @@ import { Layout } from './components/Layout'
 import { AuthProvider, useAuth, type Me } from './lib/auth'
 import { AdminPage } from './pages/Admin'
 import { Login } from './pages/Login'
-import { DashboardPage, PayrollPage, ProjectsPage } from './pages/placeholders'
+import { ProjectsPage } from './pages/Projects'
+import { DashboardPage, PayrollPage, ProjectDetailPage } from './pages/placeholders'
 
 function Protected({ children, roles }: { children: ReactNode; roles?: Me['role'][] }) {
   const { user, loading } = useAuth()
@@ -29,6 +30,7 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <DashboardPage /> },
       { path: 'projects', element: <ProjectsPage /> },
+      { path: 'projects/:id', element: <ProjectDetailPage /> },
       { path: 'payroll', element: <PayrollPage /> },
       {
         path: 'admin',

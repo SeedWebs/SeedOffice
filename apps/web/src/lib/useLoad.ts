@@ -24,7 +24,7 @@ export function useLoad<T>(fn: () => Promise<T>, deps: unknown[] = []) {
     setLoading(true)
     void reload()
     // deps มาจากผู้เรียก (เช่น id ใน url) — reload เสถียรอยู่แล้ว
-  }, deps) // eslint-disable-line
+  }, deps)
 
   return { data, loading, error, reload }
 }

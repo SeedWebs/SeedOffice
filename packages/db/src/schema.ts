@@ -66,6 +66,46 @@ export const companyConfig = sqliteTable('company_config', {
   workHourCapMinutes: integer('work_hour_cap_minutes').notNull().default(480), // 8 ชม./วัน
 })
 
+/** ลูกค้า (CRM §4.17 — entity จริงตั้งแต่ T08 เลี่ยง refactor) */
+export const clients = sqliteTable('clients', {
+  id: id(),
+  name: text('name').notNull(),
+  logo: text('logo'), // emoji
+  contactName: text('contact_name'),
+  contactEmail: text('contact_email'),
+  contactPhone: text('contact_phone'),
+  note: text('note'),
+  status: text('status', { enum: ['active', 'archived'] }).notNull().default('active'),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+})
+
+export const PROJECT_STATUSES = ['design', 'dev', 'staging', 'golive', 'ma', 'archived'] as const
+
+/** โปรเจกต์ 2 ประเภท (SPEC §4.3): project = fixed-price มีกำหนดส่ง · recurring = ดูแลรายเดือน/ปี */
+export const projects = sqliteTable(
+  'projects',
+  {
+    id: id(),
+    code: text('code'),
+    name: text('name').notNull(),
+    logo: text('logo'), // emoji
+    clientId: text('client_id').references(() => clients.id),
+    type: text('type', { enum: ['project', 'recurring'] }).notNull(),
+    status: text('status', { enum: PROJECT_STATUSES }).notNull().default('dev'),
+    quotedSatang: integer('quoted_satang'), // ราคาขาย (fixed) — vendor ห้ามเห็น (ตัดที่ serializer)
+    billingType: text('billing_type', { enum: ['fixed', 'recurring'] }).notNull().default('fixed'),
+    recurringPeriod: text('recurring_period', { enum: ['monthly', 'yearly'] }),
+    startDate: text('start_date'), // YYYY-MM-DD
+    dueDate: text('due_date'),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [index('projects_type_idx').on(t.type, t.status), index('projects_client_idx').on(t.clientId)],
+)
+
 /** log การเปลี่ยนข้อมูลการเงิน/เวลา (SPEC §11: ทุก manual/แก้/ลบ + การเงิน) — meta เก็บ before→after */
 export const auditLogs = sqliteTable(
   'audit_logs',
@@ -93,3 +133,5 @@ export type Session = typeof sessions.$inferSelect
 export type Rate = typeof rates.$inferSelect
 export type CompanyConfig = typeof companyConfig.$inferSelect
 export type AuditLog = typeof auditLogs.$inferSelect
+export type Client = typeof clients.$inferSelect
+export type Project = typeof projects.$inferSelect
