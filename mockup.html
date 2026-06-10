@@ -4,10 +4,10 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>SeedOffice — Mockup</title>
-<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://cdn.tailwindcss.com/3.4.17"></script>
 <link rel="preconnect" href="https://fonts.googleapis.com" />
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+Thai:wght@400;500;600;700&display=swap" rel="stylesheet" />
-<script src="https://unpkg.com/lucide@latest"></script>
+<script src="https://unpkg.com/lucide@1.17.0"></script>
 <script>
   tailwind.config = { theme: { extend: {
     fontFamily: { sans: ['Inter','Noto Sans Thai','sans-serif'] },
@@ -52,7 +52,7 @@
       <a data-section="clients" data-roles="owner,member" onclick="showSection('clients')" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer"><i data-lucide="building-2" class="w-[18px] h-[18px]"></i> ลูกค้า</a>
       <a data-section="docs" data-roles="owner,member" onclick="showSection('docs')" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer"><i data-lucide="notebook-text" class="w-[18px] h-[18px]"></i> เอกสาร</a>
       <a data-section="inbox" data-roles="owner,member" onclick="showSection('inbox')" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer"><i data-lucide="inbox" class="w-[18px] h-[18px]"></i> อีเมลกลาง</a>
-      <a data-section="payroll" data-roles="owner,member" onclick="showSection('payroll')" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer"><i data-lucide="wallet" class="w-[18px] h-[18px]"></i> ค่าตอบแทน</a>
+      <a data-section="payroll" data-roles="owner,member,vendor" onclick="showSection('payroll')" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer"><i data-lucide="wallet" class="w-[18px] h-[18px]"></i> ค่าตอบแทน</a>
       <a data-section="expenses" data-roles="owner,member" onclick="showSection('expenses')" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer"><i data-lucide="receipt" class="w-[18px] h-[18px]"></i> เงินสดย่อย</a>
       <div data-roles="owner">
         <a data-section="admin" data-roles="owner" onclick="showSection('admin')" class="nav-item flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 hover:bg-slate-50 cursor-pointer"><i data-lucide="settings" class="w-[18px] h-[18px]"></i> ตั้งค่า</a>
@@ -538,6 +538,34 @@
             <div class="flex items-center justify-between"><span class="text-sm text-slate-500">เงินสดย่อยรอเบิกของฉัน</span><span class="text-lg font-bold tabular-nums text-slate-900">฿2,700</span></div>
             <div class="text-xs text-slate-400 mt-1">Stock photo ฿2,700 · รออนุมัติ</div>
           </div>
+          </div>
+        </div>
+
+        <!-- VENDOR self view: ชม.×rate − หัก ณ ที่จ่าย 3% (ไม่มี ปกส./สวัสดิการ/เงินสดย่อย) -->
+        <div data-roles="vendor" class="grid grid-cols-1 lg:grid-cols-2 gap-4 max-w-4xl items-start">
+          <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="text-sm text-slate-400">สรุปเวลาของฉัน — งวด 25 พ.ค.–24 มิ.ย.</div>
+            <div class="flex items-start gap-3 mt-3">
+              <div><div class="text-3xl font-bold tabular-nums text-slate-900">40.0</div><div class="text-[11px] text-slate-400">ชั่วโมงงวดนี้</div></div>
+              <span class="ml-auto text-[11px] bg-emerald-50 text-emerald-600 px-2 py-1 rounded-full">manual 9% · ปกติ</span>
+            </div>
+            <div class="text-[11px] text-slate-400 mt-1.5">วันนี้ 0 ชม. (ลา) · เป้า 8 ชม./วัน</div>
+            <div class="mt-4 space-y-2">
+              <div class="text-[11px] font-medium text-slate-400 uppercase tracking-wide">ตามโปรเจกต์</div>
+              <div class="flex items-center gap-2"><span class="text-sm text-slate-600 flex-1 truncate">ระบบจองคิว คลินิกหมอฟัน</span><div class="w-16 h-1.5 bg-slate-100 rounded-full overflow-hidden"><div class="h-full bg-brand-400" style="width:100%"></div></div><span class="text-xs text-slate-500 tabular-nums w-14 text-right">40.0 ชม.</span></div>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-3 flex items-center gap-1"><i data-lucide="info" class="w-3 h-3"></i> ตรวจชั่วโมงให้ตรงก่อนตัดรอบ 24 (cross-check)</p>
+          </div>
+          <div class="bg-white rounded-lg shadow-sm p-6">
+            <div class="text-sm text-slate-400">ค่าจ้างของฉัน — งวด 25 พ.ค.–24 มิ.ย.</div>
+            <div class="mt-4 space-y-2">
+              <div class="text-[11px] font-medium text-emerald-700 uppercase tracking-wide">รายได้</div>
+              <div class="flex items-center justify-between"><span class="text-sm text-slate-500">ค่าจ้าง (40.0 ชม. × ฿350)</span><span class="tabular-nums">฿14,000</span></div>
+              <div class="text-[11px] font-medium text-rose-600 uppercase tracking-wide pt-2">หัก</div>
+              <div class="flex items-center justify-between"><span class="text-sm text-slate-500">ภาษีหัก ณ ที่จ่าย 3%</span><span class="tabular-nums text-rose-500">-฿420</span></div>
+              <div class="flex items-center justify-between pt-3 border-t border-slate-200"><span class="text-sm font-medium text-slate-700">รวมสุทธิ</span><span class="text-xl font-bold tabular-nums text-slate-900">฿13,580</span></div>
+            </div>
+            <p class="text-[11px] text-slate-400 mt-4 flex items-center gap-1"><i data-lucide="shield-check" class="w-3.5 h-3.5"></i> vendor หัก ณ ที่จ่าย 3% (ไม่มี ปกส./สวัสดิการ) · จ่าย 26 มิ.ย.</p>
           </div>
         </div>
 
