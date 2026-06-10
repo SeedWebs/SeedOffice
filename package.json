@@ -12,7 +12,11 @@
     "lint": "eslint .",
     "typecheck": "pnpm -r --if-present run typecheck",
     "test": "vitest run",
-    "cf-typegen": "wrangler types"
+    "cf-typegen": "wrangler types",
+    "db:generate": "pnpm --filter @seedoffice/db exec drizzle-kit generate",
+    "db:migrate": "wrangler d1 migrations apply seedoffice --local",
+    "db:migrate:remote": "wrangler d1 migrations apply seedoffice --remote",
+    "db:seed": "wrangler d1 execute seedoffice --local --file packages/db/seed.sql"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",

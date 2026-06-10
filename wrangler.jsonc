@@ -19,12 +19,13 @@
     "head_sampling_rate": 1
   },
 
-  // D1: ใช้ local ได้เลย · database_id จริงสร้างตอน T02 (`wrangler d1 create seedoffice`)
+  // D1: สร้างจริงแล้ว (T02) · local dev ใช้ sqlite ในเครื่อง ไม่แตะ remote · migrate remote = `pnpm db:migrate:remote`
   "d1_databases": [
     {
       "binding": "DB",
       "database_name": "seedoffice",
-      "database_id": "TODO-T02-d1-create"
+      "database_id": "a83e812d-362f-41e5-bb79-3a11a45ca7cc",
+      "migrations_dir": "packages/db/migrations"
     }
   ],
 

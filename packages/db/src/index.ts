@@ -1,5 +1,14 @@
 /**
- * @seedoffice/db — Drizzle schema + migrations + seed
- * schema จริง (users/sessions/rates/company_config + migration แรก) มาใน T02
+ * @seedoffice/db — Drizzle schema + helper
+ * ใช้: const db = createDb(c.env.DB)
  */
-export {}
+import { drizzle } from 'drizzle-orm/d1'
+import * as schema from './schema'
+
+export function createDb(d1: D1Database) {
+  return drizzle(d1, { schema })
+}
+
+export type Db = ReturnType<typeof createDb>
+export * from './schema'
+export { schema }
