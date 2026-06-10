@@ -2,8 +2,9 @@ import type { ReactNode } from 'react'
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router'
 import { Layout } from './components/Layout'
 import { AuthProvider, useAuth, type Me } from './lib/auth'
+import { AdminPage } from './pages/Admin'
 import { Login } from './pages/Login'
-import { AdminPage, DashboardPage, PayrollPage, ProjectsPage } from './pages/placeholders'
+import { DashboardPage, PayrollPage, ProjectsPage } from './pages/placeholders'
 
 function Protected({ children, roles }: { children: ReactNode; roles?: Me['role'][] }) {
   const { user, loading } = useAuth()

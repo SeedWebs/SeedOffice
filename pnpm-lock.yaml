@@ -63,6 +63,9 @@ importers:
 
   apps/web:
     dependencies:
+      '@seedoffice/core':
+        specifier: workspace:*
+        version: link:../../packages/core
       lucide-react:
         specifier: ^1.17.0
         version: 1.17.0(react@19.2.7)

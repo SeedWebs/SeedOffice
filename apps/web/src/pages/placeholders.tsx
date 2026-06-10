@@ -28,4 +28,3 @@ export function DashboardPage() {
 
 export const ProjectsPage = () => <Coming title="โปรเจกต์" task="T08" />
 export const PayrollPage = () => <Coming title="ค่าตอบแทน" task="T15" />
-export const AdminPage = () => <Coming title="ตั้งค่า" task="T07" />

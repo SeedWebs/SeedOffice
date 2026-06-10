@@ -1,0 +1,164 @@
+import { bkkDateOf, rateAt } from '@seedoffice/core'
+import { companyConfig, createDb, rates, users } from '@seedoffice/db'
+import { asc, eq } from 'drizzle-orm'
+import { Hono } from 'hono'
+import { z } from 'zod'
+import { writeAudit } from '../lib/audit'
+import type { AppEnv } from '../types'
+
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'ต้องเป็น YYYY-MM-DD')
+
+/** owner เท่านั้น (ติด requireAuth + ownerOnly ตอน mount) — provision user / ตั้ง rate / config */
+export const adminRoutes = new Hono<AppEnv>()
+
+  // ตารางผู้ใช้เต็ม (email/status/rate ปัจจุบัน)
+  .get('/users', async (c) => {
+    const db = createDb(c.env.DB)
+    const all = await db.select().from(users).orderBy(asc(users.role), asc(users.name))
+    const allRates = await db.select().from(rates)
+    const today = bkkDateOf(Date.now())
+    return c.json(
+      all.map((u) => ({
+        ...u,
+        currentRateSatangPerHour: rateAt(
+          allRates.filter((r) => r.userId === u.id),
+          today,
+        ),
+      })),
+    )
+  })
+
+  // provision user ใหม่ (member ในโดเมน หรือ vendor allowlist อีเมลภายนอก)
+  .post('/users', async (c) => {
+    const body = z
+      .object({
+        email: z.string().email().toLowerCase(),
+        name: z.string().min(1),
+        role: z.enum(['owner', 'member', 'vendor']),
+        rateSatangPerHour: z.number().int().nonnegative().optional(),
+        rateEffectiveFrom: isoDate.optional(),
+      })
+      .safeParse(await c.req.json())
+    if (!body.success) return c.json({ error: body.error.issues[0]?.message ?? 'invalid' }, 400)
+
+    const db = createDb(c.env.DB)
+    const dup = (await db.select().from(users).where(eq(users.email, body.data.email)).limit(1))[0]
+    if (dup) return c.json({ error: 'email_exists' }, 409)
+
+    const inserted = await db
+      .insert(users)
+      .values({ email: body.data.email, name: body.data.name, role: body.data.role })
+      .returning()
+    const user = inserted[0]
+    if (!user) return c.json({ error: 'insert_failed' }, 500)
+
+    if (body.data.rateSatangPerHour !== undefined) {
+      const r = await db
+        .insert(rates)
+        .values({
+          userId: user.id,
+          rateSatangPerHour: body.data.rateSatangPerHour,
+          effectiveFrom: body.data.rateEffectiveFrom ?? bkkDateOf(Date.now()),
+          note: 'rate ตั้งต้น',
+        })
+        .returning()
+      await writeAudit(c.env, {
+        actorId: c.get('user').id,
+        action: 'rate.create',
+        entity: 'rate',
+        entityId: r[0]?.id ?? '',
+        meta: { userId: user.id, rateSatangPerHour: body.data.rateSatangPerHour },
+      })
+    }
+    await writeAudit(c.env, {
+      actorId: c.get('user').id,
+      action: 'user.create',
+      entity: 'user',
+      entityId: user.id,
+      meta: { email: user.email, role: user.role },
+    })
+    return c.json(user, 201)
+  })
+
+  // แก้ชื่อ/role/สถานะ (ปิดการใช้งาน = status disabled — session เดิมใช้ไม่ได้ทันที)
+  .patch('/users/:id', async (c) => {
+    const body = z
+      .object({
+        name: z.string().min(1).optional(),
+        role: z.enum(['owner', 'member', 'vendor']).optional(),
+        status: z.enum(['active', 'disabled']).optional(),
+      })
+      .safeParse(await c.req.json())
+    if (!body.success) return c.json({ error: 'invalid' }, 400)
+    const db = createDb(c.env.DB)
+    const before = (await db.select().from(users).where(eq(users.id, c.req.param('id'))).limit(1))[0]
+    if (!before) return c.json({ error: 'not_found' }, 404)
+    const updated = await db
+      .update(users)
+      .set(body.data)
+      .where(eq(users.id, before.id))
+      .returning()
+    await writeAudit(c.env, {
+      actorId: c.get('user').id,
+      action: 'user.update',
+      entity: 'user',
+      entityId: before.id,
+      meta: { before: { role: before.role, status: before.status }, after: body.data },
+    })
+    return c.json(updated[0])
+  })
+
+  // ตั้ง rate ใหม่ (effective-dated — insert เสมอ ไม่แก้ย้อนหลัง · SPEC §4.2)
+  .post('/users/:id/rates', async (c) => {
+    const body = z
+      .object({
+        rateSatangPerHour: z.number().int().nonnegative(),
+        effectiveFrom: isoDate,
+        note: z.string().optional(),
+      })
+      .safeParse(await c.req.json())
+    if (!body.success) return c.json({ error: body.error.issues[0]?.message ?? 'invalid' }, 400)
+    const db = createDb(c.env.DB)
+    const target = (
+      await db.select().from(users).where(eq(users.id, c.req.param('id'))).limit(1)
+    )[0]
+    if (!target) return c.json({ error: 'not_found' }, 404)
+    const inserted = await db
+      .insert(rates)
+      .values({ userId: target.id, ...body.data })
+      .returning()
+    await writeAudit(c.env, {
+      actorId: c.get('user').id,
+      action: 'rate.create',
+      entity: 'rate',
+      entityId: inserted[0]?.id ?? '',
+      meta: { userId: target.id, ...body.data },
+    })
+    return c.json(inserted[0], 201)
+  })
+
+  // แก้ config บริษัท
+  .patch('/config', async (c) => {
+    const body = z
+      .object({
+        cutoffDay: z.number().int().min(1).max(28).optional(),
+        workHourCapMinutes: z.number().int().min(60).max(1440).optional(),
+      })
+      .safeParse(await c.req.json())
+    if (!body.success) return c.json({ error: 'invalid' }, 400)
+    const db = createDb(c.env.DB)
+    const before = (await db.select().from(companyConfig).limit(1))[0]
+    const updated = await db
+      .update(companyConfig)
+      .set(body.data)
+      .where(eq(companyConfig.id, 1))
+      .returning()
+    await writeAudit(c.env, {
+      actorId: c.get('user').id,
+      action: 'config.update',
+      entity: 'company_config',
+      entityId: '1',
+      meta: { before, after: body.data },
+    })
+    return c.json(updated[0])
+  })
