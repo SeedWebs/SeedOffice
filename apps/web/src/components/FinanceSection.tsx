@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { api } from '../lib/api'
 import { fmtThaiDate } from '../lib/project-ui'
 import { useLoad } from '../lib/useLoad'
+import { useDialog } from './Dialog'
 
 interface Milestone {
   id: string
@@ -38,6 +39,7 @@ const MS_STATUS: Record<Milestone['status'], { label: string; cls: string }> = {
 /** งวดงาน + การชำระเงิน (owner/member เท่านั้น — ผู้เรียกกรอง role แล้ว) */
 export function FinanceSection({ projectId }: { projectId: string }) {
   const { data, reload } = useLoad<Finance>(() => api.get(`/api/projects/${projectId}/finance`), [projectId])
+  const { confirmDialog } = useDialog()
   const [msForm, setMsForm] = useState({ open: false, name: '', budgetBaht: '', due: '' })
   const [payForm, setPayForm] = useState({ open: false, label: '', amountBaht: '', due: '' })
   const today = bkkToday()
@@ -101,7 +103,7 @@ export function FinanceSection({ projectId }: { projectId: string }) {
               <span className="flex-1 min-w-0 truncate text-slate-700">{m.name}</span>
               {m.dueDate && <span className="text-[11px] text-slate-400">{fmtThaiDate(m.dueDate)}</span>}
               <span className="tabular-nums text-slate-600 w-20 text-right">{m.budgetSatang != null ? formatSatang(m.budgetSatang) : '—'}</span>
-              <button onClick={() => { if (confirm(`ลบงวด "${m.name}"?`)) void api.delete(`/api/milestones/${m.id}`).then(reload) }} className="text-slate-200 hover:text-rose-500" title="ลบงวด">
+              <button onClick={() => { void confirmDialog({ title: 'ลบงวดงานนี้?', message: `"${m.name}" จะถูกลบออกจากการคิด P&L ต่องวด`, confirmLabel: 'ลบ', danger: true }).then((yes) => { if (yes) void api.delete(`/api/milestones/${m.id}`).then(reload) }) }} className="text-slate-200 hover:text-rose-500" title="ลบงวด">
                 <Trash2 className="w-3.5 h-3.5" />
               </button>
             </div>
@@ -144,7 +146,7 @@ export function FinanceSection({ projectId }: { projectId: string }) {
                 {overdue && <span className="text-[11px] bg-rose-100 text-rose-600 px-2 py-0.5 rounded-full">เกินกำหนด</span>}
                 {p.dueDate && !overdue && !p.paidAt && <span className="text-[11px] text-slate-400">กำหนด {fmtThaiDate(p.dueDate)}</span>}
                 <span className="tabular-nums text-slate-700 w-24 text-right">{formatSatang(p.amountSatang)}</span>
-                <button onClick={() => { if (confirm('ลบงวดจ่ายนี้?')) void api.delete(`/api/payments/${p.id}`).then(reload) }} className="text-slate-200 hover:text-rose-500" title="ลบงวดจ่าย">
+                <button onClick={() => { void confirmDialog({ title: 'ลบงวดจ่ายนี้?', message: `${p.label ?? `งวด ${p.installmentNo}`} (${formatSatang(p.amountSatang)}) จะถูกลบ — มีบันทึกใน audit log`, confirmLabel: 'ลบ', danger: true }).then((yes) => { if (yes) void api.delete(`/api/payments/${p.id}`).then(reload) }) }} className="text-slate-200 hover:text-rose-500" title="ลบงวดจ่าย">
                   <Trash2 className="w-3.5 h-3.5" />
                 </button>
               </div>

@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react'
 import { createBrowserRouter, Navigate, RouterProvider } from 'react-router'
+import { DialogProvider } from './components/Dialog'
 import { Layout } from './components/Layout'
 import { AuthProvider, useAuth, type Me } from './lib/auth'
 import { AdminPage } from './pages/Admin'
@@ -77,7 +78,9 @@ const router = createBrowserRouter([
 export function App() {
   return (
     <AuthProvider>
-      <RouterProvider router={router} />
+      <DialogProvider>
+        <RouterProvider router={router} />
+      </DialogProvider>
     </AuthProvider>
   )
 }

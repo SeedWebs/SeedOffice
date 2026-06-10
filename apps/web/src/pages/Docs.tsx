@@ -10,6 +10,7 @@ import {
   Strikethrough, TextQuote, Trash2,
 } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useDialog } from '../components/Dialog'
 import { PageHeader } from '../components/PageHeader'
 import { api } from '../lib/api'
 import { useLoad } from '../lib/useLoad'
@@ -39,14 +40,21 @@ async function uploadImage(file: File, docId: string): Promise<string | null> {
 
 function Toolbar({ editor, docId, saveState }: { editor: Editor; docId: string; saveState: 'saved' | 'saving' }) {
   const fileRef = useRef<HTMLInputElement>(null)
+  const { promptDialog } = useDialog()
   const btn = (active: boolean) =>
     `w-8 h-8 grid place-items-center rounded-lg shrink-0 ${active ? 'bg-brand-50 text-brand-700' : 'text-slate-500 hover:bg-slate-100'}`
   const divider = <span className="w-px h-5 bg-slate-200 mx-1 shrink-0" />
-  const setLink = () => {
+  const setLink = async () => {
     const prev = editor.getAttributes('link').href as string | undefined
-    const url = window.prompt('ลิงก์ (เว้นว่าง = เอาออก)', prev ?? 'https://')
+    const url = await promptDialog({
+      title: 'ใส่ลิงก์',
+      message: 'เว้นว่างแล้วกดตกลง = เอาลิงก์ออก',
+      placeholder: 'https://...',
+      initialValue: prev ?? 'https://',
+      confirmLabel: 'ใส่ลิงก์',
+    })
     if (url === null) return
-    if (url === '') editor.chain().focus().unsetLink().run()
+    if (url === '' || url === 'https://') editor.chain().focus().unsetLink().run()
     else editor.chain().focus().setLink({ href: url }).run()
   }
   const pickImage = () => fileRef.current?.click()
@@ -72,7 +80,7 @@ function Toolbar({ editor, docId, saveState }: { editor: Editor; docId: string; 
       <button title="เช็คลิสต์" onClick={() => editor.chain().focus().toggleList('taskList', 'taskItem').run()} className={btn(editor.isActive('taskList'))}><ListChecks className="w-4 h-4" /></button>
       {divider}
       <button title="อ้างอิง" onClick={() => editor.chain().focus().toggleBlockquote().run()} className={btn(editor.isActive('blockquote'))}><TextQuote className="w-4 h-4" /></button>
-      <button title="ลิงก์" onClick={setLink} className={btn(editor.isActive('link'))}><Link2 className="w-4 h-4" /></button>
+      <button title="ลิงก์" onClick={() => void setLink()} className={btn(editor.isActive('link'))}><Link2 className="w-4 h-4" /></button>
       <button title="แทรกรูป (หรือวาง/ลากรูปลงในเนื้อหา)" onClick={pickImage} className={btn(false)}><ImageIcon className="w-4 h-4" /></button>
       <button title="เส้นคั่น" onClick={() => editor.chain().focus().setHorizontalRule().run()} className={btn(false)}><Minus className="w-4 h-4" /></button>
       <span className="ml-auto flex items-center gap-1.5 text-xs text-slate-400 shrink-0 pl-3">
@@ -179,6 +187,7 @@ export function DocsPage() {
   const [selId, setSelId] = useState<string | null>(null)
   const [expanded, setExpanded] = useState<Set<string>>(new Set())
   const [mobileView, setMobileView] = useState<'tree' | 'doc'>('tree')
+  const { confirmDialog, promptDialog } = useDialog()
   const { data: doc, reload: reloadDoc } = useLoad<DocFull | null>(
     () => (selId ? api.get(`/api/docs/${selId}`) : Promise.resolve(null)),
     [selId],
@@ -196,7 +205,11 @@ export function DocsPage() {
 
   const addDoc = useCallback(
     async (parentId: string | null) => {
-      const title = window.prompt('ชื่อหน้าใหม่')
+      const title = await promptDialog({
+        title: parentId ? 'เพิ่มหน้าย่อย' : 'เอกสารใหม่',
+        placeholder: 'ชื่อหน้า เช่น คู่มือพนักงานใหม่...',
+        confirmLabel: 'สร้างหน้า',
+      })
       if (!title?.trim()) return
       const created = await api.post<{ id: string }>('/api/docs', { title: title.trim(), ...(parentId ? { parentId } : {}) })
       if (parentId) setExpanded((s) => new Set(s).add(parentId))
@@ -204,12 +217,18 @@ export function DocsPage() {
       setSelId(created.id)
       setMobileView('doc')
     },
-    [reloadTree],
+    [reloadTree, promptDialog],
   )
 
   const deleteDoc = async () => {
     if (!doc) return
-    if (!confirm(`ลบ "${doc.title}" และหน้าย่อยทั้งหมด?`)) return
+    const yes = await confirmDialog({
+      title: 'ลบหน้านี้?',
+      message: `"${doc.title}" และหน้าย่อยทั้งหมดจะถูกลบ`,
+      confirmLabel: 'ลบ',
+      danger: true,
+    })
+    if (!yes) return
     await api.delete(`/api/docs/${doc.id}`)
     setSelId(null)
     await reloadTree()

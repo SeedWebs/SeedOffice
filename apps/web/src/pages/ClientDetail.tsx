@@ -2,6 +2,7 @@ import { formatSatang } from '@seedoffice/core'
 import { ArrowLeft, Check, Cpu, Globe, Mail, Package, Phone, Pin, Plus, Server, ShieldCheck, Trash2, User, Wrench, X } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
 import { Link, useNavigate, useParams } from 'react-router'
+import { useDialog } from '../components/Dialog'
 import { api } from '../lib/api'
 import { fmtThaiDate, STATUS_CHIP, STATUS_LABEL } from '../lib/project-ui'
 import { useLoad } from '../lib/useLoad'
@@ -56,6 +57,7 @@ function Section({ title, action, children }: { title: ReactNode; action?: React
 export function ClientDetailPage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
+  const { confirmDialog, promptDialog } = useDialog()
   const { data: c, reload } = useLoad<Detail>(() => api.get(`/api/clients/${id}`), [id])
   const [noteDraft, setNoteDraft] = useState('')
   const [addingNote, setAddingNote] = useState(false)
@@ -82,7 +84,13 @@ export function ClientDetailPage() {
     await reload()
   }
   const renewService = async (svcId: string, next: string | null) => {
-    const input = window.prompt('วันต่ออายุถัดไป (YYYY-MM-DD)', next ?? c.today)
+    const input = await promptDialog({
+      title: 'เลื่อนวันต่ออายุ',
+      message: 'ใช้หลังเก็บเงิน/ต่อสัญญาแล้ว — ตั้งเป็นรอบถัดไป',
+      inputType: 'date',
+      initialValue: next ?? c.today,
+      confirmLabel: 'บันทึก',
+    })
     if (!input) return
     await api.patch(`/api/services/${svcId}`, { nextDueDate: input })
     await reload()
@@ -153,7 +161,7 @@ export function ClientDetailPage() {
                 <div className="text-sm text-slate-700">{n.body}</div>
                 <div className="text-[11px] text-slate-400 mt-0.5">{n.byName} · {noteDate(n.createdAt)}</div>
               </div>
-              <button onClick={() => { if (confirm('ลบโน้ตนี้?')) void api.delete(`/api/notes/${n.id}`).then(reload) }} className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-rose-500" title="ลบโน้ต">
+              <button onClick={() => { void confirmDialog({ title: 'ลบโน้ตนี้?', message: n.body, confirmLabel: 'ลบ', danger: true }).then((yes) => { if (yes) void api.delete(`/api/notes/${n.id}`).then(reload) }) }} className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-rose-500" title="ลบโน้ต">
                 <X className="w-4 h-4" />
               </button>
             </div>
@@ -245,7 +253,7 @@ export function ClientDetailPage() {
                   ) : (
                     <span className="w-28 text-right text-sm text-slate-300">—</span>
                   )}
-                  <button onClick={() => { if (confirm(`ลบบริการ "${sv.label}"?`)) void api.delete(`/api/services/${sv.id}`).then(reload) }} className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-rose-500" title="ลบบริการ">
+                  <button onClick={() => { void confirmDialog({ title: 'ลบบริการต่อเนื่อง?', message: `"${sv.label}" จะหายจาก MRR/การแจ้งต่ออายุ — มีบันทึกใน audit log`, confirmLabel: 'ลบ', danger: true }).then((yes) => { if (yes) void api.delete(`/api/services/${sv.id}`).then(reload) }) }} className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-rose-500" title="ลบบริการ">
                     <Trash2 className="w-3.5 h-3.5" />
                   </button>
                 </div>

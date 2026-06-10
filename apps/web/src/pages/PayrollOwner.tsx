@@ -1,6 +1,7 @@
 import { formatSatang, minutesToHoursLabel, type AdjustmentKind } from '@seedoffice/core'
 import { Download, Lock, MessageSquare, MessageSquarePlus, Trash2 } from 'lucide-react'
 import { useState, type ReactNode } from 'react'
+import { useDialog } from '../components/Dialog'
 import { PageHeader } from '../components/PageHeader'
 import { api } from '../lib/api'
 import { fmtThaiDate } from '../lib/project-ui'
@@ -99,6 +100,7 @@ export function PayrollOwnerPage() {
   const [date, setDate] = useState(bkkToday())
   const { data, reload } = useLoad<TeamPayroll>(() => api.get(`/api/admin/payroll?date=${date}`), [date])
   const [openRow, setOpenRow] = useState<string | null>(null)
+  const { confirmDialog } = useDialog()
 
   if (!data) return (
     <>
@@ -113,7 +115,12 @@ export function PayrollOwnerPage() {
 
   const active = data.rows.filter((r) => r.minutesTotal > 0 || r.netSatang !== 0)
   const closeCycle = async () => {
-    if (!confirm(`ปิด${cycleLabel(data.cycle)}? หลังปิดจะแก้เวลา/รายการย้อนหลังไม่ได้ และระบบจะ snapshot payslip ไว้เป็นหลักฐาน`)) return
+    const yes = await confirmDialog({
+      title: `ปิด${cycleLabel(data.cycle)}?`,
+      message: 'ระบบจะ snapshot payslip ของทุกคนไว้เป็นหลักฐาน\nหลังปิดจะแก้เวลา/รายการรายได้-หักย้อนหลังของงวดนี้ไม่ได้อีก',
+      confirmLabel: 'ปิดงวด',
+    })
+    if (!yes) return
     await api.post('/api/admin/payroll/close', { date })
     await reload()
   }

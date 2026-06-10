@@ -20,6 +20,24 @@ body {
   background: #f5f5f7;
 }
 
+/* dialog animation — fade backdrop + pop card (เข้า/ออกสั้นๆ เรียบหรู) */
+@keyframes so-fade-in {
+  from { opacity: 0; }
+}
+@keyframes so-fade-out {
+  to { opacity: 0; }
+}
+@keyframes so-pop-in {
+  from { opacity: 0; transform: translateY(10px) scale(0.96); }
+}
+@keyframes so-pop-out {
+  to { opacity: 0; transform: translateY(6px) scale(0.97); }
+}
+.so-fade-in { animation: so-fade-in 0.16s ease-out; }
+.so-fade-out { animation: so-fade-out 0.13s ease-in forwards; }
+.so-pop-in { animation: so-pop-in 0.2s cubic-bezier(0.16, 1, 0.3, 1); }
+.so-pop-out { animation: so-pop-out 0.13s ease-in forwards; }
+
 /* typography ของเอกสาร (Tiptap) — ตาม mockup docs */
 .doc-editor h2 { font-size: 1.25rem; font-weight: 600; color: var(--color-slate-900); margin: 2rem 0 0.5rem; }
 .doc-editor h3 { font-size: 1.1rem; font-weight: 600; color: var(--color-slate-900); margin: 1.5rem 0 0.4rem; }
