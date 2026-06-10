@@ -7,6 +7,8 @@ import { useAuth } from '../lib/auth'
 import {
   fmtBudgetK,
   fmtThaiDate,
+  HEALTH_DOT,
+  HEALTH_LABEL,
   STATUS_CHIP,
   STATUS_LABEL,
   TH_MONTHS,
@@ -82,6 +84,14 @@ function Cards({ rows, showMoney }: { rows: ProjectRow[]; showMoney: boolean }) 
             {showMoney && p.paidPct != null && (
               <span className="text-xs text-slate-500 tabular-nums">
                 {p.paidPct}% <span className="text-slate-400">จ่ายแล้ว</span>
+              </span>
+            )}
+            {showMoney && p.health && (
+              <span className="group relative">
+                <span className={`block w-2.5 h-2.5 rounded-full ${HEALTH_DOT[p.health]}`} />
+                <span className="absolute left-0 top-full mt-1 w-44 bg-slate-900 text-white text-[11px] rounded-lg p-2 opacity-0 group-hover:opacity-100 pointer-events-none transition shadow-lg z-20">
+                  {p.paidPct != null ? `ลูกค้าจ่าย ${p.paidPct}% · ` : ''}งวดนี้ใช้งบ {p.usagePct}% · {HEALTH_LABEL[p.health]}
+                </span>
               </span>
             )}
             <span className="ml-auto text-[11px] text-slate-400">{p.clientName ?? ''}</span>

@@ -1,11 +1,38 @@
-import { createDb, milestones, payments } from '@seedoffice/db'
-import { and, asc, eq } from 'drizzle-orm'
+import { costSatang, marginOf, profitSatang } from '@seedoffice/core'
+import { createDb, milestones, payments, projects, tasks, timeEntries, users } from '@seedoffice/db'
+import { and, asc, eq, isNull } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { writeAudit } from '../lib/audit'
 import type { AppEnv } from '../types'
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+
+export type Health = 'green' | 'amber' | 'red'
+
+/**
+ * จุดสีสุขภาพงบ (SPEC §4.8): ใช้งบงวดปัจจุบันไปกี่ % — เขียว <80 · ส้ม 80–100 · แดง >100
+ * นิยาม v1: ต้นทุนของงวดปัจจุบัน = ต้นทุนรวม − Σงบของงวดที่ done แล้ว (ไม่มี mapping entry→งวดโดยตรง)
+ * ไม่มีงวด/งบ → เทียบต้นทุนรวมกับราคาขายทั้งโปรเจกต์แทน
+ */
+export function healthOf(
+  cost: number,
+  quoted: number | null,
+  ms: { budgetSatang: number | null; status: string }[],
+): { health: Health | null; usagePct: number | null } {
+  const active = ms.find((m) => m.status === 'active' && m.budgetSatang)
+  let usage: number | null = null
+  if (active?.budgetSatang) {
+    const doneBudget = ms
+      .filter((m) => m.status === 'done')
+      .reduce((s, m) => s + (m.budgetSatang ?? 0), 0)
+    usage = Math.round(((cost - doneBudget) / active.budgetSatang) * 100)
+  } else if (quoted && quoted > 0) {
+    usage = Math.round((cost / quoted) * 100)
+  }
+  if (usage === null) return { health: null, usagePct: null }
+  return { health: usage > 100 ? 'red' : usage >= 80 ? 'amber' : 'green', usagePct: usage }
+}
 
 /** งวดงาน + งวดจ่าย — mount ด้วย requireAuth + teamOnly (vendor 403 ทั้ง subtree · SPEC §4.8) */
 export const financeRoutes = new Hono<AppEnv>()
@@ -32,6 +59,56 @@ export const financeRoutes = new Hono<AppEnv>()
       totalSatang: total,
       paidSatang: paid,
       paidPct: total > 0 ? Math.round((paid / total) * 100) : null,
+    })
+  })
+
+  // P&L (SPEC §4.8): cost/profit/margin + ความคืบหน้า + breakdown รายคนเป็น "ชั่วโมง" (ไม่โชว์เงินรายคน)
+  .get('/projects/:id/pnl', async (c) => {
+    const db = createDb(c.env.DB)
+    const projectId = c.req.param('id')
+    const project = (await db.select().from(projects).where(eq(projects.id, projectId)).limit(1))[0]
+    if (!project) return c.json({ error: 'not_found' }, 404)
+
+    const entries = await db
+      .select({
+        minutes: timeEntries.minutes,
+        rateSnapshotSatang: timeEntries.rateSnapshotSatang,
+        userId: timeEntries.userId,
+        userName: users.name,
+      })
+      .from(timeEntries)
+      .innerJoin(users, eq(timeEntries.userId, users.id))
+      .where(and(eq(timeEntries.projectId, projectId), isNull(timeEntries.deletedAt)))
+
+    const cost = costSatang(entries)
+    const minutesTotal = entries.reduce((s, e) => s + e.minutes, 0)
+    const byUser = new Map<string, { userId: string; userName: string; minutes: number }>()
+    for (const e of entries) {
+      const cur = byUser.get(e.userId)
+      if (cur) cur.minutes += e.minutes
+      else byUser.set(e.userId, { userId: e.userId, userName: e.userName, minutes: e.minutes })
+    }
+
+    const taskRows = await db
+      .select({ est: tasks.estimateMinutes })
+      .from(tasks)
+      .where(eq(tasks.projectId, projectId))
+    const estimateMinutes = taskRows.reduce((s, t) => s + (t.est ?? 0), 0)
+
+    const ms = await db.select().from(milestones).where(eq(milestones.projectId, projectId))
+    const { health, usagePct } = healthOf(cost, project.quotedSatang, ms)
+
+    const quoted = project.quotedSatang
+    return c.json({
+      quotedSatang: quoted,
+      costSatang: cost,
+      profitSatang: quoted != null ? profitSatang(quoted, cost) : null,
+      margin: quoted != null ? marginOf(quoted, cost) : null,
+      minutesTotal,
+      estimateMinutes,
+      health,
+      usagePct,
+      byUser: [...byUser.values()].sort((a, b) => b.minutes - a.minutes), // ชั่วโมงเท่านั้น
     })
   })
 

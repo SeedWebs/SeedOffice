@@ -1,5 +1,7 @@
-import { clients, createDb, payments, projects, PROJECT_STATUSES, tasks, users, type Project } from '@seedoffice/db'
-import { asc, eq, ne } from 'drizzle-orm'
+import { costSatang } from '@seedoffice/core'
+import { clients, createDb, milestones, payments, projects, PROJECT_STATUSES, tasks, timeEntries, users, type Project } from '@seedoffice/db'
+import { asc, eq, isNull, ne } from 'drizzle-orm'
+import { healthOf } from './finance'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { writeAudit } from '../lib/audit'
@@ -9,14 +11,20 @@ import type { AppEnv } from '../types'
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
 
 /** vendor ห้ามเห็นการเงินโปรเจกต์ (SPEC §2/§4.8) — ตัดที่ server เสมอ */
-function serialize<T extends { quotedSatang?: number | null; paidPct?: number | null }>(
-  p: T,
-  role: string,
-) {
+function serialize<
+  T extends {
+    quotedSatang?: number | null
+    paidPct?: number | null
+    health?: string | null
+    usagePct?: number | null
+  },
+>(p: T, role: string) {
   if (role === 'vendor') {
     const rest: Partial<T> = { ...p }
     delete rest.quotedSatang
     delete rest.paidPct
+    delete rest.health
+    delete rest.usagePct
     return rest
   }
   return p
@@ -48,7 +56,7 @@ export const projectRoutes = new Hono<AppEnv>()
       const cur = firstOpen.get(t.projectId)
       if (!cur || (t.dueDate ?? '9999') < (cur.dueDate ?? '9999')) firstOpen.set(t.projectId, t)
     }
-    // %ลูกค้าจ่าย ต่อโปรเจกต์ (→ card · vendor ถูกตัดที่ serialize)
+    // %ลูกค้าจ่าย + จุดสี health ต่อโปรเจกต์ (→ card · vendor ถูกตัดที่ serialize)
     const allPayments = await db
       .select({ projectId: payments.projectId, amountSatang: payments.amountSatang, paidAt: payments.paidAt })
       .from(payments)
@@ -58,19 +66,34 @@ export const projectRoutes = new Hono<AppEnv>()
       if (total === 0) return null
       return Math.round((mine.filter((p) => p.paidAt).reduce((s, p) => s + p.amountSatang, 0) / total) * 100)
     }
+    const allEntries = await db
+      .select({ projectId: timeEntries.projectId, minutes: timeEntries.minutes, rateSnapshotSatang: timeEntries.rateSnapshotSatang })
+      .from(timeEntries)
+      .where(isNull(timeEntries.deletedAt))
+    const allMilestones = await db
+      .select({ projectId: milestones.projectId, budgetSatang: milestones.budgetSatang, status: milestones.status })
+      .from(milestones)
     const role = c.get('user').role
     return c.json(
-      rows.map((r) =>
-        serialize(
+      rows.map((r) => {
+        const cost = costSatang(allEntries.filter((e) => e.projectId === r.project.id))
+        const h = healthOf(
+          cost,
+          r.project.quotedSatang,
+          allMilestones.filter((m) => m.projectId === r.project.id),
+        )
+        return serialize(
           {
             ...r.project,
             clientName: r.clientName,
             openTodo: firstOpen.get(r.project.id) ?? null,
             paidPct: paidPctOf(r.project.id),
+            health: h.health,
+            usagePct: h.usagePct,
           },
           role,
-        ),
-      ),
+        )
+      }),
     )
   })
 

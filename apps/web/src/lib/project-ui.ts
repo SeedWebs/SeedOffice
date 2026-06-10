@@ -15,6 +15,19 @@ export interface ProjectRow {
   dueDate: string | null
   openTodo: { title: string; dueDate: string | null; assigneeName: string | null } | null
   paidPct?: number | null // ไม่มีเมื่อเป็น vendor (server ตัด)
+  health?: 'green' | 'amber' | 'red' | null
+  usagePct?: number | null
+}
+
+export const HEALTH_DOT: Record<'green' | 'amber' | 'red', string> = {
+  green: 'bg-emerald-500',
+  amber: 'bg-orange-400',
+  red: 'bg-rose-500',
+}
+export const HEALTH_LABEL: Record<'green' | 'amber' | 'red', string> = {
+  green: 'งบงวดนี้ปกติ',
+  amber: 'งวดนี้ใกล้เต็มงบ',
+  red: 'งวดนี้เกินงบ',
 }
 
 export const STATUS_LABEL: Record<ProjectRow['status'], string> = {

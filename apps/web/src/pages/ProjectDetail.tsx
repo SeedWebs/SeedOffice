@@ -1,3 +1,4 @@
+import { formatSatang, minutesToHoursLabel } from '@seedoffice/core'
 import { ArrowUpDown, Check, ChevronLeft, GripVertical, Plus, Star, X } from 'lucide-react'
 import { useMemo, useState, type DragEvent } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
@@ -30,6 +31,54 @@ export interface BoardGroup {
 }
 const AVATAR_COLORS = ['bg-brand-100 text-brand-700', 'bg-sky-100 text-sky-700', 'bg-violet-100 text-violet-700', 'bg-rose-100 text-rose-700', 'bg-amber-100 text-amber-700', 'bg-teal-100 text-teal-700', 'bg-indigo-100 text-indigo-700', 'bg-pink-100 text-pink-700']
 export const avatarColor = (key: string) => AVATAR_COLORS[[...key].reduce((s, ch) => s + ch.charCodeAt(0), 0) % AVATAR_COLORS.length]
+
+interface Pnl {
+  quotedSatang: number | null
+  costSatang: number
+  profitSatang: number | null
+  margin: number | null
+  minutesTotal: number
+  estimateMinutes: number
+  usagePct: number | null
+  health: 'green' | 'amber' | 'red' | null
+}
+
+/** แถบ P&L ย่อ hover ดูตัวเลข (mockup: progress + tooltip ชั่วโมง/ต้นทุน/กำไร) — owner+member */
+function PnlChip({ projectId }: { projectId: string }) {
+  const { data: p } = useLoad<Pnl>(() => api.get(`/api/projects/${projectId}/pnl`), [projectId])
+  if (!p) return null
+  const pct = p.estimateMinutes > 0 ? Math.round((p.minutesTotal / p.estimateMinutes) * 100) : null
+  const barColor = p.health === 'red' ? 'bg-rose-500' : p.health === 'amber' ? 'bg-amber-400' : 'bg-brand-500'
+  return (
+    <div className="group relative flex items-center gap-2 text-xs">
+      <span className="text-slate-400">progress</span>
+      <div className="w-28 h-2 bg-slate-100 rounded-full overflow-hidden">
+        <div className={`h-full ${barColor}`} style={{ width: `${Math.min(100, pct ?? p.usagePct ?? 0)}%` }} />
+      </div>
+      <span className={`font-medium ${p.health === 'red' ? 'text-rose-600' : p.health === 'amber' ? 'text-amber-600' : 'text-slate-500'}`}>
+        {pct != null ? `${pct}%` : p.usagePct != null ? `${p.usagePct}%` : '—'}
+      </span>
+      <div className="absolute z-10 right-0 top-full mt-2 w-56 bg-slate-900 text-white rounded-xl p-3 opacity-0 group-hover:opacity-100 pointer-events-none transition shadow-lg">
+        <div className="flex justify-between py-0.5">
+          <span className="text-slate-300">ชั่วโมง</span>
+          <span>{minutesToHoursLabel(p.minutesTotal)}{p.estimateMinutes > 0 ? ` / ${minutesToHoursLabel(p.estimateMinutes)}` : ''}</span>
+        </div>
+        <div className="flex justify-between py-0.5">
+          <span className="text-slate-300">ต้นทุน{p.quotedSatang != null ? ' / ขาย' : ''}</span>
+          <span>{formatSatang(p.costSatang)}{p.quotedSatang != null ? ` / ${formatSatang(p.quotedSatang)}` : ''}</span>
+        </div>
+        {p.profitSatang != null && (
+          <div className="flex justify-between py-0.5 border-t border-slate-700 mt-1 pt-1">
+            <span className="text-slate-300">กำไร</span>
+            <span className={p.profitSatang >= 0 ? 'text-brand-300' : 'text-rose-300'}>
+              {formatSatang(p.profitSatang)}{p.margin != null ? ` (${Math.round(p.margin * 100)}%)` : ''}
+            </span>
+          </div>
+        )}
+      </div>
+    </div>
+  )
+}
 
 /** ไทม์ไลน์ต่อ task group: บาร์ = min(start) → max(due) ของงานในกลุ่ม + เส้นวันนี้ */
 function GroupTimeline({ groups }: { groups: BoardGroup[] }) {
@@ -166,6 +215,7 @@ export function ProjectDetailPage() {
         <span className={`text-xs px-2 py-0.5 rounded-full ${STATUS_CHIP[project.status]}`}>{STATUS_LABEL[project.status]}</span>
         {canEdit && (
           <div className="ml-auto flex items-center gap-3">
+            {project.type === 'project' && <PnlChip projectId={project.id} />}
             <button
               onClick={() => setReorderOn((v) => !v)}
               title="จัดเรียง task group / งาน"
