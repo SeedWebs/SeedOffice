@@ -156,6 +156,22 @@ export const tasks = sqliteTable(
   ],
 )
 
+/** ติดดาว "ทำวันนี้" ต่อคนต่อวัน (SPEC §4.4) — feed งานวันนี้ + standup */
+export const taskStars = sqliteTable(
+  'task_stars',
+  {
+    id: id(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    taskId: text('task_id')
+      .notNull()
+      .references(() => tasks.id),
+    forDate: text('for_date').notNull(), // YYYY-MM-DD (Asia/Bangkok)
+  },
+  (t) => [index('task_stars_user_date_idx').on(t.userId, t.forDate)],
+)
+
 export const taskComments = sqliteTable(
   'task_comments',
   {
@@ -229,3 +245,4 @@ export type TaskGroup = typeof taskGroups.$inferSelect
 export type Task = typeof tasks.$inferSelect
 export type TaskComment = typeof taskComments.$inferSelect
 export type TaskAttachment = typeof taskAttachments.$inferSelect
+export type TaskStar = typeof taskStars.$inferSelect

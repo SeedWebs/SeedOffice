@@ -12,6 +12,7 @@ import { useEffect, useState } from 'react'
 import { NavLink, Outlet, useNavigate } from 'react-router'
 import { api } from '../lib/api'
 import { useAuth, type Me } from '../lib/auth'
+import { QuickAddModal } from './QuickAdd'
 
 type Role = Me['role']
 
@@ -59,6 +60,24 @@ export function Layout() {
   const { user, logout } = useAuth()
   const navigate = useNavigate()
   const [navOpen, setNavOpen] = useState(false)
+  const [quickAddOpen, setQuickAddOpen] = useState(false)
+
+  // Quick Add (N) จากทุกหน้า — เช็คจาก e.code กันแป้นไทย (SPEC §9)
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      const typing = ['input', 'textarea', 'select'].includes(
+        (document.activeElement?.tagName ?? '').toLowerCase(),
+      )
+      if (e.code === 'KeyN' && !typing && !e.metaKey && !e.ctrlKey && !e.altKey) {
+        e.preventDefault()
+        setQuickAddOpen(true)
+      }
+      if (e.code === 'Escape') setQuickAddOpen(false)
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
   if (!user) return null
 
   const items = NAV.filter((n) => n.roles.includes(user.role))
@@ -156,6 +175,7 @@ export function Layout() {
           <Outlet />
         </main>
       </div>
+      {quickAddOpen && <QuickAddModal onClose={() => setQuickAddOpen(false)} />}
     </div>
   )
 }

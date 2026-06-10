@@ -1,4 +1,5 @@
-import { createDb, projects, taskGroups, tasks, TASK_STATUSES, users } from '@seedoffice/db'
+import { bkkDateOf } from '@seedoffice/core'
+import { createDb, projects, taskGroups, tasks, taskStars, TASK_STATUSES, users } from '@seedoffice/db'
 import { and, asc, eq } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
@@ -24,10 +25,12 @@ const taskPatchSchema = z.object({
 /** board ของโปรเจกต์ + CRUD group/task — vendor อ่านได้ แก้ไม่ได้ (teamOnly เฉพาะ mutation) */
 export const taskRoutes = new Hono<AppEnv>()
 
-  // board เต็มของโปรเจกต์ (groups + tasks + ชื่อผู้รับผิดชอบ)
+  // board เต็มของโปรเจกต์ (groups + tasks + ชื่อผู้รับผิดชอบ + ดาววันนี้ของฉัน)
   .get('/projects/:id/board', async (c) => {
     const db = createDb(c.env.DB)
     const projectId = c.req.param('id')
+    const me = c.get('user')
+    const today = bkkDateOf(Date.now())
     const groups = await db
       .select()
       .from(taskGroups)
@@ -39,10 +42,17 @@ export const taskRoutes = new Hono<AppEnv>()
       .leftJoin(users, eq(tasks.assigneeId, users.id))
       .where(eq(tasks.projectId, projectId))
       .orderBy(asc(tasks.sortOrder))
+    const myStars = await db
+      .select({ taskId: taskStars.taskId })
+      .from(taskStars)
+      .where(and(eq(taskStars.userId, me.id), eq(taskStars.forDate, today)))
+    const starred = new Set(myStars.map((s) => s.taskId))
     return c.json({
       groups: groups.map((g) => ({
         ...g,
-        tasks: rows.filter((r) => r.task.groupId === g.id).map((r) => ({ ...r.task, assigneeName: r.assigneeName })),
+        tasks: rows
+          .filter((r) => r.task.groupId === g.id)
+          .map((r) => ({ ...r.task, assigneeName: r.assigneeName, starredToday: starred.has(r.task.id) })),
       })),
     })
   })

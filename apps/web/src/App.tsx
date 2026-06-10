@@ -3,10 +3,11 @@ import { createBrowserRouter, Navigate, RouterProvider } from 'react-router'
 import { Layout } from './components/Layout'
 import { AuthProvider, useAuth, type Me } from './lib/auth'
 import { AdminPage } from './pages/Admin'
+import { DashboardPage } from './pages/Dashboard'
 import { Login } from './pages/Login'
 import { ProjectDetailPage } from './pages/ProjectDetail'
 import { ProjectsPage } from './pages/Projects'
-import { DashboardPage, PayrollPage } from './pages/placeholders'
+import { PayrollPage } from './pages/placeholders'
 
 function Protected({ children, roles }: { children: ReactNode; roles?: Me['role'][] }) {
   const { user, loading } = useAuth()

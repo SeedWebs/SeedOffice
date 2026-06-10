@@ -3,6 +3,7 @@ import { requireAuth } from './middleware/auth'
 import { ownerOnly } from './middleware/roles'
 import { adminRoutes } from './routes/admin'
 import { authRoutes } from './routes/auth'
+import { overviewRoutes } from './routes/overview'
 import { clientPickerRoutes, projectRoutes } from './routes/projects'
 import { taskDetailRoutes } from './routes/task-detail'
 import { taskRoutes } from './routes/tasks'
@@ -28,8 +29,10 @@ app.route('/api/clients', clientPickerRoutes)
 app.use('/api/groups/*', requireAuth)
 app.use('/api/tasks/*', requireAuth)
 app.use('/api/attachments/*', requireAuth)
+app.use('/api/overview', requireAuth)
 app.route('/api', taskRoutes)
 app.route('/api', taskDetailRoutes)
+app.route('/api', overviewRoutes)
 
 app.get('/api/me', requireAuth, (c) => {
   const u = c.var.user

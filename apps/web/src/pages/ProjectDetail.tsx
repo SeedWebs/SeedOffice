@@ -1,6 +1,6 @@
-import { ArrowUpDown, Check, ChevronLeft, GripVertical, Plus, X } from 'lucide-react'
+import { ArrowUpDown, Check, ChevronLeft, GripVertical, Plus, Star, X } from 'lucide-react'
 import { useMemo, useState, type DragEvent } from 'react'
-import { Link, useParams } from 'react-router'
+import { Link, useParams, useSearchParams } from 'react-router'
 import { TaskDrawer } from '../components/TaskDrawer'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
@@ -19,6 +19,7 @@ export interface BoardTask {
   estimateMinutes: number | null
   startDate: string | null
   dueDate: string | null
+  starredToday: boolean
 }
 export interface BoardGroup {
   id: string
@@ -91,7 +92,12 @@ export function ProjectDetailPage() {
   const { data: project } = useLoad<ProjectRow>(() => api.get(`/api/projects/${id}`), [id])
   const { data: board, reload } = useLoad<{ groups: BoardGroup[] }>(() => api.get(`/api/projects/${id}/board`), [id])
   const [reorderOn, setReorderOn] = useState(false)
-  const [drawerTask, setDrawerTask] = useState<string | null>(null)
+  const [searchParams, setSearchParams] = useSearchParams()
+  const [drawerTask, setDrawerTask] = useState<string | null>(searchParams.get('task'))
+  const closeDrawer = () => {
+    setDrawerTask(null)
+    if (searchParams.has('task')) setSearchParams({}, { replace: true })
+  }
   const [addingTaskIn, setAddingTaskIn] = useState<string | null>(null)
   const [newTitle, setNewTitle] = useState('')
   const [addingGroup, setAddingGroup] = useState(false)
@@ -216,6 +222,13 @@ export function ProjectDetailPage() {
                       {t.status === 'done' && <Check className="w-2.5 h-2.5" />}
                     </button>
                     <span className={`text-sm flex-1 min-w-0 truncate ${t.status === 'done' ? 'text-slate-400 line-through' : ''}`}>{t.title}</span>
+                    <button
+                      onClick={(e) => { e.stopPropagation(); void api.post(`/api/tasks/${t.id}/star`, { on: !t.starredToday }).then(() => reload()) }}
+                      title={t.starredToday ? 'เอาออกจากวันนี้' : 'ติดดาว ทำวันนี้'}
+                      className="shrink-0"
+                    >
+                      <Star className={`w-4 h-4 ${t.starredToday ? 'text-amber-400 fill-amber-400' : 'text-slate-200 hover:text-amber-300'}`} />
+                    </button>
                     {t.dueDate && t.status !== 'done' && (
                       <span className="text-[11px] text-slate-400 shrink-0">{fmtThaiDate(t.dueDate)}</span>
                     )}
@@ -274,7 +287,7 @@ export function ProjectDetailPage() {
       </div>
 
       {drawerTask && (
-        <TaskDrawer taskId={drawerTask} onClose={() => setDrawerTask(null)} onChanged={() => void reload()} />
+        <TaskDrawer taskId={drawerTask} onClose={closeDrawer} onChanged={() => void reload()} />
       )}
     </div>
   )

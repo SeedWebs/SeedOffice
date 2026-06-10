@@ -15,15 +15,4 @@ function Coming({ title, task }: { title: string; task: string }) {
   )
 }
 
-export function DashboardPage() {
-  // ภาพรวมไม่มี header (SPEC §4) — เนื้อหาจริงมา T11
-  return (
-    <div className="p-3 sm:p-6">
-      <div className="bg-white rounded-lg shadow-xs p-10 text-center text-sm text-slate-400">
-        ภาพรวม (งานวันนี้ + งานเร็วๆ นี้) — กำลังจะมาใน T11
-      </div>
-    </div>
-  )
-}
-
 export const PayrollPage = () => <Coming title="ค่าตอบแทน" task="T15" />
