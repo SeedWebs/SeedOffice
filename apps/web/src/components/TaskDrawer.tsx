@@ -1,10 +1,139 @@
-import { formatHMS } from '@seedoffice/core'
-import { Check, ChevronDown, History, Paperclip, Plus, Send, Trash2, X } from 'lucide-react'
+import { formatHMS, minutesToHoursLabel } from '@seedoffice/core'
+import { Check, ChevronDown, History, Paperclip, Pause, Pencil, Play, Plus, Send, Trash2, X } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
+import { useTimer } from '../lib/timer'
 import { useLoad } from '../lib/useLoad'
 import { avatarColor } from '../pages/ProjectDetail'
+
+interface TimeRow {
+  id: string
+  userId: string
+  userName: string
+  workDate: string
+  minutes: number
+  note: string | null
+  source: 'timer' | 'manual'
+  editCount: number
+}
+
+const bkkToday = () => new Date(Date.now() + 7 * 3_600_000).toISOString().slice(0, 10)
+
+/** timer + manual + รายการเวลา ของ task นี้ (SPEC §4.5 — ลงเวลาจากหน้า task เท่านั้น) */
+function TimeSection({ taskId }: { taskId: string }) {
+  const { user } = useAuth()
+  const timer = useTimer()
+  const { data: rows, reload } = useLoad<TimeRow[]>(() => api.get(`/api/tasks/${taskId}/time`), [taskId])
+  const [manualOpen, setManualOpen] = useState(false)
+  const [mForm, setMForm] = useState({ date: bkkToday(), hours: '', note: '' })
+  const [mError, setMError] = useState('')
+  const [editRow, setEditRow] = useState<TimeRow | null>(null)
+
+  const isRunningHere = timer.active?.taskId === taskId
+  const taskSeconds = (rows ?? []).filter((r) => r.userId === user?.id && r.workDate === bkkToday()).reduce((s, r) => s + r.minutes * 60, 0)
+
+  const addManual = async () => {
+    try {
+      setMError('')
+      const minutes = Math.round(Number(mForm.hours) * 60)
+      await api.post(`/api/tasks/${taskId}/time`, { workDate: mForm.date, minutes, note: mForm.note || undefined })
+      setManualOpen(false)
+      setMForm({ date: bkkToday(), hours: '', note: '' })
+      await reload()
+      await timer.refresh()
+    } catch (e) {
+      setMError(e instanceof Error ? e.message : 'ผิดพลาด')
+    }
+  }
+  const saveEdit = async () => {
+    if (!editRow) return
+    await api.patch(`/api/time/${editRow.id}`, { minutes: editRow.minutes, note: editRow.note })
+    setEditRow(null)
+    await reload()
+    await timer.refresh()
+  }
+  const removeRow = async (r: TimeRow) => {
+    if (!confirm(`ลบเวลา ${minutesToHoursLabel(r.minutes)} ชม. วันที่ ${r.workDate}?`)) return
+    await api.delete(`/api/time/${r.id}`)
+    await reload()
+    await timer.refresh()
+  }
+
+  return (
+    <div>
+      <div className="bg-brand-50 rounded-xl p-3 flex items-center gap-3">
+        <div className="flex-1">
+          <div className="text-[11px] text-brand-700">ลงเวลาที่งานนี้ (วันนี้)</div>
+          <div className="text-2xl font-bold tabular-nums text-slate-900">
+            {formatHMS(taskSeconds + (isRunningHere ? timer.runningSeconds : 0))}
+          </div>
+        </div>
+        {isRunningHere ? (
+          <button onClick={() => void timer.stop().then(() => reload())} className="bg-rose-500 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-1">
+            <Pause className="w-4 h-4" /> หยุด
+          </button>
+        ) : (
+          <button
+            onClick={() => void timer.start(taskId).then(() => reload())}
+            disabled={timer.capReached}
+            title={timer.capReached ? 'ครบเพดานชั่วโมงวันนี้แล้ว' : 'เริ่มจับเวลา'}
+            className="bg-brand-600 hover:bg-brand-700 disabled:opacity-40 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-1"
+          >
+            <Play className="w-4 h-4" /> จับเวลา
+          </button>
+        )}
+        <button onClick={() => setManualOpen((v) => !v)} className="shadow-xs bg-white px-3 py-2 rounded-lg text-sm">+ manual</button>
+      </div>
+
+      {manualOpen && (
+        <div className="mt-2 p-3 bg-slate-50 rounded-xl space-y-2">
+          <div className="flex gap-2">
+            <input type="date" value={mForm.date} onChange={(e) => setMForm({ ...mForm, date: e.target.value })} className="text-sm bg-white shadow-xs rounded-lg px-2.5 py-1.5" />
+            <input type="number" step="0.25" min="0" placeholder="ชม." value={mForm.hours} onChange={(e) => setMForm({ ...mForm, hours: e.target.value })} className="w-20 text-sm bg-white shadow-xs rounded-lg px-2.5 py-1.5" />
+            <input placeholder="โน้ต (ทำอะไร)" value={mForm.note} onChange={(e) => setMForm({ ...mForm, note: e.target.value })} className="flex-1 min-w-0 text-sm bg-white shadow-xs rounded-lg px-2.5 py-1.5" />
+          </div>
+          {mError && <div className="text-xs text-rose-600">{mError}</div>}
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-slate-400">manual ถูกบันทึก log และนับเข้า manual% เสมอ</span>
+            <button onClick={() => void addManual()} disabled={!mForm.hours} className="text-sm bg-brand-600 text-white px-3 py-1.5 rounded-lg disabled:opacity-40">บันทึกเวลา</button>
+          </div>
+        </div>
+      )}
+
+      {(rows ?? []).length > 0 && (
+        <div className="mt-3 space-y-1">
+          {(rows ?? []).map((r) => (
+            <div key={r.id} className="flex items-center gap-2 text-xs py-1">
+              {editRow?.id === r.id ? (
+                <>
+                  <span className="text-slate-500 w-20">{r.workDate.slice(5)}</span>
+                  <input type="number" value={editRow.minutes} onChange={(e) => setEditRow({ ...editRow, minutes: Number(e.target.value) })} className="w-16 bg-white shadow-xs rounded px-1.5 py-1" title="นาที" />
+                  <span className="text-slate-400">นาที</span>
+                  <button onClick={() => void saveEdit()} className="text-brand-600 font-medium">บันทึก</button>
+                  <button onClick={() => setEditRow(null)} className="text-slate-400">ยกเลิก</button>
+                </>
+              ) : (
+                <>
+                  <span className="text-slate-500 w-20 shrink-0">{r.workDate.slice(5)}</span>
+                  <span className="tabular-nums font-medium text-slate-700">{minutesToHoursLabel(r.minutes)} ชม.</span>
+                  <span className={`px-1.5 rounded text-[10px] ${r.source === 'manual' ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-500'}`}>{r.source}</span>
+                  <span className="text-slate-400 truncate flex-1">{r.userName}{r.note ? ` · ${r.note}` : ''}{r.editCount > 0 ? ` · แก้ ${r.editCount} ครั้ง` : ''}</span>
+                  {(r.userId === user?.id || user?.role === 'owner') && (
+                    <span className="shrink-0 flex gap-1">
+                      <button onClick={() => setEditRow(r)} title="แก้เวลา" className="text-slate-300 hover:text-slate-600"><Pencil className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => void removeRow(r)} title="ลบเวลา" className="text-slate-300 hover:text-rose-600"><Trash2 className="w-3.5 h-3.5" /></button>
+                    </span>
+                  )}
+                </>
+              )}
+            </div>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
 
 interface Detail {
   id: string
@@ -128,14 +257,7 @@ export function TaskDrawer({ taskId, onClose, onChanged }: { taskId: string; onC
             )}
           </div>
 
-          {/* ลงเวลา — เชื่อม timer จริงใน T12 */}
-          <div className="bg-brand-50 rounded-xl p-3 flex items-center gap-3">
-            <div className="flex-1">
-              <div className="text-[11px] text-brand-700">ลงเวลาที่งานนี้</div>
-              <div className="text-2xl font-bold tabular-nums text-slate-900">{formatHMS(0)}</div>
-            </div>
-            <span className="text-[11px] text-slate-400">timer มาใน T12</span>
-          </div>
+          <TimeSection taskId={t.id} />
 
           {canEdit && (
             <div className="flex flex-wrap items-center gap-2">

@@ -1,6 +1,6 @@
 import { env } from 'cloudflare:test'
 import { beforeEach, describe, expect, it } from 'vitest'
-import app from '../src/index'
+import { app } from '../src/index'
 import { loginAs, seedUsers } from './helpers'
 
 beforeEach(async () => {

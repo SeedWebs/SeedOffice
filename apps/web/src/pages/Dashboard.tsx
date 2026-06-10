@@ -1,10 +1,11 @@
 import { formatHMS } from '@seedoffice/core'
-import { Play, Plus, Star } from 'lucide-react'
+import { Pause, Play, Plus, Star } from 'lucide-react'
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import { TASK_CREATED_EVENT } from '../components/QuickAdd'
 import { api } from '../lib/api'
 import { fmtThaiDate } from '../lib/project-ui'
+import { TIMER_CHANGED_EVENT, useTimer } from '../lib/timer'
 import { useLoad } from '../lib/useLoad'
 
 interface TodayTask {
@@ -26,13 +27,18 @@ interface UpcomingTask {
 }
 
 export function DashboardPage() {
-  const { data, reload } = useLoad<{ today: TodayTask[]; upcoming: UpcomingTask[] }>(() => api.get('/api/overview'))
+  const { data, reload } = useLoad<{ today: TodayTask[]; activeTaskId: string | null; upcoming: UpcomingTask[] }>(() => api.get('/api/overview'))
   const navigate = useNavigate()
+  const timer = useTimer()
 
   useEffect(() => {
     const onCreated = () => void reload()
     window.addEventListener(TASK_CREATED_EVENT, onCreated)
-    return () => window.removeEventListener(TASK_CREATED_EVENT, onCreated)
+    window.addEventListener(TIMER_CHANGED_EVENT, onCreated)
+    return () => {
+      window.removeEventListener(TASK_CREATED_EVENT, onCreated)
+      window.removeEventListener(TIMER_CHANGED_EVENT, onCreated)
+    }
   }, [reload])
 
   const unstar = async (t: TodayTask) => {
@@ -78,17 +84,29 @@ export function DashboardPage() {
                     <span className="truncate text-slate-400 text-[11px] sm:text-sm sm:order-3">{t.groupName}</span>
                   </span>
                 </div>
-                <button
-                  onClick={(e) => e.stopPropagation()}
-                  title="จับเวลา — มาใน T12"
-                  className="w-full flex items-center justify-center gap-1.5 text-slate-300 px-2 py-1 rounded-lg text-xs tabular-nums sm:order-5 cursor-default"
-                >
-                  <Play className="w-3.5 h-3.5" /> <span>{formatHMS(t.todaySeconds)}</span>
-                </button>
+                {timer.active?.taskId === t.id ? (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); void timer.stop() }}
+                    title="หยุดจับเวลา"
+                    className="w-full flex items-center justify-center gap-1.5 bg-rose-500 text-white px-2 py-1 rounded-lg text-xs font-medium tabular-nums sm:order-5"
+                  >
+                    <Pause className="w-3.5 h-3.5" /> <span>{formatHMS(t.todaySeconds + timer.runningSeconds)}</span>
+                  </button>
+                ) : (
+                  <button
+                    onClick={(e) => { e.stopPropagation(); void timer.start(t.id) }}
+                    title="จับเวลา"
+                    className="w-full flex items-center justify-center gap-1.5 text-slate-400 hover:text-brand-600 hover:bg-brand-50 px-2 py-1 rounded-lg text-xs tabular-nums sm:order-5"
+                  >
+                    <Play className="w-3.5 h-3.5" /> <span>{formatHMS(t.todaySeconds)}</span>
+                  </button>
+                )}
               </div>
             ))}
           </div>
-          <p className="text-[11px] text-slate-400 mt-3">★ = ตั้งใจทำวันนี้ · ปุ่ม ▶ จับเวลาจะเปิดใช้เมื่อระบบลงเวลามา (T12)</p>
+          <p className="text-[11px] text-slate-400 mt-3">
+            กด ▶ จับเวลา · งานที่จับเวลาวันนี้มาอยู่ที่นี่ทั้งหมด · ★ = ตั้งใจทำวันนี้ · วันนี้ {Math.floor(timer.todayMinutes / 60)}:{String(timer.todayMinutes % 60).padStart(2, '0')} / {timer.capMinutes / 60} ชม.
+          </p>
         </div>
 
         {/* งานเร็วๆ นี้ */}

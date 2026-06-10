@@ -7,7 +7,9 @@ import { overviewRoutes } from './routes/overview'
 import { clientPickerRoutes, projectRoutes } from './routes/projects'
 import { taskDetailRoutes } from './routes/task-detail'
 import { taskRoutes } from './routes/tasks'
+import { timeRoutes } from './routes/time'
 import { userRoutes } from './routes/users'
+import { runScheduled } from './scheduled'
 import type { AppEnv } from './types'
 
 const app = new Hono<AppEnv>()
@@ -30,9 +32,13 @@ app.use('/api/groups/*', requireAuth)
 app.use('/api/tasks/*', requireAuth)
 app.use('/api/attachments/*', requireAuth)
 app.use('/api/overview', requireAuth)
+app.use('/api/timer', requireAuth)
+app.use('/api/timer/*', requireAuth)
+app.use('/api/time/*', requireAuth)
 app.route('/api', taskRoutes)
 app.route('/api', taskDetailRoutes)
 app.route('/api', overviewRoutes)
+app.route('/api', timeRoutes)
 
 app.get('/api/me', requireAuth, (c) => {
   const u = c.var.user
@@ -45,4 +51,11 @@ app.get('/api/me', requireAuth, (c) => {
   })
 })
 
-export default app
+export { app } // ใช้ในเทสต์ (app.request)
+
+export default {
+  fetch: app.fetch,
+  scheduled: (controller: ScheduledController, env: Env, ctx: ExecutionContext) => {
+    ctx.waitUntil(runScheduled(env, controller.cron))
+  },
+}

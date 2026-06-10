@@ -19,6 +19,11 @@
     "head_sampling_rate": 1
   },
 
+  // cron: กวาด timer ค้าง (ปิดที่เพดาน) + ล้าง session หมดอายุ ทุก 30 นาที · T18 เพิ่ม backup รายวัน
+  "triggers": {
+    "crons": ["*/30 * * * *"]
+  },
+
   // ค่า production — local override ที่ .dev.vars · GOOGLE_CLIENT_SECRET = secret (wrangler secret put)
   "vars": {
     "APP_URL": "https://seedoffice.example.com", // TODO: เปลี่ยนเป็นโดเมนจริงก่อน deploy

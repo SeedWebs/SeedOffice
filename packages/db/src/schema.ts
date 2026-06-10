@@ -212,6 +212,50 @@ export const taskAttachments = sqliteTable(
   (t) => [index('task_attachments_task_idx').on(t.taskId)],
 )
 
+/** เวลา = หัวใจลูปเงิน (SPEC §4.5) — snapshot rate ตอนสร้าง · soft-delete เท่านั้น */
+export const timeEntries = sqliteTable(
+  'time_entries',
+  {
+    id: id(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    taskId: text('task_id')
+      .notNull()
+      .references(() => tasks.id),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id),
+    workDate: text('work_date').notNull(), // YYYY-MM-DD (Asia/Bangkok)
+    minutes: integer('minutes').notNull(),
+    note: text('note'),
+    rateSnapshotSatang: integer('rate_snapshot_satang').notNull(),
+    source: text('source', { enum: ['timer', 'manual'] }).notNull(),
+    editCount: integer('edit_count').notNull().default(0),
+    lastEditedBy: text('last_edited_by'),
+    editedAt: integer('edited_at', { mode: 'timestamp_ms' }),
+    deletedAt: integer('deleted_at', { mode: 'timestamp_ms' }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [
+    index('time_entries_user_date_idx').on(t.userId, t.workDate),
+    index('time_entries_task_idx').on(t.taskId),
+    index('time_entries_project_idx').on(t.projectId),
+  ],
+)
+
+/** timer ที่กำลังเดิน — คนละ 1 ตัว (start ใหม่ = ปิดตัวเก่า) · startedAt = epoch ms ดิบ (คณิตเวลา + ส่งให้ FE เดินนาฬิกา) */
+export const timerSessions = sqliteTable('timer_sessions', {
+  id: id(),
+  userId: text('user_id').notNull().unique(),
+  taskId: text('task_id')
+    .notNull()
+    .references(() => tasks.id),
+  startedAt: integer('started_at').notNull(),
+})
+
 /** log การเปลี่ยนข้อมูลการเงิน/เวลา (SPEC §11: ทุก manual/แก้/ลบ + การเงิน) — meta เก็บ before→after */
 export const auditLogs = sqliteTable(
   'audit_logs',
@@ -246,3 +290,5 @@ export type Task = typeof tasks.$inferSelect
 export type TaskComment = typeof taskComments.$inferSelect
 export type TaskAttachment = typeof taskAttachments.$inferSelect
 export type TaskStar = typeof taskStars.$inferSelect
+export type TimeEntry = typeof timeEntries.$inferSelect
+export type TimerSession = typeof timerSessions.$inferSelect

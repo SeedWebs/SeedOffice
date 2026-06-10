@@ -23,7 +23,7 @@ export async function seedUsers() {
 
 /** login ผ่าน dev-login แล้วคืน Cookie header สำหรับ request ถัดไป */
 export async function loginAs(
-  app: (typeof import('../src/index'))['default'],
+  app: (typeof import('../src/index'))['app'],
   email: string,
 ): Promise<string> {
   const res = await app.request(
