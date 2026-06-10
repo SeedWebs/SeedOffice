@@ -1,6 +1,6 @@
 # SeedOffice — P1 Task List
 
-> vertical slices เรียงตาม dependency · ทำจากบนลงล่าง · ภาพรวมที่ [plan.md](./plan.md) · สเปค [SPEC.md](../SPEC.md) v0.8
+> vertical slices เรียงตาม dependency · ทำจากบนลงล่าง · ภาพรวมที่ [plan.md](./plan.md) · สเปค [SPEC.md](../SPEC.md) v0.9
 > ทุก task DoD = `typecheck + lint + test` เขียว + verify ผ่าน + ขึ้น preview ได้
 
 ---
@@ -52,7 +52,7 @@
 - **AC:** member ยิง endpoint owner-only → 403; **vendor ยิง P&L/payroll → 403**; action การเงินถูก log
 - **Verify:** integration test สิทธิ์ครบ 3 role; ดู `audit_logs` มี record
 
-> **CP1:** login ได้, role กัน nav + API ถูกต้อง — รีวิวกับเจ้าของ
+> **CP1:** login ได้, role กัน nav + API ถูกต้อง + **e2e login (Playwright) เขียว** — รีวิวกับเจ้าของ
 
 ---
 
@@ -107,8 +107,9 @@
 **deps:** T09, T07 (rate), T03
 - `time_entries` (+ `timer_sessions` สำหรับ timer เดินอยู่); ลงเวลาจาก task detail: timer start/stop + manual; **snapshot rate** ตอนสร้าง; edit + soft-delete
 - แสดง **`H:MM:SS`** (ชั่วโมงหลักเดียว) + อ้าง **เพดานชั่วโมง/วัน** (config)
-- **AC:** timer stop → entry มี rateSnapshot; manual ได้; แก้/ลบ (soft) ได้; **ทุก role รวม vendor ลงของตัวเองได้**
-- **Verify:** จับเวลา 1 รอบ + manual → เห็น entry + rateSnapshot ถูก; vendor ลงของตัวเองได้
+- **กฎ timer (SPEC §4.5)**: วิ่งทีละตัวต่อคน (start ใหม่ = auto-stop ตัวเดิม) · **ชนเพดานวัน = บล็อก** (timer auto-stop + เริ่มต่อไม่ได้) + **banner เว็บ + อีเมลแจ้ง** (เลือก provider: CF Email Sending/Resend — mock ใน CI) · ข้ามคืนรันต่อได้ จน **session ครบ 8 ชม. → auto-stop** · manual ย้อนหลังลงได้แม้วันนั้นชนเพดาน (เข้า manual%)
+- **AC:** timer stop → entry มี rateSnapshot; manual ได้; แก้/ลบ (soft) ได้; **ทุก role รวม vendor ลงของตัวเองได้**; start timer ตัวที่ 2 → ตัวแรก stop + ได้ entry; ชั่วโมงวันแตะเพดาน → timer หยุด + จับต่อไม่ได้ + มี banner (+ อีเมล mock ถูกยิง)
+- **Verify:** จับเวลา 1 รอบ + manual → เห็น entry + rateSnapshot ถูก; vendor ลงของตัวเองได้; จำลองชนเพดาน → ถูกบล็อก + เตือนโผล่
 
 ### ☐ T13 — Time audit + integrity metric (manual%)
 **deps:** T12
@@ -148,7 +149,14 @@
 - **AC:** cost/profit/margin ตรง core; owner+member เห็น; **vendor ไม่เห็น P&L เลย (server + UI)**; breakdown รายคนโชว์ **ชั่วโมง** (ไม่โชว์เงินรายคน)
 - **Verify:** เทียบ cost กับ core; สลับ vendor → ไม่เห็นเงินทั้ง list + detail
 
-> **CP4:** ลูปเงินครบ → **P1 เสร็จ** — รีวิว + ตัดสินใจเข้า P2 (petty cash + team hub)
+### ☐ T18 — D1 backup (Cron → R2)
+**deps:** T02 *(ทำได้ทุกเมื่อหลัง T02 — ต้องเสร็จก่อนปิดงวดจริงครั้งแรก)*
+- Cron Trigger รายวัน: export D1 (ทุกตารางเวลา/การเงิน) → R2 พร้อม timestamp + retention (เช่นเก็บ 30 ชุดล่าสุด); log ผล/แจ้ง fail
+- **AC:** backup ขึ้น R2 ตาม schedule; **ทดสอบ restore ลง local D1 สำเร็จ 1 ครั้ง** (ไม่ใช่แค่มีไฟล์)
+- **Verify:** trigger cron ใน dev → object โผล่ใน R2; restore แล้ว query ข้อมูลครบ
+
+> **CP4:** ลูปเงินครบ + backup ทำงาน + **e2e ลูปเงิน (login → ลงเวลา → เห็นเงิน → ปิดงวด) เขียว** → **P1 เสร็จ** — รีวิว + ตัดสินใจเข้า P2 (petty cash + team hub)
+> **Cutover:** เริ่มใช้จริง**วันที่ 25 (ต้นงวด)** แบบ fresh — ไม่ import จาก Notion/Everhour · **รันคู่กับวิธีเดิม 1 งวดเต็ม** ยอดตรงกับคิดมือ → ค่อยเลิกของเก่า
 
 ---
 
