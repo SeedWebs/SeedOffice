@@ -1,3 +1,5 @@
+import { createDb, users } from '@seedoffice/db'
+import { eq } from 'drizzle-orm'
 import { Hono, type Context } from 'hono'
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 import { z } from 'zod'
@@ -89,6 +91,18 @@ export const authRoutes = new Hono<AppEnv>()
     if (token) await revokeSession(c.env, token)
     deleteCookie(c, SESSION_COOKIE, { path: '/' })
     return c.json({ ok: true })
+  })
+
+  // dev เท่านั้น — FE ใช้โชว์ปุ่ม dev-login + ตัวสลับ user (prod = enabled:false เสมอ)
+  .get('/dev-info', async (c) => {
+    if (c.env.DEV_AUTH !== '1') return c.json({ enabled: false, users: [] })
+    const db = createDb(c.env.DB)
+    const list = await db
+      .select({ email: users.email, name: users.name, role: users.role })
+      .from(users)
+      .where(eq(users.status, 'active'))
+      .orderBy(users.role, users.name)
+    return c.json({ enabled: true, users: list })
   })
 
   // dev เท่านั้น (DEV_AUTH=1) — login เป็น user ที่ seed ไว้ ใช้ใน local/e2e · prod = 404

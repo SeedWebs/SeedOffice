@@ -16,10 +16,12 @@
     "db:generate": "pnpm --filter @seedoffice/db exec drizzle-kit generate",
     "db:migrate": "wrangler d1 migrations apply seedoffice --local",
     "db:migrate:remote": "wrangler d1 migrations apply seedoffice --remote",
-    "db:seed": "wrangler d1 execute seedoffice --local --file packages/db/seed.sql"
+    "db:seed": "wrangler d1 execute seedoffice --local --file packages/db/seed.sql",
+    "test:e2e": "playwright test"
   },
   "devDependencies": {
     "@eslint/js": "^10.0.1",
+    "@playwright/test": "^1.60.0",
     "@types/node": "^25.9.2",
     "concurrently": "^10.0.3",
     "eslint": "^10.4.1",

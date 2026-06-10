@@ -10,3 +10,7 @@ dist/
 .wrangler/
 .dev.vars
 *.local
+
+# Playwright
+test-results/
+playwright-report/
