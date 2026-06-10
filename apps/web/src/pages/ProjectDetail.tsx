@@ -1,6 +1,7 @@
-import { ArrowUpDown, Check, ChevronLeft, GripVertical, Plus, Trash2, X } from 'lucide-react'
+import { ArrowUpDown, Check, ChevronLeft, GripVertical, Plus, X } from 'lucide-react'
 import { useMemo, useState, type DragEvent } from 'react'
 import { Link, useParams } from 'react-router'
+import { TaskDrawer } from '../components/TaskDrawer'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
 import { fmtThaiDate, STATUS_CHIP, STATUS_LABEL, type ProjectRow } from '../lib/project-ui'
@@ -25,11 +26,6 @@ export interface BoardGroup {
   sortOrder: number
   tasks: BoardTask[]
 }
-interface UserOpt {
-  id: string
-  name: string
-}
-
 const AVATAR_COLORS = ['bg-brand-100 text-brand-700', 'bg-sky-100 text-sky-700', 'bg-violet-100 text-violet-700', 'bg-rose-100 text-rose-700', 'bg-amber-100 text-amber-700', 'bg-teal-100 text-teal-700', 'bg-indigo-100 text-indigo-700', 'bg-pink-100 text-pink-700']
 export const avatarColor = (key: string) => AVATAR_COLORS[[...key].reduce((s, ch) => s + ch.charCodeAt(0), 0) % AVATAR_COLORS.length]
 
@@ -88,57 +84,14 @@ function GroupTimeline({ groups }: { groups: BoardGroup[] }) {
   )
 }
 
-function TaskEditor({ task, userOpts, onSaved, onDeleted }: { task: BoardTask; userOpts: UserOpt[]; onSaved: () => void; onDeleted: () => void }) {
-  const [form, setForm] = useState({
-    title: task.title,
-    assigneeId: task.assigneeId ?? '',
-    startDate: task.startDate ?? '',
-    dueDate: task.dueDate ?? '',
-    estimateH: task.estimateMinutes != null ? String(task.estimateMinutes / 60) : '',
-  })
-  const input = 'text-sm bg-white shadow-xs rounded-lg px-2.5 py-1.5'
-  const save = async () => {
-    await api.patch(`/api/tasks/${task.id}`, {
-      title: form.title,
-      assigneeId: form.assigneeId || null,
-      startDate: form.startDate || null,
-      dueDate: form.dueDate || null,
-      estimateMinutes: form.estimateH ? Math.round(Number(form.estimateH) * 60) : null,
-    })
-    onSaved()
-  }
-  return (
-    <div className="px-4 py-3 bg-slate-50/80 border-t border-slate-100 flex flex-wrap items-center gap-2">
-      <input value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={`${input} flex-1 min-w-44`} />
-      <select value={form.assigneeId} onChange={(e) => setForm({ ...form, assigneeId: e.target.value })} className={input} aria-label="ผู้รับผิดชอบ">
-        <option value="">— ไม่ระบุ —</option>
-        {userOpts.map((u) => (
-          <option key={u.id} value={u.id}>{u.name}</option>
-        ))}
-      </select>
-      <input type="date" value={form.startDate} onChange={(e) => setForm({ ...form, startDate: e.target.value })} className={input} title="เริ่ม" />
-      <input type="date" value={form.dueDate} onChange={(e) => setForm({ ...form, dueDate: e.target.value })} className={input} title="กำหนดส่ง" />
-      <input type="number" placeholder="ประเมิน (ชม.)" value={form.estimateH} onChange={(e) => setForm({ ...form, estimateH: e.target.value })} className={`${input} w-28`} />
-      <button onClick={() => void save()} className="text-sm bg-brand-600 text-white px-3 py-1.5 rounded-lg hover:bg-brand-700">บันทึก</button>
-      <button
-        onClick={() => { if (confirm(`ลบงาน "${task.title}"?`)) void api.delete(`/api/tasks/${task.id}`).then(onDeleted) }}
-        title="ลบงาน" className="p-1.5 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50"
-      >
-        <Trash2 className="w-4 h-4" />
-      </button>
-    </div>
-  )
-}
-
 export function ProjectDetailPage() {
   const { id } = useParams<{ id: string }>()
   const { user } = useAuth()
   const canEdit = user?.role !== 'vendor'
   const { data: project } = useLoad<ProjectRow>(() => api.get(`/api/projects/${id}`), [id])
   const { data: board, reload } = useLoad<{ groups: BoardGroup[] }>(() => api.get(`/api/projects/${id}/board`), [id])
-  const { data: userOpts } = useLoad<UserOpt[]>(() => api.get('/api/users'))
   const [reorderOn, setReorderOn] = useState(false)
-  const [editingTask, setEditingTask] = useState<string | null>(null)
+  const [drawerTask, setDrawerTask] = useState<string | null>(null)
   const [addingTaskIn, setAddingTaskIn] = useState<string | null>(null)
   const [newTitle, setNewTitle] = useState('')
   const [addingGroup, setAddingGroup] = useState(false)
@@ -250,7 +203,7 @@ export function ProjectDetailPage() {
                     onDragStart={(e) => { e.stopPropagation(); setDrag({ kind: 'task', id: t.id }) }}
                     onDragOver={reorderOn ? over : undefined}
                     onDrop={reorderOn && drag?.kind === 'task' ? (e) => { e.stopPropagation(); void dropTask(g, ti) } : undefined}
-                    onClick={() => canEdit && setEditingTask(editingTask === t.id ? null : t.id)}
+                    onClick={() => setDrawerTask(t.id)}
                   >
                     {reorderOn && <GripVertical className="w-4 h-4 text-slate-200 cursor-grab shrink-0" />}
                     <button
@@ -272,14 +225,6 @@ export function ProjectDetailPage() {
                       </div>
                     )}
                   </div>
-                  {editingTask === t.id && userOpts && (
-                    <TaskEditor
-                      task={t}
-                      userOpts={userOpts}
-                      onSaved={() => { setEditingTask(null); void reload() }}
-                      onDeleted={() => { setEditingTask(null); void reload() }}
-                    />
-                  )}
                 </div>
               ))}
               {reorderOn && drag?.kind === 'task' && (
@@ -327,6 +272,10 @@ export function ProjectDetailPage() {
           )
         )}
       </div>
+
+      {drawerTask && (
+        <TaskDrawer taskId={drawerTask} onClose={() => setDrawerTask(null)} onChanged={() => void reload()} />
+      )}
     </div>
   )
 }

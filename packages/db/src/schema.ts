@@ -156,6 +156,46 @@ export const tasks = sqliteTable(
   ],
 )
 
+export const taskComments = sqliteTable(
+  'task_comments',
+  {
+    id: id(),
+    taskId: text('task_id')
+      .notNull()
+      .references(() => tasks.id),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    body: text('body').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [index('task_comments_task_idx').on(t.taskId)],
+)
+
+/** ไฟล์แนบบน R2 — เก็บเฉพาะ metadata, ตัวไฟล์อยู่ R2 (SPEC §6) */
+export const taskAttachments = sqliteTable(
+  'task_attachments',
+  {
+    id: id(),
+    taskId: text('task_id')
+      .notNull()
+      .references(() => tasks.id),
+    r2Key: text('r2_key').notNull(),
+    filename: text('filename').notNull(),
+    mime: text('mime').notNull(),
+    sizeBytes: integer('size_bytes').notNull(),
+    uploadedBy: text('uploaded_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [index('task_attachments_task_idx').on(t.taskId)],
+)
+
 /** log การเปลี่ยนข้อมูลการเงิน/เวลา (SPEC §11: ทุก manual/แก้/ลบ + การเงิน) — meta เก็บ before→after */
 export const auditLogs = sqliteTable(
   'audit_logs',
@@ -187,3 +227,5 @@ export type Client = typeof clients.$inferSelect
 export type Project = typeof projects.$inferSelect
 export type TaskGroup = typeof taskGroups.$inferSelect
 export type Task = typeof tasks.$inferSelect
+export type TaskComment = typeof taskComments.$inferSelect
+export type TaskAttachment = typeof taskAttachments.$inferSelect
