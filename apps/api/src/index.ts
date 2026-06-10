@@ -3,8 +3,10 @@ import { requireAuth } from './middleware/auth'
 import { ownerOnly, teamOnly } from './middleware/roles'
 import { adminRoutes } from './routes/admin'
 import { authRoutes } from './routes/auth'
+import { calendarRoutes } from './routes/calendar'
 import { docRoutes } from './routes/docs'
 import { expenseRoutes } from './routes/expenses'
+import { teamActivityRoutes } from './routes/team-activity'
 import { financeRoutes } from './routes/finance'
 import { overviewRoutes } from './routes/overview'
 import { payrollAdminRoutes } from './routes/payroll-admin'
@@ -71,6 +73,12 @@ app.route('/api/docs', docRoutes)
 app.use('/api/expenses', requireAuth, teamOnly)
 app.use('/api/expenses/*', requireAuth, teamOnly)
 app.route('/api/expenses', expenseRoutes)
+// ปฏิทินทีม + team activity: owner+member (vendor ไม่เห็น team hub — SPEC §4.10)
+app.use('/api/calendar', requireAuth, teamOnly)
+app.use('/api/calendar/*', requireAuth, teamOnly)
+app.route('/api/calendar', calendarRoutes)
+app.use('/api/team-activity', requireAuth, teamOnly)
+app.route('/api/team-activity', teamActivityRoutes)
 
 app.get('/api/me', requireAuth, (c) => {
   const u = c.var.user

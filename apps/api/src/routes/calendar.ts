@@ -1,0 +1,103 @@
+import { addDaysISO, cycleOf } from '@seedoffice/core'
+import { CALENDAR_EVENT_TYPES, calendarEvents, companyConfig, createDb, users } from '@seedoffice/db'
+import { and, eq, gte, lte } from 'drizzle-orm'
+import { Hono } from 'hono'
+import { z } from 'zod'
+import type { AppEnv } from '../types'
+
+const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
+
+/** event ตัดรอบ/จ่ายเงินเดือนจาก config — virtual ไม่เก็บใน DB (เปลี่ยน config แล้วขยับเอง) */
+function payrollEvents(from: string, to: string, cutoffDay: number) {
+  const out: { id: string; title: string; startDate: string; type: 'payroll' }[] = []
+  // เดินทีละงวดจาก from จนพ้น to
+  let probe = from
+  for (let i = 0; i < 26; i++) {
+    const cycle = cycleOf(probe, cutoffDay)
+    for (const [title, date] of [
+      ['ตัดรอบเงินเดือน', cycle.end],
+      ['จ่ายเงินเดือน', cycle.payDate],
+    ] as const) {
+      if (date >= from && date <= to) out.push({ id: `payroll-${title}-${date}`, title, startDate: date, type: 'payroll' })
+    }
+    probe = addDaysISO(cycle.end, 2) // เข้างวดถัดไป
+    if (probe > to) break
+  }
+  return out
+}
+
+/** ปฏิทินทีม (SPEC §4.14) — mount ด้วย requireAuth + teamOnly (vendor ไม่เห็น team hub) */
+export const calendarRoutes = new Hono<AppEnv>()
+
+  .get('/', async (c) => {
+    const q = z
+      .object({ from: isoDate, to: isoDate })
+      .safeParse({ from: c.req.query('from'), to: c.req.query('to') })
+    if (!q.success) return c.json({ error: 'invalid_range' }, 400)
+    const db = createDb(c.env.DB)
+    const rows = await db
+      .select({ ev: calendarEvents, userName: users.name })
+      .from(calendarEvents)
+      .leftJoin(users, eq(calendarEvents.userId, users.id))
+      .where(and(lte(calendarEvents.startDate, q.data.to), gte(calendarEvents.startDate, addDaysISO(q.data.from, -31))))
+    const cfg = (await db.select().from(companyConfig).limit(1))[0]
+
+    // event หลายวัน: เก็บที่ startDate แต่ครอบช่วง — กรองให้ทับช่วงที่ขอ
+    const visible = rows.filter((r) => (r.ev.endDate ?? r.ev.startDate) >= q.data.from)
+    return c.json({
+      events: [
+        ...visible.map((r) => ({ ...r.ev, userName: r.userName })),
+        ...payrollEvents(q.data.from, q.data.to, cfg?.cutoffDay ?? 25),
+      ],
+    })
+  })
+
+  .post('/', async (c) => {
+    const body = z
+      .object({
+        title: z.string().min(1).max(120),
+        startDate: isoDate,
+        endDate: isoDate.optional(),
+        type: z.enum(CALENDAR_EVENT_TYPES).default('other'),
+        userId: z.string().optional(), // วันลาของใคร
+        projectId: z.string().optional(),
+      })
+      .safeParse(await c.req.json())
+    if (!body.success) return c.json({ error: 'invalid' }, 400)
+    if (body.data.endDate && body.data.endDate < body.data.startDate)
+      return c.json({ error: 'invalid_range' }, 400)
+    const db = createDb(c.env.DB)
+    const me = c.get('user')
+    const inserted = await db
+      .insert(calendarEvents)
+      .values({ ...body.data, createdBy: me.id })
+      .returning()
+    return c.json(inserted[0], 201)
+  })
+
+  .patch('/:id', async (c) => {
+    const body = z
+      .object({
+        title: z.string().min(1).max(120).optional(),
+        startDate: isoDate.optional(),
+        endDate: isoDate.nullable().optional(),
+        type: z.enum(CALENDAR_EVENT_TYPES).optional(),
+        userId: z.string().nullable().optional(),
+      })
+      .safeParse(await c.req.json())
+    if (!body.success) return c.json({ error: 'invalid' }, 400)
+    const db = createDb(c.env.DB)
+    const updated = await db
+      .update(calendarEvents)
+      .set(body.data)
+      .where(eq(calendarEvents.id, c.req.param('id')))
+      .returning()
+    if (!updated[0]) return c.json({ error: 'not_found' }, 404)
+    return c.json(updated[0])
+  })
+
+  .delete('/:id', async (c) => {
+    const db = createDb(c.env.DB)
+    await db.delete(calendarEvents).where(eq(calendarEvents.id, c.req.param('id')))
+    return c.json({ ok: true })
+  })

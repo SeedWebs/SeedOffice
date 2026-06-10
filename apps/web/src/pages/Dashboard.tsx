@@ -3,7 +3,10 @@ import { Pause, Play, Plus, Star } from 'lucide-react'
 import { useEffect } from 'react'
 import { useNavigate } from 'react-router'
 import { TASK_CREATED_EVENT } from '../components/QuickAdd'
+import { TeamBox } from '../components/TeamBox'
+import { TeamCalendar } from '../components/TeamCalendar'
 import { api } from '../lib/api'
+import { useAuth } from '../lib/auth'
 import { fmtThaiDate } from '../lib/project-ui'
 import { TIMER_CHANGED_EVENT, useTimer } from '../lib/timer'
 import { useLoad } from '../lib/useLoad'
@@ -30,6 +33,7 @@ export function DashboardPage() {
   const { data, reload } = useLoad<{ today: TodayTask[]; activeTaskId: string | null; upcoming: UpcomingTask[] }>(() => api.get('/api/overview'))
   const navigate = useNavigate()
   const timer = useTimer()
+  const { user } = useAuth()
 
   useEffect(() => {
     const onCreated = () => void reload()
@@ -133,7 +137,12 @@ export function DashboardPage() {
           </div>
         </div>
       </div>
-      <p className="text-[11px] text-slate-400 mt-5">ทีมงาน + ปฏิทิน (team hub) จะตามมาใน P2 — ตอนนี้โฟกัสลูปเงินก่อน</p>
+      {user?.role !== 'vendor' && (
+        <>
+          <TeamBox />
+          <TeamCalendar />
+        </>
+      )}
     </div>
   )
 }
