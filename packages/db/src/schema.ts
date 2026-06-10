@@ -66,7 +66,30 @@ export const companyConfig = sqliteTable('company_config', {
   workHourCapMinutes: integer('work_hour_cap_minutes').notNull().default(480), // 8 ชม./วัน
 })
 
+/** log การเปลี่ยนข้อมูลการเงิน/เวลา (SPEC §11: ทุก manual/แก้/ลบ + การเงิน) — meta เก็บ before→after */
+export const auditLogs = sqliteTable(
+  'audit_logs',
+  {
+    id: id(),
+    actorId: text('actor_id')
+      .notNull()
+      .references(() => users.id),
+    action: text('action').notNull(), // เช่น 'rate.create' · 'time_entry.update' · 'pay_cycle.close'
+    entity: text('entity').notNull(),
+    entityId: text('entity_id').notNull(),
+    meta: text('meta', { mode: 'json' }).$type<Record<string, unknown>>(),
+    at: integer('at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [
+    index('audit_entity_idx').on(t.entity, t.entityId),
+    index('audit_actor_idx').on(t.actorId),
+  ],
+)
+
 export type User = typeof users.$inferSelect
 export type Session = typeof sessions.$inferSelect
 export type Rate = typeof rates.$inferSelect
 export type CompanyConfig = typeof companyConfig.$inferSelect
+export type AuditLog = typeof auditLogs.$inferSelect
