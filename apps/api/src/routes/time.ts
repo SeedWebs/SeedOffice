@@ -1,9 +1,10 @@
-import { bkkDateOf, remainingCapMinutes } from '@seedoffice/core'
-import { createDb, tasks, timeEntries, timerSessions, users } from '@seedoffice/db'
-import { and, desc, eq, isNull } from 'drizzle-orm'
+import { bkkDateOf, cycleOf, isManualFlagged, manualRatio, remainingCapMinutes } from '@seedoffice/core'
+import { companyConfig, createDb, tasks, timeEntries, timerSessions, users } from '@seedoffice/db'
+import { and, desc, eq, gte, isNull, lte } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { writeAudit } from '../lib/audit'
+import { teamOnly } from '../middleware/roles'
 import { closeSession, getCapMinutes, loggedMinutes, rateFor } from '../lib/time-core'
 import type { AppEnv } from '../types'
 
@@ -122,6 +123,51 @@ export const timeRoutes = new Hono<AppEnv>()
     const capMinutes = await getCapMinutes(c.env)
     const dayTotal = await loggedMinutes(c.env, me.id, body.data.workDate)
     return c.json({ ...inserted[0], overCap: dayTotal > capMinutes }, 201)
+  })
+
+  // ชั่วโมงทีมทั้งงวด + integrity metric (manual% เห็นทั้งทีม owner+member · SPEC §4.5/§13)
+  .get('/team-hours', teamOnly, async (c) => {
+    const db = createDb(c.env.DB)
+    const today = bkkDateOf(Date.now())
+    const cfg = (await db.select().from(companyConfig).limit(1))[0]
+    const cycle = cycleOf(c.req.query('date') ?? today, cfg?.cutoffDay ?? 25)
+
+    const entries = await db
+      .select({
+        userId: timeEntries.userId,
+        minutes: timeEntries.minutes,
+        source: timeEntries.source,
+        editCount: timeEntries.editCount,
+      })
+      .from(timeEntries)
+      .where(
+        and(
+          gte(timeEntries.workDate, cycle.start),
+          lte(timeEntries.workDate, cycle.end),
+          isNull(timeEntries.deletedAt),
+        ),
+      )
+    const team = await db
+      .select({ id: users.id, name: users.name, role: users.role })
+      .from(users)
+      .where(eq(users.status, 'active'))
+
+    return c.json({
+      cycle,
+      rows: team.map((u) => {
+        const mine = entries.filter((e) => e.userId === u.id)
+        const ratio = manualRatio(mine)
+        return {
+          userId: u.id,
+          name: u.name,
+          role: u.role,
+          totalMinutes: mine.reduce((s, e) => s + e.minutes, 0),
+          manualRatio: ratio,
+          flagged: isManualFlagged(ratio),
+          editCount: mine.reduce((s, e) => s + e.editCount, 0),
+        }
+      }),
+    })
   })
 
   // entries ของ task (ใน drawer) — vendor เห็นเฉพาะของตัวเอง (SPEC §2)

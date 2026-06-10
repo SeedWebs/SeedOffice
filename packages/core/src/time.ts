@@ -45,6 +45,29 @@ export function remainingCapMinutes(loggedTodayMinutes: number, capMinutes: numb
   return Math.max(0, capMinutes - loggedTodayMinutes)
 }
 
+export interface SourcedMinutes {
+  minutes: number
+  source: 'timer' | 'manual'
+}
+
+/**
+ * Integrity metric (SPEC §4.5): % เวลา manual เทียบเวลารวม "ทั้งงวด" ต่อคน
+ * คืนสัดส่วน 0–1 (float เพื่อแสดงผลเท่านั้น) · ไม่มีเวลาเลย = 0
+ */
+export function manualRatio(entries: readonly SourcedMinutes[]): number {
+  let total = 0
+  let manual = 0
+  for (const e of entries) {
+    total += e.minutes
+    if (e.source === 'manual') manual += e.minutes
+  }
+  return total === 0 ? 0 : manual / total
+}
+
+/** เกณฑ์ flag สีส้ม: manual เกิน 10% ของงวด (SPEC §13 locked) */
+export const MANUAL_FLAG_THRESHOLD = 0.1
+export const isManualFlagged = (ratio: number): boolean => ratio > MANUAL_FLAG_THRESHOLD
+
 export interface RatePoint {
   rateSatangPerHour: number
   effectiveFrom: string // YYYY-MM-DD

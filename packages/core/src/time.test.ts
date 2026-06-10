@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { bkkDateOf, rateAt, remainingCapMinutes, splitSessionMinutes } from './time'
+import { bkkDateOf, isManualFlagged, manualRatio, rateAt, remainingCapMinutes, splitSessionMinutes } from './time'
 
 // epoch helper: สร้าง ms จากเวลา BKK (UTC+7)
 const bkk = (iso: string) => Date.parse(`${iso}:00+07:00`)
@@ -44,6 +44,25 @@ describe('remainingCapMinutes — เพดานชั่วโมง/วัน
     expect(remainingCapMinutes(420, 480)).toBe(60)
     expect(remainingCapMinutes(480, 480)).toBe(0)
     expect(remainingCapMinutes(500, 480)).toBe(0) // เกินแล้ว (manual ย้อนหลัง) → ไม่ติดลบ
+  })
+})
+
+describe('manualRatio — integrity metric ทั้งงวด (flag ส้ม >10%)', () => {
+  it('นิยาม: Σmanual ÷ Σทั้งหมด', () => {
+    expect(
+      manualRatio([
+        { minutes: 90, source: 'timer' },
+        { minutes: 10, source: 'manual' },
+      ]),
+    ).toBeCloseTo(0.1)
+    expect(manualRatio([])).toBe(0)
+    expect(manualRatio([{ minutes: 60, source: 'manual' }])).toBe(1)
+  })
+  it('flag เมื่อ "เกิน" 10% เท่านั้น (10% พอดี = ปกติ — ตาม mockup ตูน 18% ส้ม / ปอนด์ 4% ปกติ)', () => {
+    expect(isManualFlagged(0.1)).toBe(false)
+    expect(isManualFlagged(0.100001)).toBe(true)
+    expect(isManualFlagged(0.04)).toBe(false)
+    expect(isManualFlagged(0.18)).toBe(true)
   })
 })
 
