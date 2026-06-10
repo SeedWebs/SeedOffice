@@ -31,6 +31,12 @@
     "GOOGLE_CLIENT_ID": "TODO-google-oauth-client-id"
   },
 
+  // Presence realtime (SPEC §4.15) — DO ตัวเดียว broadcast ความเคลื่อนไหว timer ให้ทีม
+  "durable_objects": {
+    "bindings": [{ "name": "PRESENCE", "class_name": "PresenceHub" }]
+  },
+  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["PresenceHub"] }],
+
   // D1: สร้างจริงแล้ว (T02) · local dev ใช้ sqlite ในเครื่อง ไม่แตะ remote · migrate remote = `pnpm db:migrate:remote`
   "d1_databases": [
     {

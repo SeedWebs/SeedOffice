@@ -3,6 +3,7 @@ import { companyConfig, createDb, rates, timeEntries, timerSessions, type TimerS
 import { and, eq, isNull } from 'drizzle-orm'
 import { writeAudit } from './audit'
 import { notifyCapReached } from './notify'
+import { notifyPresence } from './presence-notify'
 
 export async function getCapMinutes(env: Env): Promise<number> {
   const db = createDb(env.DB)
@@ -78,5 +79,6 @@ export async function closeSession(
   }
   await db.delete(timerSessions).where(eq(timerSessions.id, session.id))
   if (capped) await notifyCapReached(env, session.userId)
+  await notifyPresence(env, 'changed') // ทีมเห็น timer หยุดแบบ realtime
   return { capped, createdMinutes }
 }

@@ -6,6 +6,7 @@ import { z } from 'zod'
 import { writeAudit } from '../lib/audit'
 import { teamOnly } from '../middleware/roles'
 import { isCycleClosed } from '../lib/payroll-core'
+import { notifyPresence } from '../lib/presence-notify'
 import { closeSession, getCapMinutes, loggedMinutes, rateFor } from '../lib/time-core'
 import type { AppEnv } from '../types'
 
@@ -67,6 +68,7 @@ export const timeRoutes = new Hono<AppEnv>()
 
     await db.insert(timerSessions).values({ userId: me.id, taskId: task.id, startedAt: Date.now() })
     if (task.status === 'todo') await db.update(tasks).set({ status: 'doing' }).where(eq(tasks.id, task.id))
+    await notifyPresence(c.env, 'changed')
     return c.json({ ok: true, startedAt: Date.now() })
   })
 

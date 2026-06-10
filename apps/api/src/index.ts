@@ -19,6 +19,8 @@ import { taskRoutes } from './routes/tasks'
 import { timeRoutes } from './routes/time'
 import { userRoutes } from './routes/users'
 import { runScheduled } from './scheduled'
+
+export { PresenceHub } from './do/presence-hub'
 import type { AppEnv } from './types'
 
 const app = new Hono<AppEnv>()
@@ -79,6 +81,18 @@ app.use('/api/calendar/*', requireAuth, teamOnly)
 app.route('/api/calendar', calendarRoutes)
 app.use('/api/team-activity', requireAuth, teamOnly)
 app.route('/api/team-activity', teamActivityRoutes)
+
+// presence WebSocket (SPEC §4.15 realtime) — owner+member · ส่งต่อให้ DO พร้อมตัวตนที่ auth แล้ว
+app.get('/api/presence/ws', requireAuth, teamOnly, async (c) => {
+  if (c.req.header('upgrade')?.toLowerCase() !== 'websocket')
+    return c.json({ error: 'expected_websocket' }, 426)
+  const me = c.get('user')
+  const headers = new Headers(c.req.raw.headers)
+  headers.set('x-user-id', me.id)
+  headers.set('x-user-name', me.name)
+  const stub = c.env.PRESENCE.get(c.env.PRESENCE.idFromName('global'))
+  return stub.fetch(new Request(c.req.raw.url, { headers }))
+})
 
 app.get('/api/me', requireAuth, (c) => {
   const u = c.var.user

@@ -66,3 +66,15 @@ describe('audit log', () => {
     expect(rows[0]?.at).toBeInstanceOf(Date)
   })
 })
+
+describe('presence WS guards (P2)', () => {
+  it('vendor 403 · ไม่ upgrade = 426', async () => {
+    const v = await loginAs(guardedWithAuthRoutes, 'somchai@example.com')
+    void v
+    const { app } = await import('../src/index')
+    const vendorCookie = await loginAs(app, 'somchai@example.com')
+    expect((await app.request('/api/presence/ws', { headers: { cookie: vendorCookie } }, env)).status).toBe(403)
+    const m = await loginAs(app, 'pond@seedwebs.com')
+    expect((await app.request('/api/presence/ws', { headers: { cookie: m } }, env)).status).toBe(426)
+  })
+})

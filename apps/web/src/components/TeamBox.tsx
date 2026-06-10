@@ -50,6 +50,33 @@ export function TeamBox({ presenceRows }: { presenceRows?: TeamRow[] | null }) {
     return () => window.removeEventListener(TIMER_CHANGED_EVENT, onTimer)
   }, [reload])
 
+  // realtime (SPEC §4.15): presence WS — timer ใครขยับ → reload ทันที · reconnect ทุก 5 วิ + ping กัน idle
+  useEffect(() => {
+    let ws: WebSocket | null = null
+    let closed = false
+    let pingIv: ReturnType<typeof setInterval> | null = null
+    const connect = () => {
+      if (closed) return
+      ws = new WebSocket(`${location.protocol === 'https:' ? 'wss' : 'ws'}://${location.host}/api/presence/ws`)
+      ws.onmessage = (ev) => {
+        if (typeof ev.data === 'string' && ev.data.includes('changed')) void reload()
+      }
+      ws.onopen = () => {
+        pingIv = setInterval(() => ws?.readyState === WebSocket.OPEN && ws.send('ping'), 30_000)
+      }
+      ws.onclose = () => {
+        if (pingIv) clearInterval(pingIv)
+        if (!closed) setTimeout(connect, 5_000)
+      }
+    }
+    connect()
+    return () => {
+      closed = true
+      if (pingIv) clearInterval(pingIv)
+      ws?.close()
+    }
+  }, [reload])
+
   const rows = presenceRows ?? data?.rows ?? []
   if (rows.length === 0) return null
 
