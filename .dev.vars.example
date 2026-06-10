@@ -1,0 +1,8 @@
+# คัดลอกเป็น .dev.vars (gitignored) แล้วเติมค่า
+# APP_URL = origin ที่เปิดเว็บตอน dev (vite)
+APP_URL=http://localhost:5173
+# DEV_AUTH=1 เปิดปุ่ม dev-login (ห้ามเปิดบน production เด็ดขาด)
+DEV_AUTH=1
+# จาก Google Cloud Console → OAuth client (Web) · redirect URI = {APP_URL}/api/auth/callback
+GOOGLE_CLIENT_ID=
+GOOGLE_CLIENT_SECRET=

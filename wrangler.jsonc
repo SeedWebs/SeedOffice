@@ -19,6 +19,13 @@
     "head_sampling_rate": 1
   },
 
+  // ค่า production — local override ที่ .dev.vars · GOOGLE_CLIENT_SECRET = secret (wrangler secret put)
+  "vars": {
+    "APP_URL": "https://seedoffice.example.com", // TODO: เปลี่ยนเป็นโดเมนจริงก่อน deploy
+    "DEV_AUTH": "0",
+    "GOOGLE_CLIENT_ID": "TODO-google-oauth-client-id"
+  },
+
   // D1: สร้างจริงแล้ว (T02) · local dev ใช้ sqlite ในเครื่อง ไม่แตะ remote · migrate remote = `pnpm db:migrate:remote`
   "d1_databases": [
     {
