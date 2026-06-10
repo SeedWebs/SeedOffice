@@ -14,6 +14,7 @@ export interface ProjectRow {
   startDate: string | null
   dueDate: string | null
   openTodo: { title: string; dueDate: string | null; assigneeName: string | null } | null
+  paidPct?: number | null // ไม่มีเมื่อเป็น vendor (server ตัด)
 }
 
 export const STATUS_LABEL: Record<ProjectRow['status'], string> = {

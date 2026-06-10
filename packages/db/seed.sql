@@ -83,6 +83,24 @@ INSERT OR REPLACE INTO tasks (id, project_id, group_id, sort_order, title, descr
   ('t_somwang_ssl','p_somwang','g_somwang_ma',0,'ต่ออายุ SSL + domain',NULL,'u_korn','todo','normal',60,NULL,'2026-06-12','u_owner',1767200000000,NULL),
   ('t_daoden_news','p_daoden','g_daoden_ma',0,'เพิ่มข่าวรับสมัคร',NULL,'u_praew','todo','normal',60,NULL,'2026-06-15','u_owner',1767200000000,NULL);
 
+-- milestones + payments (ตรง mockup CRM: ทรัพย์เจริญ จ่ายแล้ว 50% · คลินิก 70% overdue งวด 3)
+INSERT OR REPLACE INTO milestones (id, project_id, name, sort_order, budget_satang, due_date, status) VALUES
+  ('m_sap_1','p_sap','งวด 1 · ออกแบบ + โครงเว็บ',0,6000000,'2026-03-15','done'),
+  ('m_sap_2','p_sap','งวด 2 · พัฒนา + ขึ้น staging',1,7000000,'2026-05-15','active'),
+  ('m_sap_3','p_sap','งวด 3 · ส่งมอบ + go live',2,5000000,'2026-06-30','planned'),
+  ('m_bloom_1','p_bloom','งวด 1 · มัดจำเริ่มงาน',0,7500000,'2026-03-15','done'),
+  ('m_bloom_2','p_bloom','งวด 2 · ระบบร้านค้า',1,10000000,'2026-06-30','active');
+
+INSERT OR REPLACE INTO payments (id, project_id, installment_no, label, amount_satang, due_date, paid_at, created_at) VALUES
+  ('pay_sap_1','p_sap',1,'งวด 1 · มัดจำ 50%',9000000,'2026-02-01','2026-02-03',1767200000000),
+  ('pay_sap_2','p_sap',2,'งวด 2 · 50% (ส่งมอบ)',9000000,'2026-06-30',NULL,1767200000000),
+  ('pay_bloom_1','p_bloom',1,'งวด 1 · มัดจำ 30%',7500000,'2026-03-01','2026-03-02',1767200000000),
+  ('pay_bloom_2','p_bloom',2,'งวด 2 · 40%',10000000,'2026-07-15',NULL,1767200000000),
+  ('pay_bloom_3','p_bloom',3,'งวด 3 · 30% (ส่งมอบ)',7500000,'2026-08-31',NULL,1767200000000),
+  ('pay_dent_1','p_dent',1,'งวด 1 · 40%',8800000,'2026-03-01','2026-03-01',1767200000000),
+  ('pay_dent_2','p_dent',2,'งวด 2 · 30%',6600000,'2026-05-01','2026-05-02',1767200000000),
+  ('pay_dent_3','p_dent',3,'งวด 3 · 30%',6600000,'2026-05-24',NULL,1767200000000);
+
 -- rates (สตางค์/ชั่วโมง) — ตรง mockup: เมธ ฿450 · ปอนด์ ฿400 · น้ำ ฿350 · ตูน ฿200 · สมชาย ฿350
 INSERT OR REPLACE INTO rates (id, user_id, rate_satang_per_hour, effective_from, note, created_at) VALUES
   ('r_owner_1',  'u_owner',  45000, '2026-01-01', 'rate ตั้งต้น', 1767200000000),

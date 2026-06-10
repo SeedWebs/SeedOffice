@@ -1,6 +1,7 @@
 import { ArrowUpDown, Check, ChevronLeft, GripVertical, Plus, Star, X } from 'lucide-react'
 import { useMemo, useState, type DragEvent } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
+import { FinanceSection } from '../components/FinanceSection'
 import { TaskDrawer } from '../components/TaskDrawer'
 import { api } from '../lib/api'
 import { useAuth } from '../lib/auth'
@@ -177,6 +178,7 @@ export function ProjectDetailPage() {
       </div>
 
       <GroupTimeline groups={groups} />
+      {canEdit && project.type === 'project' && <FinanceSection projectId={project.id} />}
 
       <div className="space-y-4">
         {groups.map((g, gi) => (

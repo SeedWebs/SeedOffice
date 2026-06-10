@@ -212,6 +212,43 @@ export const taskAttachments = sqliteTable(
   (t) => [index('task_attachments_task_idx').on(t.taskId)],
 )
 
+/** งวดงาน → กำไร/ขาดทุนต่องวด (SPEC §4.8) */
+export const milestones = sqliteTable(
+  'milestones',
+  {
+    id: id(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id),
+    name: text('name').notNull(),
+    sortOrder: integer('sort_order').notNull().default(0),
+    budgetSatang: integer('budget_satang'),
+    dueDate: text('due_date'),
+    status: text('status', { enum: ['planned', 'active', 'done'] }).notNull().default('planned'),
+  },
+  (t) => [index('milestones_project_idx').on(t.projectId, t.sortOrder)],
+)
+
+/** เงินลูกค้าจ่ายเป็นงวด → % บน card (SPEC §4.8) — owner+member เท่านั้น */
+export const payments = sqliteTable(
+  'payments',
+  {
+    id: id(),
+    projectId: text('project_id')
+      .notNull()
+      .references(() => projects.id),
+    installmentNo: integer('installment_no').notNull(),
+    label: text('label'),
+    amountSatang: integer('amount_satang').notNull(),
+    dueDate: text('due_date'),
+    paidAt: text('paid_at'), // YYYY-MM-DD ที่รับเงิน (null = ยังไม่จ่าย)
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [index('payments_project_idx').on(t.projectId, t.installmentNo)],
+)
+
 /** เวลา = หัวใจลูปเงิน (SPEC §4.5) — snapshot rate ตอนสร้าง · soft-delete เท่านั้น */
 export const timeEntries = sqliteTable(
   'time_entries',
@@ -292,3 +329,5 @@ export type TaskAttachment = typeof taskAttachments.$inferSelect
 export type TaskStar = typeof taskStars.$inferSelect
 export type TimeEntry = typeof timeEntries.$inferSelect
 export type TimerSession = typeof timerSessions.$inferSelect
+export type Milestone = typeof milestones.$inferSelect
+export type Payment = typeof payments.$inferSelect

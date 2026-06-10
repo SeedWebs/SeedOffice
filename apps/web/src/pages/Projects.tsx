@@ -79,9 +79,9 @@ function Cards({ rows, showMoney }: { rows: ProjectRow[]; showMoney: boolean }) 
           </div>
           <div className="flex items-center gap-2 mt-2.5">
             <span className={`text-[11px] px-2 py-0.5 rounded-full ${STATUS_CHIP[p.status]}`}>{STATUS_LABEL[p.status]}</span>
-            {showMoney && (
-              <span className="text-xs text-slate-400 tabular-nums" title="%ลูกค้าจ่าย — ต่อหลังมี payments (T14)">
-                —% จ่ายแล้ว
+            {showMoney && p.paidPct != null && (
+              <span className="text-xs text-slate-500 tabular-nums">
+                {p.paidPct}% <span className="text-slate-400">จ่ายแล้ว</span>
               </span>
             )}
             <span className="ml-auto text-[11px] text-slate-400">{p.clientName ?? ''}</span>

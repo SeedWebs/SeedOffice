@@ -1,4 +1,4 @@
-import { clients, createDb, projects, PROJECT_STATUSES, tasks, users, type Project } from '@seedoffice/db'
+import { clients, createDb, payments, projects, PROJECT_STATUSES, tasks, users, type Project } from '@seedoffice/db'
 import { asc, eq, ne } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
@@ -9,10 +9,14 @@ import type { AppEnv } from '../types'
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/)
 
 /** vendor ห้ามเห็นการเงินโปรเจกต์ (SPEC §2/§4.8) — ตัดที่ server เสมอ */
-function serialize<T extends { quotedSatang?: number | null }>(p: T, role: string) {
+function serialize<T extends { quotedSatang?: number | null; paidPct?: number | null }>(
+  p: T,
+  role: string,
+) {
   if (role === 'vendor') {
     const rest: Partial<T> = { ...p }
     delete rest.quotedSatang
+    delete rest.paidPct
     return rest
   }
   return p
@@ -44,11 +48,26 @@ export const projectRoutes = new Hono<AppEnv>()
       const cur = firstOpen.get(t.projectId)
       if (!cur || (t.dueDate ?? '9999') < (cur.dueDate ?? '9999')) firstOpen.set(t.projectId, t)
     }
+    // %ลูกค้าจ่าย ต่อโปรเจกต์ (→ card · vendor ถูกตัดที่ serialize)
+    const allPayments = await db
+      .select({ projectId: payments.projectId, amountSatang: payments.amountSatang, paidAt: payments.paidAt })
+      .from(payments)
+    const paidPctOf = (projectId: string): number | null => {
+      const mine = allPayments.filter((p) => p.projectId === projectId)
+      const total = mine.reduce((s, p) => s + p.amountSatang, 0)
+      if (total === 0) return null
+      return Math.round((mine.filter((p) => p.paidAt).reduce((s, p) => s + p.amountSatang, 0) / total) * 100)
+    }
     const role = c.get('user').role
     return c.json(
       rows.map((r) =>
         serialize(
-          { ...r.project, clientName: r.clientName, openTodo: firstOpen.get(r.project.id) ?? null },
+          {
+            ...r.project,
+            clientName: r.clientName,
+            openTodo: firstOpen.get(r.project.id) ?? null,
+            paidPct: paidPctOf(r.project.id),
+          },
           role,
         ),
       ),
