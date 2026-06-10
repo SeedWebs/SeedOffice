@@ -57,6 +57,13 @@
       "when": 1781071207334,
       "tag": "0007_lovely_robbie_robertson",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1781071501684,
+      "tag": "0008_mean_vindicator",
+      "breakpoints": true
     }
   ]
 }

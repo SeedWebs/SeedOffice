@@ -293,6 +293,99 @@ export const timerSessions = sqliteTable('timer_sessions', {
   startedAt: integer('started_at').notNull(),
 })
 
+export const ADJUSTMENT_KINDS = [
+  'allowance',
+  'depreciation',
+  'bonus',
+  'other_income',
+  'sso',
+  'wht',
+  'other_deduction',
+] as const
+
+/**
+ * รายการรายได้/หัก ต่อคนต่องวด (SPEC §4.7) — owner กรอกเหมือนที่ทำมือ
+ * งวดอ้างด้วย cycleStart (YYYY-MM-DD วันที่ 25) แทน pay_cycles id — งวดเปิดไม่ต้องมีแถวล่วงหน้า
+ * bonus = ความลับ (เจ้าตัว + owner เท่านั้น — บังคับที่ API)
+ */
+export const payAdjustments = sqliteTable(
+  'pay_adjustments',
+  {
+    id: id(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    cycleStart: text('cycle_start').notNull(),
+    kind: text('kind', { enum: ADJUSTMENT_KINDS }).notNull(),
+    amountSatang: integer('amount_satang').notNull(), // เก็บบวกเสมอ kind บอกทิศ
+    note: text('note'),
+    createdBy: text('created_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [index('pay_adjustments_user_cycle_idx').on(t.userId, t.cycleStart)],
+)
+
+/** โน้ต owner → พนักงาน ต่องวด (เตือน/ชม) — เจ้าตัว + owner เท่านั้น (SPEC §4.7) */
+export const payNotes = sqliteTable(
+  'pay_notes',
+  {
+    id: id(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    cycleStart: text('cycle_start').notNull(),
+    body: text('body').notNull(),
+    updatedBy: text('updated_by')
+      .notNull()
+      .references(() => users.id),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [index('pay_notes_user_cycle_idx').on(t.userId, t.cycleStart)],
+)
+
+/** snapshot ตอนปิดงวด — หลักฐานถาวร ไม่เปลี่ยนย้อนหลัง (SPEC §4.7) */
+export const payslips = sqliteTable(
+  'payslips',
+  {
+    id: id(),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    cycleStart: text('cycle_start').notNull(),
+    cycleEnd: text('cycle_end').notNull(),
+    payDate: text('pay_date').notNull(),
+    minutesTotal: integer('minutes_total').notNull(),
+    baseSatang: integer('base_satang').notNull(),
+    incomeSatang: integer('income_satang').notNull(),
+    deductionSatang: integer('deduction_satang').notNull(),
+    netSatang: integer('net_satang').notNull(),
+    linesJson: text('lines_json', { mode: 'json' }).$type<Record<string, unknown>>(),
+    ownerNote: text('owner_note'),
+    closedAt: integer('closed_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [index('payslips_user_cycle_idx').on(t.userId, t.cycleStart)],
+)
+
+/** ทะเบียนงวดที่ปิดแล้ว — กันแก้เวลา/adjustment ย้อนหลังในงวดปิด */
+export const payCycleClosures = sqliteTable('pay_cycle_closures', {
+  cycleStart: text('cycle_start').primaryKey(),
+  cycleEnd: text('cycle_end').notNull(),
+  closedBy: text('closed_by')
+    .notNull()
+    .references(() => users.id),
+  closedAt: integer('closed_at', { mode: 'timestamp_ms' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+})
+
 /** log การเปลี่ยนข้อมูลการเงิน/เวลา (SPEC §11: ทุก manual/แก้/ลบ + การเงิน) — meta เก็บ before→after */
 export const auditLogs = sqliteTable(
   'audit_logs',
@@ -331,3 +424,6 @@ export type TimeEntry = typeof timeEntries.$inferSelect
 export type TimerSession = typeof timerSessions.$inferSelect
 export type Milestone = typeof milestones.$inferSelect
 export type Payment = typeof payments.$inferSelect
+export type PayAdjustment = typeof payAdjustments.$inferSelect
+export type PayNote = typeof payNotes.$inferSelect
+export type Payslip = typeof payslips.$inferSelect

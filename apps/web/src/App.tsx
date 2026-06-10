@@ -6,8 +6,8 @@ import { AdminPage } from './pages/Admin'
 import { DashboardPage } from './pages/Dashboard'
 import { Login } from './pages/Login'
 import { ProjectDetailPage } from './pages/ProjectDetail'
+import { PayrollPage } from './pages/Payroll'
 import { ProjectsPage } from './pages/Projects'
-import { PayrollPage } from './pages/placeholders'
 
 function Protected({ children, roles }: { children: ReactNode; roles?: Me['role'][] }) {
   const { user, loading } = useAuth()

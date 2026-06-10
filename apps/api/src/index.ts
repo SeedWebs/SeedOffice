@@ -5,6 +5,7 @@ import { adminRoutes } from './routes/admin'
 import { authRoutes } from './routes/auth'
 import { financeRoutes } from './routes/finance'
 import { overviewRoutes } from './routes/overview'
+import { payrollRoutes } from './routes/payroll'
 import { clientPickerRoutes, projectRoutes } from './routes/projects'
 import { taskDetailRoutes } from './routes/task-detail'
 import { taskRoutes } from './routes/tasks'
@@ -48,6 +49,8 @@ app.route('/api', taskDetailRoutes)
 app.route('/api', overviewRoutes)
 app.route('/api', timeRoutes)
 app.route('/api', financeRoutes)
+app.use('/api/payroll/*', requireAuth)
+app.route('/api', payrollRoutes)
 
 app.get('/api/me', requireAuth, (c) => {
   const u = c.var.user
