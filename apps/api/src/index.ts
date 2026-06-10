@@ -5,6 +5,7 @@ import { adminRoutes } from './routes/admin'
 import { authRoutes } from './routes/auth'
 import { financeRoutes } from './routes/finance'
 import { overviewRoutes } from './routes/overview'
+import { payrollAdminRoutes } from './routes/payroll-admin'
 import { payrollRoutes } from './routes/payroll'
 import { clientPickerRoutes, projectRoutes } from './routes/projects'
 import { taskDetailRoutes } from './routes/task-detail'
@@ -21,6 +22,7 @@ app.get('/api/health', (c) => c.json({ ok: true }))
 app.route('/api/auth', authRoutes)
 app.use('/api/admin/*', requireAuth, ownerOnly)
 app.route('/api/admin', adminRoutes)
+app.route('/api/admin', payrollAdminRoutes)
 app.use('/api/users/*', requireAuth)
 app.use('/api/users', requireAuth)
 app.use('/api/config', requireAuth)

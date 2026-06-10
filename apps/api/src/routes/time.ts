@@ -5,6 +5,7 @@ import { Hono } from 'hono'
 import { z } from 'zod'
 import { writeAudit } from '../lib/audit'
 import { teamOnly } from '../middleware/roles'
+import { isCycleClosed } from '../lib/payroll-core'
 import { closeSession, getCapMinutes, loggedMinutes, rateFor } from '../lib/time-core'
 import type { AppEnv } from '../types'
 
@@ -96,6 +97,8 @@ export const timeRoutes = new Hono<AppEnv>()
     const me = c.get('user')
     const task = (await db.select().from(tasks).where(eq(tasks.id, c.req.param('id'))).limit(1))[0]
     if (!task) return c.json({ error: 'not_found' }, 404)
+    if (await isCycleClosed(c.env, body.data.workDate))
+      return c.json({ error: 'cycle_closed', message: 'งวดนั้นปิดแล้ว ลงเวลาย้อนหลังไม่ได้' }, 409)
     const rate = await rateFor(c.env, me.id, body.data.workDate)
     if (rate === null)
       return c.json({ error: 'no_rate', message: 'ยังไม่มี rate มีผล ณ วันที่นั้น' }, 409)
@@ -216,6 +219,11 @@ export const timeRoutes = new Hono<AppEnv>()
     )[0]
     if (!before) return c.json({ error: 'not_found' }, 404)
     if (before.userId !== me.id && me.role !== 'owner') return c.json({ error: 'forbidden' }, 403)
+    if (
+      (await isCycleClosed(c.env, before.workDate)) ||
+      (body.data.workDate && (await isCycleClosed(c.env, body.data.workDate)))
+    )
+      return c.json({ error: 'cycle_closed', message: 'งวดนั้นปิดแล้ว แก้เวลาไม่ได้' }, 409)
 
     const updated = await db
       .update(timeEntries)
@@ -248,6 +256,8 @@ export const timeRoutes = new Hono<AppEnv>()
     )[0]
     if (!before) return c.json({ error: 'not_found' }, 404)
     if (before.userId !== me.id && me.role !== 'owner') return c.json({ error: 'forbidden' }, 403)
+    if (await isCycleClosed(c.env, before.workDate))
+      return c.json({ error: 'cycle_closed', message: 'งวดนั้นปิดแล้ว ลบเวลาไม่ได้' }, 409)
     await db.update(timeEntries).set({ deletedAt: new Date() }).where(eq(timeEntries.id, before.id))
     await writeAudit(c.env, {
       actorId: me.id,

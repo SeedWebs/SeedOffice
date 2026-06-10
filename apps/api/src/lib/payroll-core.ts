@@ -1,6 +1,19 @@
 import { baseSatang, cycleOf, manualRatio, netOf, type Adjustment, type PayCycle } from '@seedoffice/core'
-import { companyConfig, createDb, payAdjustments, payNotes, projects, timeEntries } from '@seedoffice/db'
+import { companyConfig, createDb, payAdjustments, payCycleClosures, payNotes, projects, timeEntries } from '@seedoffice/db'
 import { and, eq, gte, isNull, lte } from 'drizzle-orm'
+
+/** งวดของ workDate ถูกปิดแล้วหรือยัง — ปิดแล้วห้ามแตะเวลา/adjustment (SPEC §4.7 ไม่เปลี่ยนย้อนหลัง) */
+export async function isCycleClosed(env: Env, workDate: string): Promise<boolean> {
+  const cycle = await cycleFor(env, workDate)
+  const row = (
+    await createDb(env.DB)
+      .select()
+      .from(payCycleClosures)
+      .where(eq(payCycleClosures.cycleStart, cycle.start))
+      .limit(1)
+  )[0]
+  return !!row
+}
 
 export interface SelfPayroll {
   cycle: PayCycle
