@@ -208,3 +208,23 @@
 - **Verify (preview):** เปิดลูกค้า → ตาราง+การ์ด; คลิก → detail; เพิ่มโน้ต; vendor → ไม่มีเมนู
 
 > **(P3)** email wire: ผูก `clients.contactEmail` ↔ `inbox_threads` → คอลัมน์/แท็บ "อีเมลล่าสุด" + อีเมลที่ผ่านมาใน detail
+
+---
+
+## Phase P2 (เสร็จ 10 มิ.ย. 69) — petty cash + team hub + realtime + PWA
+
+### ☑ P2-1/2 — เงินสดย่อย (SPEC §4.9)
+- expenses + ใบเสร็จ R2 + สถานะ pending→approved/rejected→reimbursed (owner) + ค้างคืน + CSV FlowAccount + การ์ดรอเบิกใน payroll self + nav
+
+### ☑ P2-3/4 — Team hub (SPEC §4.6/§4.10/§4.14)
+- /api/team-activity + /api/calendar (CRUD + event ตัดรอบ/จ่ายอัตโนมัติจาก config)
+- กล่องทีมงาน: avatar presence (ring+badge นาฬิกาวิ่ง · hover ชม.วันนี้/เดือนนี้ · ลาวันนี้จาง) + standup grid (ดาว=แผนวันนี้ · toggle เมื่อวาน + ชม.) — ไม่ต้องพิมพ์
+- ปฏิทินทีม Day/Week/Month + เพิ่ม event (วันลาเลือกคน) + คลิกลบ — vendor ไม่เห็น team hub
+
+### ☑ P2-5 — Realtime presence (SPEC §4.15)
+- PresenceHub Durable Object (WebSocket Hibernation) + /api/presence/ws (teamOnly) + broadcast ทุก start/stop/auto-stop → TeamBox reload สด (reconnect 5s + ping 30s)
+
+### ☑ P2-6 — PWA
+- manifest + icon (svg+png) + theme-color → add to homescreen ได้
+
+> คงเหลือใน P2 backlog: แจ้งเตือนภายใน (ใกล้ตัดรอบ/overdue/ใกล้หมดอายุ) — รอเคาะ email provider พร้อมกับแจ้งเตือนชนเพดาน

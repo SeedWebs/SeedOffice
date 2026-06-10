@@ -2,7 +2,7 @@
 
 > Internal tool ของทีม **SeedWebs** (web agency, ~10 คน + vendor)
 > เชื่อมงาน → เวลา → เงิน ไว้ในระบบเดียว
-> สถานะ: **v0.9 — P1 + P1.x build เสร็จทั้งหมด (T01–T18 + Docs D1–D3 + CRM C1–C3)** — รอรีวิวเจ้าของ + เตรียม deploy/cutover · เหลือเคาะ: Google OAuth credentials · email provider · ดูคำถามใน tasks/PROGRESS.md
+> สถานะ: **v0.9 — P1 + P1.x + P2 build เสร็จ (T01–T18 · Docs · CRM · petty cash · team hub · realtime DO+WS · PWA)** — รอรีวิว + deploy/cutover · เหลือเคาะ: OAuth credentials · email provider · ดูคำถามใน tasks/PROGRESS.md
 
 ---
 

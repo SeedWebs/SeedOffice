@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512">
+  <rect width="512" height="512" rx="112" fill="#059669"/>
+  <g fill="none" stroke="#ffffff" stroke-width="28" stroke-linecap="round" stroke-linejoin="round">
+    <!-- sprout (ตามโลโก้ lucide ใน sidebar) -->
+    <path d="M256 416V272"/>
+    <path d="M256 288c0-62 50-112 112-112h28v20c0 62-50 112-112 112h-28"/>
+    <path d="M256 240c0-49-40-88-88-88h-24v16c0 49 40 88 88 88h24"/>
+  </g>
+</svg>
