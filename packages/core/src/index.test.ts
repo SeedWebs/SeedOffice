@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest'
-import { formatSatang, minutesToHoursLabel } from './index'
+import { formatHMS, formatSatang, minutesToHoursLabel } from './index'
 
 describe('formatSatang', () => {
   it('จำนวนเต็มบาท ไม่แสดงทศนิยม (ตาม mockup)', () => {
@@ -32,5 +32,18 @@ describe('minutesToHoursLabel', () => {
   })
   it('ปฏิเสธนาทีที่ไม่ใช่ integer', () => {
     expect(() => minutesToHoursLabel(1.5)).toThrow(TypeError)
+  })
+})
+
+describe('formatHMS — H:MM:SS ชั่วโมงหลักเดียว (SPEC §4.5)', () => {
+  it('ตรงตัวอย่าง mockup (3:42:18)', () => {
+    expect(formatHMS(3 * 3600 + 42 * 60 + 18)).toBe('3:42:18')
+    expect(formatHMS(0)).toBe('0:00:00')
+    expect(formatHMS(59)).toBe('0:00:59')
+    expect(formatHMS(3600)).toBe('1:00:00')
+  })
+  it('ปฏิเสธค่าลบ/ไม่ integer', () => {
+    expect(() => formatHMS(-1)).toThrow(TypeError)
+    expect(() => formatHMS(1.5)).toThrow(TypeError)
   })
 })
