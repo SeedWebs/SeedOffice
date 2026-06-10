@@ -293,6 +293,52 @@ export const timerSessions = sqliteTable('timer_sessions', {
   startedAt: integer('started_at').notNull(),
 })
 
+/** เอกสาร/wiki tree (SPEC §4.16) — sub-page ลึกได้ · เก็บ markdown · soft-delete ทั้ง subtree */
+export const docs = sqliteTable(
+  'docs',
+  {
+    id: id(),
+    parentId: text('parent_id'), // self-ref (FK บังคับที่ API — เลี่ยง circular type)
+    sortOrder: integer('sort_order').notNull().default(0),
+    icon: text('icon'), // emoji (ตาม mockup)
+    title: text('title').notNull(),
+    contentMarkdown: text('content_markdown').notNull().default(''),
+    createdBy: text('created_by')
+      .notNull()
+      .references(() => users.id),
+    updatedBy: text('updated_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    updatedAt: integer('updated_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+    deletedAt: integer('deleted_at', { mode: 'timestamp_ms' }),
+  },
+  (t) => [index('docs_parent_idx').on(t.parentId, t.sortOrder)],
+)
+
+export const docImages = sqliteTable(
+  'doc_images',
+  {
+    id: id(),
+    docId: text('doc_id'),
+    r2Key: text('r2_key').notNull(),
+    filename: text('filename').notNull(),
+    mime: text('mime').notNull(),
+    sizeBytes: integer('size_bytes').notNull(),
+    uploadedBy: text('uploaded_by')
+      .notNull()
+      .references(() => users.id),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [index('doc_images_doc_idx').on(t.docId)],
+)
+
 export const ADJUSTMENT_KINDS = [
   'allowance',
   'depreciation',
@@ -427,3 +473,5 @@ export type Payment = typeof payments.$inferSelect
 export type PayAdjustment = typeof payAdjustments.$inferSelect
 export type PayNote = typeof payNotes.$inferSelect
 export type Payslip = typeof payslips.$inferSelect
+export type Doc = typeof docs.$inferSelect
+export type DocImage = typeof docImages.$inferSelect

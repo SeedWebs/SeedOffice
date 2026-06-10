@@ -4,6 +4,7 @@ import { Layout } from './components/Layout'
 import { AuthProvider, useAuth, type Me } from './lib/auth'
 import { AdminPage } from './pages/Admin'
 import { DashboardPage } from './pages/Dashboard'
+import { DocsPage } from './pages/Docs'
 import { Login } from './pages/Login'
 import { ProjectDetailPage } from './pages/ProjectDetail'
 import { PayrollPage } from './pages/Payroll'
@@ -33,6 +34,14 @@ const router = createBrowserRouter([
       { index: true, element: <DashboardPage /> },
       { path: 'projects', element: <ProjectsPage /> },
       { path: 'projects/:id', element: <ProjectDetailPage /> },
+      {
+        path: 'docs',
+        element: (
+          <Protected roles={['owner', 'member']}>
+            <DocsPage />
+          </Protected>
+        ),
+      },
       { path: 'payroll', element: <PayrollPage /> },
       {
         path: 'admin',

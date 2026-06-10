@@ -3,6 +3,7 @@ import { requireAuth } from './middleware/auth'
 import { ownerOnly, teamOnly } from './middleware/roles'
 import { adminRoutes } from './routes/admin'
 import { authRoutes } from './routes/auth'
+import { docRoutes } from './routes/docs'
 import { financeRoutes } from './routes/finance'
 import { overviewRoutes } from './routes/overview'
 import { payrollAdminRoutes } from './routes/payroll-admin'
@@ -54,6 +55,10 @@ app.route('/api', timeRoutes)
 app.route('/api', financeRoutes)
 app.use('/api/payroll/*', requireAuth)
 app.route('/api', payrollRoutes)
+// เอกสาร: owner+member เท่านั้น (vendor 403 — SPEC §4.16)
+app.use('/api/docs', requireAuth, teamOnly)
+app.use('/api/docs/*', requireAuth, teamOnly)
+app.route('/api/docs', docRoutes)
 
 app.get('/api/me', requireAuth, (c) => {
   const u = c.var.user

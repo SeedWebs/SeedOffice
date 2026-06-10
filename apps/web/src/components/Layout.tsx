@@ -1,8 +1,10 @@
 import {
+  Building2,
   FolderKanban,
   LayoutDashboard,
   LogOut,
   Menu,
+  NotebookText,
   Settings,
   Sprout,
   Wallet,
@@ -34,6 +36,8 @@ type Role = Me['role']
 const NAV: { to: string; label: string; icon: typeof LayoutDashboard; roles: Role[] }[] = [
   { to: '/', label: 'ภาพรวม', icon: LayoutDashboard, roles: ['owner', 'member', 'vendor'] },
   { to: '/projects', label: 'โปรเจกต์', icon: FolderKanban, roles: ['owner', 'member', 'vendor'] },
+  { to: '/clients', label: 'ลูกค้า', icon: Building2, roles: ['owner', 'member'] },
+  { to: '/docs', label: 'เอกสาร', icon: NotebookText, roles: ['owner', 'member'] },
   { to: '/payroll', label: 'ค่าตอบแทน', icon: Wallet, roles: ['owner', 'member', 'vendor'] },
   { to: '/admin', label: 'ตั้งค่า', icon: Settings, roles: ['owner'] },
 ]
@@ -80,9 +84,10 @@ export function Layout() {
   // Quick Add (N) จากทุกหน้า — เช็คจาก e.code กันแป้นไทย (SPEC §9)
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => {
-      const typing = ['input', 'textarea', 'select'].includes(
-        (document.activeElement?.tagName ?? '').toLowerCase(),
-      )
+      const el = document.activeElement as HTMLElement | null
+      const typing =
+        ['input', 'textarea', 'select'].includes((el?.tagName ?? '').toLowerCase()) ||
+        !!el?.isContentEditable // กันชนกับ Tiptap editor (เอกสาร)
       if (e.code === 'KeyN' && !typing && !e.metaKey && !e.ctrlKey && !e.altKey) {
         e.preventDefault()
         setQuickAddOpen(true)
