@@ -2,7 +2,7 @@
 
 > Internal tool ของทีม **SeedWebs** (web agency, ~10 คน + vendor)
 > เชื่อมงาน → เวลา → เงิน ไว้ในระบบเดียว
-> สถานะ: **Draft v0.9** — + กฎ timer/เพดานชั่วโมง (§4.5) + นโยบาย launch (§13) + T18 backup · spec coherent + sync กับ mockup · **เริ่ม build P1 ที่ T01**
+> สถานะ: **v0.9 — P1 build เสร็จ (T01–T18 · CP1–CP4)** — รอรีวิวเจ้าของ + เตรียม deploy/cutover · เหลือเคาะ: Google OAuth credentials · email provider (แจ้งเตือนเพดาน) · ดูคำถามใน tasks/PROGRESS.md
 
 ---
 

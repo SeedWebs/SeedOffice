@@ -20,11 +20,17 @@
 - ✅ **review รอบ มิ.ย. 69:** vendor เห็นเมนู **ค่าตอบแทน (ของตัวเอง)** แล้ว (ค่าจ้าง − WHT 3% — ตรง SPEC §2) · pin CDN (`tailwindcss 3.4.17` + `lucide 1.17.0`) กัน mockup พังเอง
 
 ## ขั้นต่อไป
-- ✅ mockup ครบ + deploy · ✅ SPEC v0.9 sync · ✅ **T01 เสร็จ (10 มิ.ย. 69)** — monorepo รันได้จริง: `pnpm dev` = vite :5173 (proxy /api) + `wrangler dev` :8787; worker เสิร์ฟ SPA dist + `/api/health` 200; lint/typecheck/test + CI เขียว
-  - stack จริง: Vite 8 · React 19 · React Router 7 · **Tailwind 4.3 (เจ้าของขอ v4 — มีตารางแปลง class จาก mockup v3 ใน CLAUDE.md)** · Hono 4 · Drizzle 0.45 · wrangler 4.99 (**wrangler.jsonc** แทน .toml)
-  - preview config: `dev` (pnpm dev, port 5173) ใน .claude/launch.json · pnpm 10 ต้องมี `onlyBuiltDependencies` (esbuild/workerd/sharp)
-- ▶ **ต่อที่ T02** (DB foundation: users/sessions/rates/company_config + migration + seed — ต้อง `wrangler d1 create seedoffice` ใส่ database_id จริง) **+ T03** (core money/time/cycle math, TDD — จุดยืนยันสูตรปัดเศษกับเจ้าของ)
-- ตรรกะการเงินทำใน `packages/core` (TDD) ก่อนเสมอ · review กับเจ้าของทุก checkpoint (CP1–CP4)
+- ✅ **P1 BUILD เสร็จทั้งหมด (10 มิ.ย. 69): T01–T18 · CP1–CP4** — ลูปเงินครบ: auth+role → users/rates/config → projects/clients/tasks (timeline/⌘K/drawer/R2/activity) → stars/QuickAdd/dashboard → timer+manual+เพดาน+integrity → milestones/payments → ค่าตอบแทน self+owner+CSV+ปิดงวด(ล็อกย้อนหลัง) → P&L+health → backup D1→R2 (cron 03:00) 
+  - stack จริง: Vite 8 · React 19 · React Router 7 · **Tailwind 4.3** (ตารางแปลง class v3→v4 ใน CLAUDE.md) · Hono 4 · Drizzle 0.45 · wrangler 4.99 (jsonc) · vitest-pool-workers 0.16 (vitest 4 API ใหม่ — **ไม่มี isolated storage ต่อเทสต์แล้ว** เทสต์ต้องล้างตารางเอง)
+  - เทสต์: core 36 unit + api 56 integration (workerd+D1 จริง) + e2e Playwright 5 (login 3 + ลูปเงิน 2) — เขียวครบ · CI เขียว
+  - D1 จริงสร้างแล้ว (id ใน wrangler.jsonc) · local dev ใช้ sqlite ในเครื่อง · seed = dev เท่านั้น (launch จริง = fresh)
+  - wrangler dev ตายถ้า reload เจอโค้ดครึ่งทาง (แก้ index.ts ให้ atomic) → restart preview "dev"
+- ▶ **รอเจ้าของรีวิว CP4** แล้วค่อย: สร้าง Google OAuth client (GCP) → R2 bucket + `pnpm db:migrate:remote` → `pnpm deploy` (ask-first) → รันคู่ 1 งวดเทียบคิดมือ → เลิก Notion/Everhour
+- ❓ **คำถามค้างถึงเจ้าของ** (จากการ build — มีสรุปท้าย session ด้วย):
+  1. สูตรปัดเศษ: ปัดครึ่งขึ้นที่สตางค์ "ต่อ entry" (ยอดโปรเจกต์=ยอดจ่ายคน) — ตรงกับที่คิดมือไหม
+  2. Google OAuth client id/secret — ต้องสร้างใน GCP console (redirect = {APP_URL}/api/auth/callback) แล้วใส่ secret
+  3. Email provider แจ้งเตือนชนเพดาน (CF Email Sending ต้อง verify domain / Resend) — ตอนนี้ log อย่างเดียว จุดต่อ: apps/api/src/lib/notify.ts
+  4. ค่า P1 ที่ผมตัดสินใจไว้ (ทักได้ถ้าไม่ตรงใจ): vendor คอมเมนต์ใน task ได้ (แนบไฟล์ไม่ได้) · timer ข้ามคืน split เที่ยงคืน · health = งบงวด active − งบงวด done · ปิดงวดบล็อก แก้/ลง/ลบเวลา+adjustment ของงวดนั้นทั้งหมด
 
 ## วิธีทำงานกับ user (สำคัญ)
 - ตอบเป็น **ภาษาไทย** · ทำทีละจุดเล็กๆ ตามที่ขอ แล้ว verify ทุกครั้ง
