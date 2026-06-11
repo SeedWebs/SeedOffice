@@ -66,6 +66,9 @@ export const companyConfig = sqliteTable('company_config', {
   workHourCapMinutes: integer('work_hour_cap_minutes').notNull().default(480), // 8 ชม./วัน
   // โดเมน auto-provision member (SPEC §4.1) — '' = ปิด · default ตอน migrate กัน production เดิมพัง
   memberDomain: text('member_domain').notNull().default('@seedwebs.com'),
+  // token ลับสำหรับ ICS feed สาธารณะ (SPEC §4.14 · E6) — null = ปิดลิงก์ · owner สร้าง/รีเซ็ต
+  // ห้ามส่งออกทาง GET /api/config (อ่านได้ทุก role) — เห็นเฉพาะ owner ผ่าน /api/admin/ics-link
+  icsToken: text('ics_token'),
 })
 
 /** ลูกค้า (CRM §4.17 — entity จริงตั้งแต่ T08 เลี่ยง refactor) */

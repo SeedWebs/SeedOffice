@@ -237,7 +237,7 @@ export function TeamCalendar() {
         </div>
       )}
 
-      <p className="text-[11px] text-slate-400 mt-2">วันลา/ประชุม/วันหยุด + ตัดรอบ/จ่ายเงินเดือน (อัตโนมัติจาก config) · คลิกกิจกรรมเพื่อลบ · sync Google Calendar = P3</p>
+      <p className="text-[11px] text-slate-400 mt-2">วันลา/ประชุม/วันหยุด + ตัดรอบ/จ่ายเงินเดือน (อัตโนมัติจาก config) · คลิกกิจกรรมเพื่อลบ · subscribe เป็น ICS ได้ที่ ตั้งค่า</p>
       {adding && <AddEventModal defaultDate={view === 'month' ? todayISO() : iso(ref)} onClose={() => setAdding(false)} onDone={() => { setAdding(false); void reload() }} />}
     </div>
   )

@@ -4,7 +4,10 @@ import { asc, eq } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { writeAudit } from '../lib/audit'
+import { newToken } from '../lib/session'
 import type { AppEnv } from '../types'
+
+const icsUrl = (appUrl: string, token: string) => `${appUrl}/api/calendar/feed/${token}`
 
 const isoDate = z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'ต้องเป็น YYYY-MM-DD')
 
@@ -169,4 +172,42 @@ export const adminRoutes = new Hono<AppEnv>()
       meta: { before, after: body.data },
     })
     return c.json(updated[0])
+  })
+
+  // ── ICS feed (SPEC §4.14 · E6) — ลิงก์ subscribe ปฏิทินทีม (owner สร้าง/รีเซ็ต/ปิด) ──
+  // ลิงก์เดียวแชร์ทั้งทีม · token ลับ = ตัวกันเข้าถึง (ไม่ส่งออกทาง GET /api/config)
+  .get('/ics-link', async (c) => {
+    const db = createDb(c.env.DB)
+    const [cfg] = await db
+      .select({ icsToken: companyConfig.icsToken })
+      .from(companyConfig)
+      .limit(1)
+    return c.json({ url: cfg?.icsToken ? icsUrl(c.env.APP_URL, cfg.icsToken) : null })
+  })
+
+  // สร้าง/รีเซ็ตลิงก์ — รีเซ็ตคือเปลี่ยน token (ลิงก์เดิมใช้ไม่ได้ทันที)
+  .post('/ics-link/regenerate', async (c) => {
+    const db = createDb(c.env.DB)
+    const token = newToken()
+    await db.update(companyConfig).set({ icsToken: token }).where(eq(companyConfig.id, 1))
+    await writeAudit(c.env, {
+      actorId: c.get('user').id,
+      action: 'config.ics_regenerate',
+      entity: 'company_config',
+      entityId: '1',
+    })
+    return c.json({ url: icsUrl(c.env.APP_URL, token) })
+  })
+
+  // ปิดลิงก์ (feed คืน 404)
+  .delete('/ics-link', async (c) => {
+    const db = createDb(c.env.DB)
+    await db.update(companyConfig).set({ icsToken: null }).where(eq(companyConfig.id, 1))
+    await writeAudit(c.env, {
+      actorId: c.get('user').id,
+      action: 'config.ics_disable',
+      entity: 'company_config',
+      entityId: '1',
+    })
+    return c.json({ url: null })
   })

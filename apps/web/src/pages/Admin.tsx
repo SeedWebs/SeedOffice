@@ -1,6 +1,7 @@
 import { formatSatang } from '@seedoffice/core'
-import { UserPlus, X } from 'lucide-react'
+import { CalendarDays, Check, Copy, UserPlus, X } from 'lucide-react'
 import { Fragment, useState } from 'react'
+import { useDialog } from '../components/Dialog'
 import { InboxSettings } from '../components/InboxSettings'
 import { PageHeader } from '../components/PageHeader'
 import { api } from '../lib/api'
@@ -183,6 +184,101 @@ function RatePanel({ user, onClose, onSaved }: { user: AdminUser; onClose: () =>
   )
 }
 
+/** ลิงก์ subscribe ปฏิทินทีมเป็น ICS feed (SPEC §4.14 · E6) — owner สร้าง/รีเซ็ต/ปิด */
+function IcsLinkCard() {
+  const { data, reload } = useLoad<{ url: string | null }>(() => api.get('/api/admin/ics-link'))
+  const { confirmDialog } = useDialog()
+  const [copied, setCopied] = useState(false)
+  const url = data?.url ?? null
+
+  const generate = async () => {
+    if (
+      url &&
+      !(await confirmDialog({
+        title: 'สร้างลิงก์ใหม่?',
+        message: 'ลิงก์เดิมจะใช้ไม่ได้ทันที — คนที่ subscribe ไว้ต้องเปลี่ยนเป็นลิงก์ใหม่',
+        confirmLabel: 'สร้างใหม่',
+      }))
+    )
+      return
+    await api.post('/api/admin/ics-link/regenerate')
+    await reload()
+  }
+  const disable = async () => {
+    if (
+      !(await confirmDialog({
+        title: 'ปิดลิงก์ปฏิทิน?',
+        message: 'feed จะเข้าไม่ได้จนกว่าจะสร้างลิงก์ใหม่',
+        confirmLabel: 'ปิดลิงก์',
+        danger: true,
+      }))
+    )
+      return
+    await api.delete('/api/admin/ics-link')
+    await reload()
+  }
+  const copy = async () => {
+    if (!url) return
+    await navigator.clipboard.writeText(url)
+    setCopied(true)
+    setTimeout(() => setCopied(false), 1500)
+  }
+
+  return (
+    <div className="bg-white rounded-lg shadow-xs p-5 max-w-md">
+      <div className="flex items-center gap-2 mb-1">
+        <CalendarDays className="w-4 h-4 text-brand-600" />
+        <div className="font-semibold text-slate-900">ลิงก์ปฏิทิน (ICS)</div>
+      </div>
+      <p className="text-[11px] text-slate-400 mb-3">
+        ลิงก์ subscribe ปฏิทินทีม (วันลา/ประชุม/วันหยุด + ตัดรอบ/จ่ายเงินเดือน) — เพิ่มใน Google/Apple
+        Calendar บนมือถือ · ใครมีลิงก์เห็นได้ทั้งทีม
+      </p>
+      {url ? (
+        <div className="space-y-2">
+          <div className="flex gap-2">
+            <input
+              readOnly
+              value={url}
+              onFocus={(e) => e.target.select()}
+              className="flex-1 min-w-0 text-xs bg-slate-50 shadow-xs rounded-lg px-3 py-2 text-slate-600"
+            />
+            <button
+              onClick={() => void copy()}
+              className="shrink-0 text-sm px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center gap-1.5"
+            >
+              {copied ? (
+                <>
+                  <Check className="w-4 h-4 text-emerald-600" /> คัดลอกแล้ว
+                </>
+              ) : (
+                <>
+                  <Copy className="w-4 h-4" /> คัดลอก
+                </>
+              )}
+            </button>
+          </div>
+          <div className="flex gap-3 text-xs">
+            <button onClick={() => void generate()} className="text-slate-500 hover:text-slate-700 underline">
+              สร้างลิงก์ใหม่
+            </button>
+            <button onClick={() => void disable()} className="text-rose-500 hover:text-rose-600 underline">
+              ปิดลิงก์
+            </button>
+          </div>
+        </div>
+      ) : (
+        <button
+          onClick={() => void generate()}
+          className="text-sm bg-brand-600 hover:bg-brand-700 text-white px-4 py-2 rounded-lg"
+        >
+          สร้างลิงก์
+        </button>
+      )}
+    </div>
+  )
+}
+
 export function AdminPage() {
   const { data: usersList, loading, reload } = useLoad<AdminUser[]>(() => api.get('/api/admin/users'))
   const { data: cfg, reload: reloadCfg } = useLoad<Config>(() => api.get('/api/config'))
@@ -354,6 +450,8 @@ export function AdminPage() {
             </div>
           )}
         </div>
+
+        <IcsLinkCard />
 
         <InboxSettings />
       </div>

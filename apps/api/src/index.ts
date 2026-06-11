@@ -8,6 +8,7 @@ import { docRoutes } from './routes/docs'
 import { expenseRoutes } from './routes/expenses'
 import { teamActivityRoutes } from './routes/team-activity'
 import { financeRoutes } from './routes/finance'
+import { icsFeedRoutes } from './routes/ics'
 import { inboxSettingsRoutes } from './routes/inbox-settings'
 import { inboxThreadRoutes } from './routes/inbox-threads'
 import { overviewRoutes } from './routes/overview'
@@ -29,6 +30,11 @@ import type { AppEnv } from './types'
 const app = new Hono<AppEnv>()
 
 app.get('/api/health', (c) => c.json({ ok: true }))
+
+// ICS feed สาธารณะ (SPEC §4.14 · E6) — ไม่มี auth (token ในพาธกันเข้าถึง)
+// ต้อง mount ก่อน app.use('/api/calendar/*', requireAuth, ...) ด้านล่าง: Hono รัน handler
+// ตามลำดับที่ register — feed ที่ register ก่อนจะตอบจบก่อน middleware auth ของ /api/calendar/* จะทำงาน
+app.route('/api/calendar/feed', icsFeedRoutes)
 
 app.route('/api/auth', authRoutes)
 app.use('/api/admin/*', requireAuth, ownerOnly)

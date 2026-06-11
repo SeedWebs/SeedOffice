@@ -34,9 +34,20 @@ export const userRoutes = new Hono<AppEnv>()
   })
 
   // config บริษัท (เพดานชั่วโมง/วันตัดรอบ) — ทุก role ใช้แสดงผล/ค่า timer
+  // เลือกคอลัมน์ชัดเจน: ห้ามส่ง icsToken (token ลับ ICS feed) ออกให้ทุก role — เห็นได้เฉพาะ owner
   .get('/config', async (c) => {
     const db = createDb(c.env.DB)
-    const cfg = (await db.select().from(companyConfig).limit(1))[0]
+    const cfg = (
+      await db
+        .select({
+          id: companyConfig.id,
+          cutoffDay: companyConfig.cutoffDay,
+          workHourCapMinutes: companyConfig.workHourCapMinutes,
+          memberDomain: companyConfig.memberDomain,
+        })
+        .from(companyConfig)
+        .limit(1)
+    )[0]
     if (!cfg) return c.json({ error: 'config_missing' }, 500)
     return c.json(cfg)
   })
