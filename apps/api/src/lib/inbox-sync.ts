@@ -63,7 +63,8 @@ export async function getAccessToken(env: Env, mailbox: InboxMailbox): Promise<s
   return access_token
 }
 
-async function gmailGet<T>(token: string, path: string): Promise<{ status: number; data: T }> {
+/** GET ไป Gmail API ด้วย token ของกล่อง — ใช้ร่วมทั้ง sync/import/search */
+export async function gmailGet<T>(token: string, path: string): Promise<{ status: number; data: T }> {
   const res = await fetch(`${GMAIL_API}${path}`, {
     headers: { authorization: `Bearer ${token}` },
   })
@@ -344,6 +345,35 @@ export async function syncAllMailboxes(env: Env): Promise<void> {
     .from(inboxMailboxes)
     .where(eq(inboxMailboxes.status, 'connected'))
   for (const b of boxes) await syncMailbox(env, b.id)
+}
+
+/**
+ * import thread เดียวจาก Gmail เข้าระบบ (ใช้ตอนกดผลค้นจาก Gmail — SPEC §4.12 hybrid search)
+ * เข้าแบบ backfill: ของที่เคลียร์แล้ว = closed/อ่านแล้ว · idempotent (เคย import แล้ว = คืน id เดิม)
+ * คืน local thread id หรือ null ถ้าดึงไม่ได้ · โยน ReconnectError ถ้า token เพิกถอน
+ */
+export async function importGmailThread(
+  env: Env,
+  mailboxId: string,
+  gmailThreadId: string,
+): Promise<string | null> {
+  const db = createDb(env.DB)
+  const [mailbox] = await db.select().from(inboxMailboxes).where(eq(inboxMailboxes.id, mailboxId))
+  if (!mailbox || mailbox.status !== 'connected') return null
+  const token = await getAccessToken(env, mailbox)
+  const { status, data } = await gmailGet<{ messages?: GmailMessage[] }>(
+    token,
+    `/threads/${gmailThreadId}?format=full`,
+  )
+  if (status !== 200) return null
+  for (const m of data.messages ?? []) await ingestMessage(db, env, mailbox, m, 'backfill')
+  const [thread] = await db
+    .select({ id: inboxThreads.id })
+    .from(inboxThreads)
+    .where(
+      and(eq(inboxThreads.mailboxId, mailbox.id), eq(inboxThreads.gmailThreadId, gmailThreadId)),
+    )
+  return thread?.id ?? null
 }
 
 /**

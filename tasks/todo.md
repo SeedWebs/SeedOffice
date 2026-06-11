@@ -266,4 +266,10 @@
 - **collision = `InboxThreadHub` DO ราย thread** (WebSocket Hibernation · idFromName(threadId) · wrangler migration v2) — badge "👀 กำลังดูอยู่ / ✏️ กำลังพิมพ์…" + auto-reconnect 5s · บั๊กที่เจอ: ตอน close ต้อง broadcast แบบ exclude socket ที่กำลังออก (getWebSockets ยังเห็นมัน)
 - UI: timeline ผสมเมล+โน้ตเหลือง · lock toggle โหมดโน้ต · tag chips ใน header · canned picker (⚡ + บันทึกร่างเป็นสำเร็จรูป) · เมนูเลื่อน (พรุ่งนี้/3 วัน/สัปดาห์ — 9:00 BKK)
 - **Verify ✓:** เทสต์ 167 เขียว · จริงบน preview: โน้ต/แท็ก/snooze pill/collision 2 session (ดู→พิมพ์→ออก badge หาย) · console สะอาด
+### ☑ E5.5 — Hybrid search: ค้น Gmail ย้อนหลังทุกกล่อง + import on-demand ✅ (11 มิ.ย. 69)
+- GET /api/inbox/search (local instr + fan-out Gmail ทุกกล่องที่เชื่อมแบบขนาน · กล่องหลุด = ข้าม+partial) · POST /api/inbox/import-thread (threads.get → ingest backfill — idempotent)
+- ⌘K modal ใหม่: ผลสด 2 ส่วน "ในระบบ / จาก Gmail ทั้งกล่อง" + กดดึงเข้าระบบแล้วเปิดเลย · Enter = กรองรายการเดิม
+- **บั๊กจริงที่แก้:** D1 LIKE pattern จำกัด ~50 bytes → คำค้นไทยยาวระเบิด → ใช้ `instr()` แทน (regression test แล้ว)
+- **Verify ✓:** เทสต์ 174 เขียว · จริง: ค้นเมล 3 พ.ค. (ก่อน backfill) → import เป็น #44 → อ่าน/ตอบได้ · console สะอาด
+
 ### ☐ E6 — GCal sync (calendar.readonly ผ่าน client SW) + ICS feed

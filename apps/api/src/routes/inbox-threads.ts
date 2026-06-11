@@ -10,13 +10,13 @@ import {
   inboxThreads,
   users,
 } from '@seedoffice/db'
-import { and, desc, eq, isNull, like, ne, or, sql } from 'drizzle-orm'
+import { and, desc, eq, inArray, isNull, ne, or, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
 import { writeAudit } from '../lib/audit'
 import { decryptSecret } from '../lib/crypto'
-import { extractEmail } from '../lib/gmail'
-import { getAccessToken, ReconnectError } from '../lib/inbox-sync'
+import { decodeRfc2047, extractEmail } from '../lib/gmail'
+import { getAccessToken, gmailGet, importGmailThread, ReconnectError } from '../lib/inbox-sync'
 import { buildMime, formatAddress, replySubject, toBase64Url } from '../lib/mime'
 import type { AppEnv } from '../types'
 
@@ -36,6 +36,16 @@ const listQuery = z.object({
   folder: z.enum(FOLDERS).default('unassigned'),
   q: z.string().trim().max(200).optional(),
 })
+
+/**
+ * เงื่อนไข "มีคำนี้อยู่ข้างใน" ด้วย instr แทน LIKE — D1 จำกัดความยาว LIKE pattern ต่ำมาก (~50 bytes)
+ * คำค้นไทยยาวๆ (UTF-8 ตัวละ 3 bytes) ชนลิมิตแล้วระเบิด "LIKE pattern too complex"
+ */
+const containsQ = (q: string) =>
+  or(
+    sql`instr(lower(${inboxThreads.subject}), lower(${q})) > 0`,
+    sql`instr(lower(${inboxThreads.contactEmail}), lower(${q})) > 0`,
+  )
 
 const patchBody = z
   .object({
@@ -99,9 +109,7 @@ export const inboxThreadRoutes = new Hono<AppEnv>()
       all: undefined,
     }[folder]
 
-    const qCond = q
-      ? or(like(inboxThreads.subject, `%${q}%`), like(inboxThreads.contactEmail, `%${q}%`))
-      : undefined
+    const qCond = q ? containsQ(q) : undefined
 
     const threads = await db
       .select({
@@ -336,6 +344,136 @@ export const inboxThreadRoutes = new Hono<AppEnv>()
       .returning({ id: inboxCanned.id })
     if (!updated[0]) return c.json({ error: 'not_found' }, 404)
     return c.json({ ok: true })
+  })
+
+  // hybrid search (SPEC §4.12): local + ค้น Gmail สดทุกกล่องที่เชื่อมแบบขนาน — ค้นย้อนหลังได้ทั้งกล่อง
+  .get('/search', async (c) => {
+    const parsed = z
+      .object({ q: z.string().trim().min(1).max(200), mailbox: z.string().optional() })
+      .safeParse(c.req.query())
+    if (!parsed.success) return c.json({ error: 'invalid_query' }, 400)
+    const { q, mailbox } = parsed.data
+    const db = createDb(c.env.DB)
+
+    // 1) local — เหมือนค้นใน list (หัวข้อ/contact)
+    const local = await db
+      .select({
+        id: inboxThreads.id,
+        mailboxId: inboxThreads.mailboxId,
+        subject: inboxThreads.subject,
+        contactEmail: inboxThreads.contactEmail,
+        status: inboxThreads.status,
+        lastMessageAt: inboxThreads.lastMessageAt,
+      })
+      .from(inboxThreads)
+      .where(and(mailbox ? eq(inboxThreads.mailboxId, mailbox) : undefined, containsQ(q)))
+      .orderBy(desc(inboxThreads.lastMessageAt))
+      .limit(15)
+
+    // 2) Gmail สด — fan-out ทุกกล่องที่เชื่อม (หรือเฉพาะกล่องที่เลือก) พร้อมกัน
+    const boxes = await db
+      .select()
+      .from(inboxMailboxes)
+      .where(
+        and(
+          eq(inboxMailboxes.status, 'connected'),
+          mailbox ? eq(inboxMailboxes.id, mailbox) : undefined,
+        ),
+      )
+    const buckets = await Promise.all(
+      boxes.map(async (box) => {
+        try {
+          const token = await getAccessToken(c.env, box)
+          const list = await gmailGet<{ messages?: { id: string; threadId: string }[] }>(
+            token,
+            `/messages?q=${encodeURIComponent(q)}&maxResults=15`,
+          )
+          if (list.status !== 200) return { boxName: box.name, error: true, items: [] }
+          // เอา thread ละ 1 ฉบับ (สูงสุด 8 thread/กล่อง) ไปดึง metadata ไว้แสดงผล
+          const seen = new Map<string, string>()
+          for (const m of list.data.messages ?? [])
+            if (!seen.has(m.threadId)) seen.set(m.threadId, m.id)
+          const items = (
+            await Promise.all(
+              [...seen.entries()].slice(0, 8).map(async ([tid, mid]) => {
+                const meta = await gmailGet<{
+                  internalDate?: string
+                  payload?: { headers?: { name: string; value: string }[] }
+                }>(
+                  token,
+                  `/messages/${mid}?format=metadata&metadataHeaders=Subject&metadataHeaders=From`,
+                )
+                if (meta.status !== 200) return null
+                const hdr = (n: string) =>
+                  meta.data.payload?.headers?.find((h) => h.name.toLowerCase() === n)?.value ?? ''
+                return {
+                  mailboxId: box.id,
+                  gmailThreadId: tid,
+                  subject: decodeRfc2047(hdr('subject')),
+                  fromAddr: decodeRfc2047(hdr('from')),
+                  sentAt: Number(meta.data.internalDate ?? 0),
+                }
+              }),
+            )
+          ).filter((x): x is NonNullable<typeof x> => x !== null)
+          return { boxName: box.name, error: false, items }
+        } catch (e) {
+          if (e instanceof ReconnectError)
+            await db
+              .update(inboxMailboxes)
+              .set({ status: 'disconnected' })
+              .where(eq(inboxMailboxes.id, box.id))
+          return { boxName: box.name, error: true, items: [] }
+        }
+      }),
+    )
+
+    // ผลจาก Gmail ที่เคย import แล้ว → ชี้ไป thread ในระบบแทน (ไม่ต้อง import ซ้ำ)
+    const remote = buckets.flatMap((b) => b.items)
+    const gmailIds = remote.map((r) => r.gmailThreadId)
+    const existing = gmailIds.length
+      ? await db
+          .select({
+            id: inboxThreads.id,
+            mailboxId: inboxThreads.mailboxId,
+            gmailThreadId: inboxThreads.gmailThreadId,
+          })
+          .from(inboxThreads)
+          .where(inArray(inboxThreads.gmailThreadId, gmailIds))
+      : []
+    const localIdOf = new Map(existing.map((e) => [`${e.mailboxId}:${e.gmailThreadId}`, e.id]))
+
+    return c.json({
+      local,
+      remote: remote.map((r) => ({
+        ...r,
+        localThreadId: localIdOf.get(`${r.mailboxId}:${r.gmailThreadId}`) ?? null,
+      })),
+      partial: buckets.filter((b) => b.error).map((b) => b.boxName), // กล่องที่ค้นไม่สำเร็จ
+    })
+  })
+
+  // import thread จากผลค้น Gmail เข้าระบบ (เข้าเป็นประวัติแบบ backfill) แล้วเปิดทำงานต่อได้ปกติ
+  .post('/import-thread', async (c) => {
+    const parsed = z
+      .object({ mailboxId: z.string().min(1), gmailThreadId: z.string().min(1) })
+      .safeParse(await c.req.json().catch(() => null))
+    if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
+    const db = createDb(c.env.DB)
+    try {
+      const threadId = await importGmailThread(c.env, parsed.data.mailboxId, parsed.data.gmailThreadId)
+      if (!threadId) return c.json({ error: 'import_failed' }, 502)
+      return c.json({ ok: true, threadId }, 201)
+    } catch (e) {
+      if (e instanceof ReconnectError) {
+        await db
+          .update(inboxMailboxes)
+          .set({ status: 'disconnected' })
+          .where(eq(inboxMailboxes.id, parsed.data.mailboxId))
+        return c.json({ error: 'mailbox_disconnected' }, 409)
+      }
+      return c.json({ error: 'import_failed' }, 502)
+    }
   })
 
   // ตอบจากในระบบ → ส่งผ่าน Gmail API จาก address ของกล่อง + threading ถูกต้อง (SPEC §4.12)

@@ -6,6 +6,7 @@ import {
   Mail,
   Paperclip,
   PenLine,
+  RefreshCw,
   Search,
   Send,
   Tag,
@@ -886,7 +887,6 @@ export function InboxPage() {
   const [searchOpen, setSearchOpen] = useState(false)
   const [composeOpen, setComposeOpen] = useState(false)
   const [openId, setOpenId] = useState<string | null>(null)
-  const searchRef = useRef<HTMLInputElement>(null)
 
   const params = new URLSearchParams({ folder })
   if (mb !== 'all') params.set('mailbox', mb)
@@ -902,7 +902,6 @@ export function InboxPage() {
       if ((e.metaKey || e.ctrlKey) && e.code === 'KeyK') {
         e.preventDefault()
         setSearchOpen(true)
-        setTimeout(() => searchRef.current?.focus(), 50)
       }
       if (e.code === 'Escape') setSearchOpen(false)
     }
@@ -924,8 +923,7 @@ export function InboxPage() {
             <button
               onClick={() => {
                 setSearchOpen(true)
-                setTimeout(() => searchRef.current?.focus(), 50)
-              }}
+                      }}
               title="ค้นหา (⌘K)"
               className="w-9 h-9 grid place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
             >
@@ -1076,37 +1074,195 @@ export function InboxPage() {
         />
       )}
 
-      {/* ค้นหา ⌘K */}
+      {/* ค้นหา ⌘K — hybrid: ในระบบ + Gmail ทั้งกล่องสด (SPEC §4.12) */}
       {searchOpen && (
-        <div
-          className="fixed inset-0 bg-slate-900/30 z-50 grid place-items-start justify-center pt-28"
-          onClick={() => setSearchOpen(false)}
-        >
-          <div
-            className="w-[34rem] max-w-[calc(100vw-2rem)] bg-white rounded-xl shadow-lg p-2"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-center gap-2 px-2">
-              <Search className="w-4 h-4 text-slate-400" />
-              <input
-                ref={searchRef}
-                defaultValue={q}
-                placeholder="ค้นหาอีเมล (เรื่อง/ผู้ส่ง)..."
-                className="flex-1 text-sm py-2.5 focus:outline-hidden"
-                onKeyDown={(e) => {
-                  if (e.code === 'Enter') {
-                    setQ((e.target as HTMLInputElement).value.trim())
-                    setFolder('all')
-                    setOpenId(null)
-                    setSearchOpen(false)
-                  }
-                }}
-              />
-              <span className="text-[10px] text-slate-300 border border-slate-200 rounded px-1">Enter</span>
-            </div>
-          </div>
-        </div>
+        <SearchModal
+          mb={mb}
+          mailboxes={mailboxes}
+          initial={q}
+          onClose={() => setSearchOpen(false)}
+          onOpen={(tid) => {
+            setSearchOpen(false)
+            setOpenId(tid)
+            void reload()
+          }}
+          onApplyFilter={(t) => {
+            setQ(t)
+            setFolder('all')
+            setOpenId(null)
+            setSearchOpen(false)
+          }}
+        />
       )}
     </>
+  )
+}
+
+interface SearchRemoteItem {
+  mailboxId: string
+  gmailThreadId: string
+  localThreadId: string | null
+  subject: string
+  fromAddr: string
+  sentAt: number
+}
+interface SearchResults {
+  local: { id: string; mailboxId: string; subject: string; contactEmail: string | null; lastMessageAt: string }[]
+  remote: SearchRemoteItem[]
+  partial: string[]
+}
+
+/** modal ค้นหา: พิมพ์แล้วเห็นผล 2 ส่วนสด — กดผลจาก Gmail = ดูด thread นั้นเข้าระบบแล้วเปิดเลย */
+function SearchModal({
+  mb,
+  mailboxes,
+  initial,
+  onClose,
+  onOpen,
+  onApplyFilter,
+}: {
+  mb: string
+  mailboxes: MailboxOpt[]
+  initial: string
+  onClose: () => void
+  onOpen: (threadId: string) => void
+  onApplyFilter: (q: string) => void
+}) {
+  const [term, setTerm] = useState(initial)
+  const [res, setRes] = useState<SearchResults | null>(null)
+  const [searching, setSearching] = useState(false)
+  const [importing, setImporting] = useState<string | null>(null)
+  const inputRef = useRef<HTMLInputElement>(null)
+  useEffect(() => inputRef.current?.focus(), [])
+
+  // ค้นแบบ debounce — local เร็ว + Gmail ตามมาในชุดเดียว
+  useEffect(() => {
+    const t = term.trim()
+    if (!t) {
+      setRes(null)
+      return
+    }
+    setSearching(true)
+    const timer = window.setTimeout(() => {
+      const p = new URLSearchParams({ q: t })
+      if (mb !== 'all') p.set('mailbox', mb)
+      api
+        .get<SearchResults>(`/api/inbox/search?${p.toString()}`)
+        .then(setRes)
+        .catch(() => setRes(null))
+        .finally(() => setSearching(false))
+    }, 450)
+    return () => window.clearTimeout(timer)
+  }, [term, mb])
+
+  const dotOf = (id: string) => DOTS[mailboxes.findIndex((m) => m.id === id) % DOTS.length]
+  const openRemote = async (r: SearchRemoteItem) => {
+    if (r.localThreadId) return onOpen(r.localThreadId)
+    setImporting(r.gmailThreadId)
+    try {
+      const out = await api.post<{ threadId: string }>('/api/inbox/import-thread', {
+        mailboxId: r.mailboxId,
+        gmailThreadId: r.gmailThreadId,
+      })
+      onOpen(out.threadId)
+    } catch {
+      setImporting(null)
+    }
+  }
+
+  return (
+    <div
+      className="fixed inset-0 bg-slate-900/30 z-50 grid place-items-start justify-center pt-24 px-4"
+      onClick={onClose}
+    >
+      <div
+        className="w-[36rem] max-w-full bg-white rounded-xl shadow-lg overflow-hidden"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="flex items-center gap-2 px-4 border-b border-slate-100">
+          <Search className="w-4 h-4 text-slate-400" />
+          <input
+            ref={inputRef}
+            value={term}
+            onChange={(e) => setTerm(e.target.value)}
+            placeholder="ค้นหาอีเมล... (รองรับ from: before: แบบ Gmail)"
+            className="flex-1 text-sm py-3 focus:outline-hidden"
+            onKeyDown={(e) => {
+              if (e.code === 'Enter' && term.trim()) onApplyFilter(term.trim())
+            }}
+          />
+          <span className="text-[10px] text-slate-300 border border-slate-200 rounded px-1">
+            Enter = กรองรายการ
+          </span>
+        </div>
+
+        <div className="max-h-[26rem] overflow-y-auto p-2">
+          {!term.trim() && (
+            <div className="px-3 py-6 text-center text-sm text-slate-400">
+              พิมพ์เพื่อค้น — ในระบบ + ย้อนหลังทั้งกล่องผ่าน Gmail
+            </div>
+          )}
+
+          {res && res.local.length > 0 && (
+            <>
+              <div className="px-3 pt-2 pb-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
+                ในระบบ
+              </div>
+              {res.local.map((l) => (
+                <button
+                  key={l.id}
+                  onClick={() => onOpen(l.id)}
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-50 text-left"
+                >
+                  <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotOf(l.mailboxId)}`} />
+                  <span className="text-sm text-slate-800 truncate">{l.subject || '(ไม่มีหัวข้อ)'}</span>
+                  <span className="ml-auto text-xs text-slate-400 shrink-0">{l.contactEmail ?? ''}</span>
+                </button>
+              ))}
+            </>
+          )}
+
+          {term.trim() && (
+            <div className="px-3 pt-3 pb-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-2">
+              จาก Gmail ทั้งกล่อง
+              {searching && <RefreshCw className="w-3 h-3 animate-spin text-slate-300" />}
+            </div>
+          )}
+          {res?.remote.map((r) => (
+            <button
+              key={`${r.mailboxId}:${r.gmailThreadId}`}
+              onClick={() => void openRemote(r)}
+              disabled={importing === r.gmailThreadId}
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-50 text-left disabled:opacity-50"
+            >
+              <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotOf(r.mailboxId)}`} />
+              <span className="min-w-0">
+                <span className="block text-sm text-slate-800 truncate">{r.subject || '(ไม่มีหัวข้อ)'}</span>
+                <span className="block text-xs text-slate-400 truncate">
+                  {displayName(r.fromAddr)} · {r.sentAt ? waitLabelDate(new Date(r.sentAt).toISOString()) : ''}
+                </span>
+              </span>
+              <span className="ml-auto text-[10px] shrink-0">
+                {importing === r.gmailThreadId ? (
+                  <span className="text-brand-600">กำลังดึงเข้าระบบ…</span>
+                ) : r.localThreadId ? (
+                  <span className="text-slate-400">อยู่ในระบบแล้ว</span>
+                ) : (
+                  <span className="text-brand-600">ดึงเข้าระบบ →</span>
+                )}
+              </span>
+            </button>
+          ))}
+          {res && term.trim() && !searching && res.remote.length === 0 && (
+            <div className="px-3 py-2 text-xs text-slate-400">— Gmail ไม่พบ —</div>
+          )}
+          {res && res.partial.length > 0 && (
+            <div className="px-3 py-2 text-[11px] text-amber-600">
+              ⚠️ ค้นไม่ครบ: กล่อง {res.partial.join(', ')} หลุดการเชื่อมต่อ
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
   )
 }
