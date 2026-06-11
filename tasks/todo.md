@@ -272,4 +272,8 @@
 - **บั๊กจริงที่แก้:** D1 LIKE pattern จำกัด ~50 bytes → คำค้นไทยยาวระเบิด → ใช้ `instr()` แทน (regression test แล้ว)
 - **Verify ✓:** เทสต์ 174 เขียว · จริง: ค้นเมล 3 พ.ค. (ก่อน backfill) → import เป็น #44 → อ่าน/ตอบได้ · console สะอาด
 
-### ☐ E6 — GCal sync (calendar.readonly ผ่าน client SW) + ICS feed
+### ☑ E6 — GCal sync (calendar.readonly) + ICS feed ✅ (11 มิ.ย. 69)
+**ICS feed (ครึ่งแรก):** public `GET /api/calendar/feed/:token` (ไม่มี auth · token ลับในพาธ · mount ก่อน middleware auth ของ /api/calendar/*) · `lib/ics.ts` pure RFC5545 (all-day DTEND exclusive · escape TEXT · fold ≤75 octet ไม่ตัดกลางตัวไทย) · owner สร้าง/รีเซ็ต/ปิดที่ ตั้งค่า (`/api/admin/ics-link` · token = `company_config.ics_token` migration 0016 · ไม่หลุดทาง GET /api/config) · refactor calendar.ts แยก `gatherCalendarEvents/payrollEvents` ใช้ร่วม
+**GCal sync (ครึ่งหลัง):** `calendar_connections` (migration 0017 · refresh token เข้ารหัส + syncToken · ใช้ client Internal ตัวเดียวกับอีเมลกลาง SW) · `lib/gcal.ts` map pure (all-day end −1 · timed → วัน BKK · cancelled) · `lib/gcal-sync.ts` (events.list singleEvents · incremental syncToken · 410 → full resync · invalid_grant → disconnected · upsert ด้วย gcalId) · routes owner `calendar-connect` (connect/callback ยืนยัน scope/reconnect · sync · disconnect) · cron `*/30` + UI การ์ดในตั้งค่า
+**Verify ✓:** typecheck/lint เขียว · เทสต์ +19 (ics 7 + gcal 12) รวม 150 api · ของจริงบน preview: feed สาธารณะ (ไม่มี cookie) คืน ICS ถูก/ไทยถอดถูก · token ผิด 404 · connect 302 → Google scope calendar.readonly · การ์ด UI ทั้งสองเรนเดอร์/console สะอาด
+**⏳ เหลือฝั่งเจ้าของ (เหมือน inbox · ไม่บังคับ):** ICS = แค่กด "สร้างลิงก์" ที่ ตั้งค่า แล้วแชร์ทีม (ไม่ต้องแตะ GCP) · GCal = เพิ่ม scope `calendar.readonly` + redirect `https://office.seedwebs.com/api/calendar-connect/callback` ใน OAuth client SW (GCP) แล้วกดเชื่อมที่ ตั้งค่า
