@@ -24,12 +24,16 @@
     "crons": ["* * * * *", "*/30 * * * *", "0 20 * * *"]
   },
 
-  // ค่า production — local override ที่ .dev.vars · GOOGLE_CLIENT_SECRET = secret (wrangler secret put)
+  // ค่า production — local override ที่ .dev.vars
+  // ค่าที่ผูกบริษัท/credential ทั้งหมดเป็น secret (`wrangler secret put`): GOOGLE_CLIENT_ID ·
+  // GOOGLE_CLIENT_SECRET (login OAuth) · INBOX_ENC_KEY (กุญแจเข้ารหัส token อีเมลกลาง) — repo public ห้ามมีค่าจริง
   "vars": {
     "APP_URL": "https://office.seedwebs.com",
-    "DEV_AUTH": "0",
-    "GOOGLE_CLIENT_ID": "TODO-google-oauth-client-id"
+    "DEV_AUTH": "0"
   },
+
+  // domain จริง — zone seedwebs.com อยู่บัญชี Cloudflare เดียวกัน wrangler จัด DNS ให้เอง
+  "routes": [{ "pattern": "office.seedwebs.com", "custom_domain": true }],
 
   // DO: PRESENCE = timer realtime (SPEC §4.15) · INBOX_HUB = collision อีเมลกลางราย thread (SPEC §4.12)
   "durable_objects": {

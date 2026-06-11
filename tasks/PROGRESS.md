@@ -36,7 +36,9 @@
   - เทสต์: core 36 unit + api 56 integration (workerd+D1 จริง) + e2e Playwright 5 (login 3 + ลูปเงิน 2) — เขียวครบ · CI เขียว
   - D1 จริงสร้างแล้ว (id ใน wrangler.jsonc) · local dev ใช้ sqlite ในเครื่อง · seed = dev เท่านั้น (launch จริง = fresh)
   - wrangler dev ตายถ้า reload เจอโค้ดครึ่งทาง (แก้ index.ts ให้ atomic) → restart preview "dev"
-- ▶ **รอเจ้าของรีวิว CP4** แล้วค่อย: สร้าง Google OAuth client (GCP) → R2 bucket + `pnpm db:migrate:remote` → `pnpm deploy` (ask-first) → รันคู่ 1 งวดเทียบคิดมือ → เลิก Notion/Everhour
+- 🚀 **DEPLOY PRODUCTION แล้ว (11 มิ.ย. 69): https://office.seedwebs.com** — custom domain (zone ในบัญชีเดียวกัน wrangler จัด DNS เอง) · migrations 0000–0015 ครบ · R2 + DO ทั้งคู่ + cron 3 ตัวขึ้น · `INBOX_ENC_KEY` production ตั้งแล้ว (สุ่มใหม่ คนละตัวกับ dev) · bootstrap: company_config (memberDomain @seedwebs.com → ทีม login ได้เอง) + owner user · **GOOGLE_CLIENT_ID ถอนออกจาก wrangler.jsonc → เป็น secret** (repo ไม่มีค่า Google ใดๆ) · verify: health 200 · SPA 200 · privacy gate 401 · login redirect โครงถูก
+  - ⏳ **เหลือฝั่งเจ้าของ 2 ขั้น:** (1) สร้าง login client (External · In production · redirect = https://office.seedwebs.com/api/auth/callback) แล้ว `wrangler secret put GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` ในเทอร์มินัลตัวเอง (2) login แล้ววาง inbox client + เชื่อมกล่องใหม่บน production (token local ใช้ข้ามเครื่องไม่ได้)
+  - แผน cutover เดิม: รันคู่ 1 งวดเทียบคิดมือ → เลิก Notion/Everhour
 - ❓ **คำถามค้างถึงเจ้าของ** (จากการ build — มีสรุปท้าย session ด้วย):
   1. สูตรปัดเศษ: ปัดครึ่งขึ้นที่สตางค์ "ต่อ entry" (ยอดโปรเจกต์=ยอดจ่ายคน) — ตรงกับที่คิดมือไหม
   2. Google OAuth client id/secret — ต้องสร้างใน GCP console (redirect = {APP_URL}/api/auth/callback) แล้วใส่ secret
