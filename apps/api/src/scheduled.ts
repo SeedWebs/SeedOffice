@@ -1,7 +1,7 @@
 import { createDb, tasks, timerSessions } from '@seedoffice/db'
 import { eq, lt } from 'drizzle-orm'
 import { runBackup } from './lib/backup'
-import { syncAllMailboxes } from './lib/inbox-sync'
+import { syncAllMailboxes, wakeSnoozedThreads } from './lib/inbox-sync'
 import { purgeExpiredSessions } from './lib/session'
 import { closeSession, getCapMinutes } from './lib/time-core'
 
@@ -15,7 +15,10 @@ const INBOX_SYNC_CRON = '* * * * *'
  * - รายวัน 03:00 BKK: backup D1 → R2 (T18 — ต้องมาก่อนปิดงวดจริงครั้งแรก)
  */
 export async function runScheduled(env: Env, cron: string): Promise<void> {
-  if (cron === INBOX_SYNC_CRON) return syncAllMailboxes(env)
+  if (cron === INBOX_SYNC_CRON) {
+    await wakeSnoozedThreads(env)
+    return syncAllMailboxes(env)
+  }
 
   const db = createDb(env.DB)
   const capMinutes = await getCapMinutes(env)

@@ -2,9 +2,11 @@ import {
   clients,
   createDb,
   inboxAttachments,
+  inboxCanned,
   inboxGoogleClients,
   inboxMailboxes,
   inboxMessages,
+  inboxNotes,
   inboxThreads,
   users,
 } from '@seedoffice/db'
@@ -37,11 +39,17 @@ const listQuery = z.object({
 
 const patchBody = z
   .object({
-    status: z.enum(['open', 'closed', 'spam']),
+    status: z.enum(['open', 'closed', 'spam', 'snoozed']),
     assigneeId: z.string().nullable(),
     unread: z.boolean(),
+    tags: z.array(z.string().trim().min(1).max(30)).max(10),
+    snoozeUntil: z.coerce.date(),
   })
   .partial()
+  // เลื่อน (snooze) ต้องบอกเวลาปลุกในอนาคต — cron ทุกนาทีจะปลุกกลับมา open
+  .refine((d) => d.status !== 'snoozed' || (d.snoozeUntil && d.snoozeUntil.getTime() > Date.now()), {
+    message: 'snooze_requires_future_time',
+  })
 
 export const inboxThreadRoutes = new Hono<AppEnv>()
 
@@ -135,6 +143,8 @@ export const inboxThreadRoutes = new Hono<AppEnv>()
         status: inboxThreads.status,
         unread: inboxThreads.unread,
         assigneeId: inboxThreads.assigneeId,
+        tags: inboxThreads.tags,
+        snoozeUntil: inboxThreads.snoozeUntil,
         lastMessageAt: inboxThreads.lastMessageAt,
       })
       .from(inboxThreads)
@@ -224,7 +234,21 @@ export const inboxThreadRoutes = new Hono<AppEnv>()
       past.total = t?.n ?? 0
     }
 
-    return c.json({ thread: { ...thread, unread: false }, messages: withBody, client, past })
+    // โน้ตภายในของ thread — UI ผสานเข้า timeline ตามเวลา
+    const notes = await db
+      .select({
+        id: inboxNotes.id,
+        body: inboxNotes.body,
+        createdAt: inboxNotes.createdAt,
+        userId: inboxNotes.userId,
+        userName: users.name,
+      })
+      .from(inboxNotes)
+      .innerJoin(users, eq(users.id, inboxNotes.userId))
+      .where(eq(inboxNotes.threadId, id))
+      .orderBy(inboxNotes.createdAt)
+
+    return c.json({ thread: { ...thread, unread: false }, messages: withBody, notes, client, past })
   })
 
   // เปลี่ยนสถานะ / มอบหมาย / mark unread — owner+member (SPEC §3: อีเมลกลาง R/W ทั้งทีม)
@@ -248,14 +272,70 @@ export const inboxThreadRoutes = new Hono<AppEnv>()
       .update(inboxThreads)
       .set({
         ...body.data,
-        // เปลี่ยนสถานะ = จัดการแล้ว: ปิด → ถือว่าอ่านแล้ว + ล้าง snooze
-        ...(body.data.status ? { snoozeUntil: null } : {}),
-        ...(body.data.status === 'closed' ? { unread: false } : {}),
+        // เปลี่ยนสถานะ = จัดการแล้ว: ปิด/เลื่อน → ถือว่าอ่านแล้ว · สถานะอื่นล้างเวลาปลุกทิ้ง
+        ...(body.data.status && body.data.status !== 'snoozed' ? { snoozeUntil: null } : {}),
+        ...(body.data.status === 'closed' || body.data.status === 'snoozed'
+          ? { unread: false }
+          : {}),
       })
       .where(eq(inboxThreads.id, c.req.param('id')))
       .returning({ id: inboxThreads.id, status: inboxThreads.status })
     if (!updated[0]) return c.json({ error: 'not_found' }, 404)
     return c.json({ ok: true, status: updated[0].status })
+  })
+
+  // โน้ตภายใน — ทีมเห็นกันเอง ไม่ถึงลูกค้า (SPEC §4.12)
+  .post('/threads/:id/notes', async (c) => {
+    const parsed = z
+      .object({ body: z.string().trim().min(1).max(10_000) })
+      .safeParse(await c.req.json().catch(() => null))
+    if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
+    const db = createDb(c.env.DB)
+    const [thread] = await db
+      .select({ id: inboxThreads.id })
+      .from(inboxThreads)
+      .where(eq(inboxThreads.id, c.req.param('id')))
+    if (!thread) return c.json({ error: 'not_found' }, 404)
+    const me = c.get('user')
+    const [note] = await db
+      .insert(inboxNotes)
+      .values({ threadId: thread.id, userId: me.id, body: parsed.data.body })
+      .returning()
+    if (!note) return c.json({ error: 'insert_failed' }, 500)
+    return c.json({ ...note, userName: me.name }, 201)
+  })
+
+  // ข้อความสำเร็จรูป (canned replies) — ทีมสร้าง/แก้/ใช้ร่วมกัน
+  .get('/canned', async (c) => {
+    const db = createDb(c.env.DB)
+    const items = await db
+      .select({ id: inboxCanned.id, title: inboxCanned.title, body: inboxCanned.body })
+      .from(inboxCanned)
+      .where(isNull(inboxCanned.deletedAt))
+      .orderBy(inboxCanned.title)
+    return c.json({ items })
+  })
+
+  .post('/canned', async (c) => {
+    const parsed = z
+      .object({ title: z.string().trim().min(1).max(100), body: z.string().trim().min(1).max(10_000) })
+      .safeParse(await c.req.json().catch(() => null))
+    if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
+    const db = createDb(c.env.DB)
+    const [row] = await db.insert(inboxCanned).values(parsed.data).returning()
+    if (!row) return c.json({ error: 'insert_failed' }, 500)
+    return c.json(row, 201)
+  })
+
+  .delete('/canned/:id', async (c) => {
+    const db = createDb(c.env.DB)
+    const updated = await db
+      .update(inboxCanned)
+      .set({ deletedAt: new Date() })
+      .where(and(eq(inboxCanned.id, c.req.param('id')), isNull(inboxCanned.deletedAt)))
+      .returning({ id: inboxCanned.id })
+    if (!updated[0]) return c.json({ error: 'not_found' }, 404)
+    return c.json({ ok: true })
   })
 
   // ตอบจากในระบบ → ส่งผ่าน Gmail API จาก address ของกล่อง + threading ถูกต้อง (SPEC §4.12)

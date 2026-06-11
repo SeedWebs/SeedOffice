@@ -610,6 +610,36 @@ export const inboxAttachments = sqliteTable(
   (t) => [index('inbox_attachments_message_idx').on(t.messageId)],
 )
 
+/** [P3 §4.12] โน้ตภายในบน thread — ทีมเห็นกันเอง ไม่ส่งถึงลูกค้า */
+export const inboxNotes = sqliteTable(
+  'inbox_notes',
+  {
+    id: id(),
+    threadId: text('thread_id')
+      .notNull()
+      .references(() => inboxThreads.id),
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    body: text('body').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [index('inbox_notes_thread_idx').on(t.threadId, t.createdAt)],
+)
+
+/** [P3 §4.12] ข้อความสำเร็จรูป (canned replies) — ทีมสร้าง/ใช้ร่วมกัน · soft-delete */
+export const inboxCanned = sqliteTable('inbox_canned', {
+  id: id(),
+  title: text('title').notNull(),
+  body: text('body').notNull(),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+  deletedAt: integer('deleted_at', { mode: 'timestamp_ms' }),
+})
+
 /** [P3 §4.12] สถานะ sync ราย mailbox — lastHistoryId เป็น text (uint64) · lastError โชว์ใน ตั้งค่า */
 export const gmailSyncState = sqliteTable(
   'gmail_sync_state',
@@ -718,5 +748,7 @@ export type InboxGoogleClient = typeof inboxGoogleClients.$inferSelect
 export type InboxMailbox = typeof inboxMailboxes.$inferSelect
 export type InboxThread = typeof inboxThreads.$inferSelect
 export type InboxMessage = typeof inboxMessages.$inferSelect
+export type InboxNote = typeof inboxNotes.$inferSelect
+export type InboxCanned = typeof inboxCanned.$inferSelect
 export type InboxAttachment = typeof inboxAttachments.$inferSelect
 export type GmailSyncState = typeof gmailSyncState.$inferSelect

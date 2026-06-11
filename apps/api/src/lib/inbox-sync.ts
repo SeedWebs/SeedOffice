@@ -9,7 +9,7 @@ import {
   type Db,
   type InboxMailbox,
 } from '@seedoffice/db'
-import { and, eq, isNull } from 'drizzle-orm'
+import { and, eq, isNull, lte } from 'drizzle-orm'
 import { decryptSecret } from './crypto'
 import { extractEmail, parseGmailMessage, type GmailMessage } from './gmail'
 
@@ -344,4 +344,13 @@ export async function syncAllMailboxes(env: Env): Promise<void> {
     .from(inboxMailboxes)
     .where(eq(inboxMailboxes.status, 'connected'))
   for (const b of boxes) await syncMailbox(env, b.id)
+}
+
+/** ปลุก thread ที่ snooze ครบเวลา (cron ทุกนาที) — กลับมา open + unread ให้ทีมเห็น */
+export async function wakeSnoozedThreads(env: Env): Promise<void> {
+  const db = createDb(env.DB)
+  await db
+    .update(inboxThreads)
+    .set({ status: 'open', unread: true, snoozeUntil: null })
+    .where(and(eq(inboxThreads.status, 'snoozed'), lte(inboxThreads.snoozeUntil, new Date())))
 }

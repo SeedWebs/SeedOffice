@@ -2,18 +2,23 @@ import {
   ArrowLeft,
   ChevronDown,
   Inbox as InboxIcon,
+  Lock,
   Mail,
   Paperclip,
   PenLine,
   Search,
   Send,
+  Tag,
   UserPlus,
   X,
+  Zap,
 } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
+import { useDialog } from '../components/Dialog'
 import { PageHeader } from '../components/PageHeader'
 import { api, ApiError } from '../lib/api'
+import { useAuth } from '../lib/auth'
 import { useLoad } from '../lib/useLoad'
 
 /**
@@ -39,10 +44,19 @@ interface ThreadRow {
   status: 'open' | 'snoozed' | 'closed' | 'spam'
   unread: boolean
   assigneeId: string | null
+  tags?: string[] | null
+  snoozeUntil?: string | null
   lastMessageAt: string
   preview: string | null
   latestFrom: string | null
   hasAttachment: number
+}
+interface NoteItem {
+  id: string
+  body: string
+  createdAt: string
+  userId: string
+  userName: string
 }
 interface Counts {
   unassigned: number
@@ -72,6 +86,7 @@ interface Msg {
 interface DetailData {
   thread: ThreadRow
   messages: Msg[]
+  notes: NoteItem[]
   client: { id: string; name: string; logo: string | null } | null
   past: { items: { id: string; subject: string; lastMessageAt: string }[]; total: number }
 }
@@ -115,6 +130,10 @@ function waitLabel(iso: string): string {
   const mins = Math.max(0, Math.floor((Date.now() - d.getTime()) / 60_000))
   if (mins < 60) return `${mins} นาที`
   if (mins < 24 * 60) return `${Math.floor(mins / 60)} ชม.`
+  return `${d.getDate()} ${THM[d.getMonth()]}`
+}
+const waitLabelDate = (iso: string) => {
+  const d = new Date(iso)
   return `${d.getDate()} ${THM[d.getMonth()]}`
 }
 function dtLabel(iso: string): string {
@@ -217,7 +236,70 @@ function MailboxSelector({
   )
 }
 
-/** เมนูเปลี่ยนสถานะ + มอบหมาย ใน detail header */
+/** การ์ดอีเมล 1 ฉบับใน timeline */
+function MessageCard({ m }: { m: Msg }) {
+  return (
+    <div
+      className={`bg-white border rounded-xl p-4 max-w-3xl ${m.direction === 'out' ? 'border-brand-200 ml-6' : 'border-slate-200'}`}
+    >
+      <div className="flex items-start justify-between gap-2">
+        <div className="font-semibold text-slate-800">
+          {displayName(m.fromAddr)}
+          {m.direction === 'out' && (
+            <span className="ml-2 text-[10px] font-medium bg-brand-50 text-brand-600 px-1.5 py-0.5 rounded">
+              ทีมเรา
+            </span>
+          )}
+        </div>
+        <div className="text-xs text-slate-400 shrink-0">{dtLabel(m.sentAt)}</div>
+      </div>
+      <div className="text-xs text-slate-400 mt-1">
+        <span>ถึง</span> {m.toAddr || '—'}
+      </div>
+      {m.ccAddr && (
+        <div className="text-xs text-slate-400 mt-0.5">
+          <span>Cc</span> {m.ccAddr}
+        </div>
+      )}
+      <hr className="my-3 border-slate-100" />
+      {m.body ? (
+        m.body.contentType.includes('html') ? (
+          <EmailFrame html={m.body.content} />
+        ) : (
+          <div className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">{m.body.content}</div>
+        )
+      ) : (
+        <div className="text-sm text-slate-400">{m.snippet || '(ไม่มีเนื้อหา)'}</div>
+      )}
+      {m.attachments.length > 0 && (
+        <div className="mt-3">
+          {m.attachments.map((a) => (
+            <a
+              key={a.id}
+              href={`/api/inbox/attachments/${a.id}/download`}
+              className="inline-flex items-center gap-2 border border-slate-200 rounded-lg px-3 py-2 text-sm text-brand-700 mt-1 mr-2 hover:bg-slate-50"
+            >
+              <Paperclip className="w-4 h-4 text-slate-400" />
+              {a.filename}
+              <span className="text-[10px] text-slate-400">{(a.sizeBytes / 1024).toFixed(0)} KB</span>
+            </a>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+/** 9:00 เช้าตามเวลาไทย (+plusDays วัน) — สำหรับเมนูเลื่อน (snooze) */
+function bkkMorning(plusDays: number): Date {
+  const bkkNow = new Date(Date.now() + 7 * 3_600_000)
+  // 9:00 BKK = 02:00 UTC
+  return new Date(
+    Date.UTC(bkkNow.getUTCFullYear(), bkkNow.getUTCMonth(), bkkNow.getUTCDate() + plusDays, 2, 0, 0),
+  )
+}
+
+/** เมนูเปลี่ยนสถานะ/เลื่อน + มอบหมาย + แท็ก ใน detail header */
 function ThreadActions({
   thread,
   onChanged,
@@ -225,7 +307,8 @@ function ThreadActions({
   thread: ThreadRow
   onChanged: () => void
 }) {
-  const [menu, setMenu] = useState<'status' | 'assign' | null>(null)
+  const [menu, setMenu] = useState<'status' | 'assign' | 'tags' | null>(null)
+  const [tagInput, setTagInput] = useState('')
   const { data: userOpts } = useLoad<UserOpt[]>(() => api.get('/api/users'))
   useEffect(() => {
     const close = () => setMenu(null)
@@ -237,13 +320,27 @@ function ThreadActions({
     setMenu(null)
     onChanged()
   }
+  const tags = thread.tags ?? []
+  const setTags = async (next: string[]) => {
+    await api.patch(`/api/inbox/threads/${thread.id}`, { tags: next })
+    onChanged()
+  }
   const pill = STATUS_PILL[thread.status] ?? STATUS_PILL.open!
   const team = (userOpts ?? []).filter((u) => u.role !== 'vendor')
   const assignee = team.find((u) => u.id === thread.assigneeId)
+  const snoozeItems: { label: string; days: number }[] = [
+    { label: 'เลื่อนถึงพรุ่งนี้ 9:00', days: 1 },
+    { label: 'เลื่อนไปอีก 3 วัน', days: 3 },
+    { label: 'เลื่อนไปสัปดาห์หน้า', days: 7 },
+  ]
   const statusItems: { label: string; body: Record<string, unknown> }[] =
     thread.status === 'open'
       ? [
           { label: 'ปิดเรื่อง', body: { status: 'closed' } },
+          ...snoozeItems.map((s) => ({
+            label: s.label,
+            body: { status: 'snoozed', snoozeUntil: bkkMorning(s.days).toISOString() },
+          })),
           { label: 'ทำเครื่องหมายสแปม', body: { status: 'spam' } },
         ]
       : thread.status === 'spam'
@@ -263,13 +360,62 @@ function ThreadActions({
       <div className="relative">
         <button
           onClick={() => setMenu(menu === 'status' ? null : 'status')}
-          className={`flex items-center gap-1 text-sm rounded-full px-3 py-1.5 ${pill.cls}`}
+          className={`flex items-center gap-1 text-sm rounded-full px-3 py-1.5 whitespace-nowrap ${pill.cls}`}
         >
-          {pill.label} <ChevronDown className="w-3.5 h-3.5" />
+          {pill.label}
+          {thread.status === 'snoozed' && thread.snoozeUntil && (
+            <span className="text-[10px] opacity-70">→ {waitLabelDate(thread.snoozeUntil)}</span>
+          )}
+          <ChevronDown className="w-3.5 h-3.5" />
         </button>
         {menu === 'status' && (
-          <div className="absolute right-0 mt-1.5 w-52 bg-white rounded-xl shadow-lg border border-slate-200 p-1.5 z-50">
+          <div className="absolute right-0 mt-1.5 w-56 bg-white rounded-xl shadow-lg border border-slate-200 p-1.5 z-50">
             {statusItems.map((s) => item(s.label, () => void patch(s.body)))}
+          </div>
+        )}
+      </div>
+      <div className="relative">
+        <button
+          title="ติดแท็ก"
+          onClick={() => setMenu(menu === 'tags' ? null : 'tags')}
+          className={`h-8 px-2 grid place-items-center rounded-lg hover:bg-slate-100 ${tags.length ? 'text-brand-600' : 'text-slate-500'}`}
+        >
+          <span className="flex items-center gap-1 text-sm">
+            <Tag className="w-4 h-4" />
+            {tags.length > 0 && <span className="text-xs">{tags.length}</span>}
+          </span>
+        </button>
+        {menu === 'tags' && (
+          <div className="absolute right-0 mt-1.5 w-60 bg-white rounded-xl shadow-lg border border-slate-200 p-2.5 z-50 space-y-2">
+            <div className="flex flex-wrap gap-1.5">
+              {tags.length === 0 && <span className="text-xs text-slate-400">ยังไม่มีแท็ก</span>}
+              {tags.map((t) => (
+                <span
+                  key={t}
+                  className="inline-flex items-center gap-1 text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full"
+                >
+                  {t}
+                  <button
+                    onClick={() => void setTags(tags.filter((x) => x !== t))}
+                    className="text-slate-400 hover:text-rose-600"
+                  >
+                    <X className="w-3 h-3" />
+                  </button>
+                </span>
+              ))}
+            </div>
+            <input
+              value={tagInput}
+              onChange={(e) => setTagInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.code === 'Enter' && tagInput.trim()) {
+                  void setTags([...new Set([...tags, tagInput.trim()])])
+                  setTagInput('')
+                }
+              }}
+              placeholder="พิมพ์แท็กแล้ว Enter"
+              className="w-full text-sm bg-slate-50 rounded-lg px-2.5 py-1.5 focus:outline-hidden"
+            />
           </div>
         )}
       </div>
@@ -317,19 +463,83 @@ function ThreadDetail({
     () => api.get(`/api/inbox/threads/${id}`),
     [id],
   )
+  const { user: me } = useAuth()
+  const { promptDialog, confirmDialog } = useDialog()
   const [draft, setDraft] = useState('')
+  const [composerMode, setComposerMode] = useState<'reply' | 'note'>('reply')
+  const [cannedOpen, setCannedOpen] = useState(false)
   const [sending, setSending] = useState(false)
   const [sendError, setSendError] = useState('')
+  const { data: canned, reload: reloadCanned } = useLoad<{ items: { id: string; title: string; body: string }[] }>(
+    () => api.get('/api/inbox/canned'),
+  )
   useEffect(() => {
     if (data) onChanged() // เปิดแล้ว server mark read — ให้ list/badge รีเฟรช
   }, [data?.thread.id])
-  useEffect(() => setDraft(''), [id]) // เปลี่ยน thread = เริ่มร่างใหม่
+  useEffect(() => {
+    setDraft('')
+    setComposerMode('reply')
+  }, [id]) // เปลี่ยน thread = เริ่มร่างใหม่
+
+  // collision detection (SPEC §4.12) — WebSocket เข้า DO ราย thread: ใครกำลังดู/พิมพ์
+  const [viewers, setViewers] = useState<{ userId: string; name: string; mode: string }[]>([])
+  const wsRef = useRef<WebSocket | null>(null)
+  const typingTimer = useRef<number | null>(null)
+  useEffect(() => {
+    let stopped = false
+    let retry: number | null = null
+    const connect = () => {
+      const proto = location.protocol === 'https:' ? 'wss' : 'ws'
+      const ws = new WebSocket(`${proto}://${location.host}/api/inbox/threads/${id}/ws`)
+      wsRef.current = ws
+      ws.onmessage = (e) => {
+        if (e.data === 'pong') return
+        try {
+          const msg = JSON.parse(String(e.data)) as { type?: string; viewers?: typeof viewers }
+          if (msg.type === 'roster' && msg.viewers) setViewers(msg.viewers)
+        } catch {
+          // ข้อความนอกรูปแบบ
+        }
+      }
+      ws.onclose = () => {
+        if (!stopped) retry = window.setTimeout(connect, 5000) // server reload/หลุด → ต่อใหม่
+      }
+    }
+    connect()
+    const ping = window.setInterval(() => {
+      if (wsRef.current?.readyState === WebSocket.OPEN) wsRef.current.send('ping')
+    }, 30_000)
+    return () => {
+      stopped = true
+      if (retry) window.clearTimeout(retry)
+      clearInterval(ping)
+      wsRef.current?.close()
+      wsRef.current = null
+      setViewers([])
+    }
+  }, [id])
+  const sendMode = (mode: 'view' | 'typing') => {
+    const ws = wsRef.current
+    if (ws?.readyState === WebSocket.OPEN) ws.send(JSON.stringify({ type: 'mode', mode }))
+  }
+  const onTyping = () => {
+    sendMode('typing')
+    if (typingTimer.current) window.clearTimeout(typingTimer.current)
+    typingTimer.current = window.setTimeout(() => sendMode('view'), 2500)
+  }
+  const others = viewers.filter((v) => v.userId !== me?.id)
+  const typers = others.filter((v) => v.mode === 'typing')
+  const watchers = others.filter((v) => v.mode !== 'typing')
 
   const sendReply = async () => {
     setSending(true)
     setSendError('')
     try {
-      await api.post(`/api/inbox/threads/${id}/reply`, { body: draft.trim() })
+      if (composerMode === 'note') {
+        await api.post(`/api/inbox/threads/${id}/notes`, { body: draft.trim() })
+      } else {
+        await api.post(`/api/inbox/threads/${id}/reply`, { body: draft.trim() })
+      }
       setDraft('')
       await reload()
       onChanged()
@@ -337,16 +547,33 @@ function ThreadDetail({
       setSendError(
         e instanceof ApiError && e.message === 'mailbox_disconnected'
           ? 'กล่องหลุดการเชื่อมต่อ — เชื่อมใหม่ที่ ตั้งค่า → อีเมลกลาง'
-          : 'ส่งไม่สำเร็จ — ลองอีกครั้ง',
+          : `${composerMode === 'note' ? 'บันทึกโน้ต' : 'ส่ง'}ไม่สำเร็จ — ลองอีกครั้ง`,
       )
     } finally {
       setSending(false)
     }
   }
+
+  const saveDraftAsCanned = async () => {
+    const title = await promptDialog({ title: 'ตั้งชื่อข้อความสำเร็จรูป', placeholder: 'เช่น ขอบคุณ + รับเรื่อง' })
+    if (!title) return
+    await api.post('/api/inbox/canned', { title, body: draft.trim() })
+    await reloadCanned()
+  }
+  const removeCanned = async (cid: string, title: string) => {
+    if (!(await confirmDialog({ title: `ลบข้อความสำเร็จรูป "${title}"?`, danger: true, confirmLabel: 'ลบ' }))) return
+    await api.delete(`/api/inbox/canned/${cid}`)
+    await reloadCanned()
+  }
   if (loading || !data)
     return <div className="p-10 text-center text-sm text-slate-400">กำลังโหลดอีเมล…</div>
-  const { thread, messages, client, past } = data
+  const { thread, messages, notes, client, past } = data
   const mailbox = mailboxes.find((m) => m.id === thread.mailboxId)
+  // timeline = อีเมล + โน้ตภายใน เรียงตามเวลา
+  const timeline = [
+    ...messages.map((m) => ({ kind: 'msg' as const, at: new Date(m.sentAt).getTime(), m })),
+    ...(notes ?? []).map((n) => ({ kind: 'note' as const, at: new Date(n.createdAt).getTime(), n })),
+  ].sort((a, b) => a.at - b.at)
   return (
     <div className="flex">
       <div className="flex-1 min-w-0 flex flex-col">
@@ -360,7 +587,23 @@ function ThreadDetail({
           <div className="font-semibold text-slate-900 truncate flex-1">
             {thread.subject || '(ไม่มีหัวข้อ)'}
             <span className="ml-2 text-xs font-normal text-slate-400 tabular-nums">#{thread.number}</span>
+            {(thread.tags ?? []).map((t) => (
+              <span key={t} className="ml-1.5 text-[10px] font-normal bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">
+                {t}
+              </span>
+            ))}
           </div>
+          {/* collision: ใครกำลังดู/พิมพ์ thread นี้อยู่ (SPEC §4.12) */}
+          {typers.length > 0 && (
+            <span className="text-[11px] bg-rose-100 text-rose-600 px-2 py-1 rounded-full whitespace-nowrap animate-pulse">
+              ✏️ {typers.map((v) => v.name).join(', ')} กำลังพิมพ์…
+            </span>
+          )}
+          {watchers.length > 0 && (
+            <span className="text-[11px] bg-amber-100 text-amber-700 px-2 py-1 rounded-full whitespace-nowrap">
+              👀 {watchers.map((v) => v.name).join(', ')} กำลังดูอยู่
+            </span>
+          )}
           <ThreadActions
             thread={thread}
             onChanged={() => {
@@ -371,87 +614,134 @@ function ThreadDetail({
         </div>
 
         <div className="flex-1 p-5 bg-slate-50/40 space-y-4">
-          {messages.map((m) => (
-            <div
-              key={m.id}
-              className={`bg-white border rounded-xl p-4 max-w-3xl ${m.direction === 'out' ? 'border-brand-200 ml-6' : 'border-slate-200'}`}
-            >
-              <div className="flex items-start justify-between gap-2">
-                <div className="font-semibold text-slate-800">
-                  {displayName(m.fromAddr)}
-                  {m.direction === 'out' && (
-                    <span className="ml-2 text-[10px] font-medium bg-brand-50 text-brand-600 px-1.5 py-0.5 rounded">
-                      ทีมเรา
-                    </span>
-                  )}
+          {timeline.map((item) =>
+            item.kind === 'note' ? (
+              <div key={item.n.id} className="bg-amber-50 border border-amber-200 rounded-xl p-4 max-w-3xl ml-6">
+                <div className="flex items-center gap-1.5 text-xs text-amber-700">
+                  <Lock className="w-3.5 h-3.5" />
+                  โน้ตภายใน · {item.n.userName}
+                  <span className="ml-auto text-amber-600/70">{dtLabel(item.n.createdAt)}</span>
                 </div>
-                <div className="text-xs text-slate-400 shrink-0">{dtLabel(m.sentAt)}</div>
+                <div className="text-sm text-slate-700 whitespace-pre-line leading-relaxed mt-2">
+                  {item.n.body}
+                </div>
               </div>
-              <div className="text-xs text-slate-400 mt-1">
-                <span>ถึง</span> {m.toAddr || '—'}
-              </div>
-              {m.ccAddr && (
-                <div className="text-xs text-slate-400 mt-0.5">
-                  <span>Cc</span> {m.ccAddr}
-                </div>
-              )}
-              <hr className="my-3 border-slate-100" />
-              {m.body ? (
-                m.body.contentType.includes('html') ? (
-                  <EmailFrame html={m.body.content} />
-                ) : (
-                  <div className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">
-                    {m.body.content}
-                  </div>
-                )
-              ) : (
-                <div className="text-sm text-slate-400">{m.snippet || '(ไม่มีเนื้อหา)'}</div>
-              )}
-              {m.attachments.length > 0 && (
-                <div className="mt-3">
-                  {m.attachments.map((a) => (
-                    <a
-                      key={a.id}
-                      href={`/api/inbox/attachments/${a.id}/download`}
-                      className="inline-flex items-center gap-2 border border-slate-200 rounded-lg px-3 py-2 text-sm text-brand-700 mt-1 mr-2 hover:bg-slate-50"
-                    >
-                      <Paperclip className="w-4 h-4 text-slate-400" />
-                      {a.filename}
-                      <span className="text-[10px] text-slate-400">
-                        {(a.sizeBytes / 1024).toFixed(0)} KB
-                      </span>
-                    </a>
-                  ))}
-                </div>
-              )}
-            </div>
-          ))}
+            ) : (
+              <MessageCard key={item.m.id} m={item.m} />
+            ),
+          )}
         </div>
 
-        {/* ช่องตอบกว้าง — ส่งผ่าน Gmail จาก address ของกล่อง (reply-from อัตโนมัติ) */}
+        {/* ช่องตอบกว้าง / โน้ตภายใน — สลับด้วยปุ่มกุญแจ (mockup) */}
         <div className="p-3 border-t border-slate-200">
-          <div className="border border-slate-200 rounded-xl p-3">
+          <div
+            className={`border rounded-xl p-3 ${composerMode === 'note' ? 'border-amber-300 bg-amber-50/60' : 'border-slate-200'}`}
+          >
             <div className="text-[11px] text-slate-400 mb-2">
-              ตอบกลับ {thread.contactEmail ?? '—'} · ส่งจาก{' '}
-              <span className="text-slate-500">{mailbox?.emailAddress ?? mailbox?.name ?? '—'}</span>
-              {mailbox?.status !== 'connected' && (
-                <span className="ml-2 text-rose-500">— กล่องหลุดการเชื่อมต่อ ส่งไม่ได้ (เชื่อมใหม่ที่ ตั้งค่า)</span>
+              {composerMode === 'note' ? (
+                <span className="text-amber-700">โน้ตภายใน — ทีมเห็นกันเอง ลูกค้าไม่เห็นข้อความนี้</span>
+              ) : (
+                <>
+                  ตอบกลับ {thread.contactEmail ?? '—'} · ส่งจาก{' '}
+                  <span className="text-slate-500">{mailbox?.emailAddress ?? mailbox?.name ?? '—'}</span>
+                  {mailbox?.status !== 'connected' && (
+                    <span className="ml-2 text-rose-500">— กล่องหลุดการเชื่อมต่อ ส่งไม่ได้ (เชื่อมใหม่ที่ ตั้งค่า)</span>
+                  )}
+                </>
               )}
             </div>
             <textarea
               value={draft}
-              onChange={(e) => setDraft(e.target.value)}
-              className="w-full h-28 resize-none text-sm focus:outline-hidden"
-              placeholder="เขียนคำตอบ... (เขียนยาวได้เต็มที่)"
+              onChange={(e) => {
+                setDraft(e.target.value)
+                onTyping()
+              }}
+              className="w-full h-28 resize-none text-sm bg-transparent focus:outline-hidden"
+              placeholder={
+                composerMode === 'note' ? 'จดโน้ตถึงทีม...' : 'เขียนคำตอบ... (เขียนยาวได้เต็มที่)'
+              }
             />
             {sendError && <div className="text-xs text-rose-600 mb-1">{sendError}</div>}
-            <div className="flex items-center justify-end pt-1">
+            <div className="flex items-center justify-between pt-1">
+              <div className="flex items-center gap-1 text-slate-400">
+                <button
+                  title={composerMode === 'note' ? 'กลับไปโหมดตอบลูกค้า' : 'โน้ตภายใน (ลูกค้าไม่เห็น)'}
+                  onClick={() => setComposerMode(composerMode === 'note' ? 'reply' : 'note')}
+                  className={`w-7 h-7 grid place-items-center rounded hover:bg-slate-100 ${composerMode === 'note' ? 'bg-amber-100 text-amber-700' : ''}`}
+                >
+                  <Lock className="w-4 h-4" />
+                </button>
+                <div className="relative">
+                  <button
+                    title="ข้อความสำเร็จรูป"
+                    onClick={(e) => {
+                      e.stopPropagation()
+                      setCannedOpen((v) => !v)
+                    }}
+                    className="w-7 h-7 grid place-items-center rounded hover:bg-slate-100"
+                  >
+                    <Zap className="w-4 h-4" />
+                  </button>
+                  {cannedOpen && (
+                    <div
+                      className="absolute bottom-9 left-0 w-72 bg-white rounded-xl shadow-lg border border-slate-200 p-1.5 z-50 max-h-64 overflow-y-auto"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {(canned?.items ?? []).length === 0 && (
+                        <div className="text-xs text-slate-400 px-2.5 py-2">
+                          ยังไม่มีข้อความสำเร็จรูป — พิมพ์ร่างแล้วกด "บันทึกร่างนี้" ด้านล่าง
+                        </div>
+                      )}
+                      {(canned?.items ?? []).map((cn) => (
+                        <div key={cn.id} className="flex items-center group">
+                          <button
+                            onClick={() => {
+                              setDraft((d) => (d.trim() ? `${d}\n\n${cn.body}` : cn.body))
+                              setCannedOpen(false)
+                            }}
+                            className="flex-1 text-left text-sm px-2.5 py-2 rounded-lg hover:bg-slate-50 text-slate-700 truncate"
+                          >
+                            {cn.title}
+                          </button>
+                          <button
+                            onClick={() => void removeCanned(cn.id, cn.title)}
+                            className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-rose-600 px-1.5"
+                          >
+                            <X className="w-3.5 h-3.5" />
+                          </button>
+                        </div>
+                      ))}
+                      {draft.trim() && (
+                        <button
+                          onClick={() => {
+                            setCannedOpen(false)
+                            void saveDraftAsCanned()
+                          }}
+                          className="w-full text-left text-xs px-2.5 py-2 mt-1 border-t border-slate-100 text-brand-600 hover:bg-slate-50 rounded-b-lg"
+                        >
+                          + บันทึกร่างนี้เป็นข้อความสำเร็จรูป
+                        </button>
+                      )}
+                    </div>
+                  )}
+                </div>
+              </div>
               <button
                 onClick={() => void sendReply()}
-                disabled={!draft.trim() || sending || mailbox?.status !== 'connected'}
-                className="bg-brand-600 hover:bg-brand-700 disabled:opacity-40 text-white text-sm px-4 py-1.5 rounded-lg flex items-center gap-1"
+                disabled={
+                  !draft.trim() || sending || (composerMode === 'reply' && mailbox?.status !== 'connected')
+                }
+                className={`${composerMode === 'note' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-brand-600 hover:bg-brand-700'} disabled:opacity-40 text-white text-sm px-4 py-1.5 rounded-lg flex items-center gap-1`}
               >
-                <Send className="w-3.5 h-3.5" /> {sending ? 'กำลังส่ง…' : 'ส่ง'}
+                {composerMode === 'note' ? (
+                  <>
+                    <Lock className="w-3.5 h-3.5" /> {sending ? 'กำลังบันทึก…' : 'บันทึกโน้ต'}
+                  </>
+                ) : (
+                  <>
+                    <Send className="w-3.5 h-3.5" /> {sending ? 'กำลังส่ง…' : 'ส่ง'}
+                  </>
+                )}
               </button>
             </div>
           </div>

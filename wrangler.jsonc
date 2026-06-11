@@ -31,11 +31,17 @@
     "GOOGLE_CLIENT_ID": "TODO-google-oauth-client-id"
   },
 
-  // Presence realtime (SPEC §4.15) — DO ตัวเดียว broadcast ความเคลื่อนไหว timer ให้ทีม
+  // DO: PRESENCE = timer realtime (SPEC §4.15) · INBOX_HUB = collision อีเมลกลางราย thread (SPEC §4.12)
   "durable_objects": {
-    "bindings": [{ "name": "PRESENCE", "class_name": "PresenceHub" }]
+    "bindings": [
+      { "name": "PRESENCE", "class_name": "PresenceHub" },
+      { "name": "INBOX_HUB", "class_name": "InboxThreadHub" }
+    ]
   },
-  "migrations": [{ "tag": "v1", "new_sqlite_classes": ["PresenceHub"] }],
+  "migrations": [
+    { "tag": "v1", "new_sqlite_classes": ["PresenceHub"] },
+    { "tag": "v2", "new_sqlite_classes": ["InboxThreadHub"] }
+  ],
 
   // D1: สร้างจริงแล้ว (T02) · local dev ใช้ sqlite ในเครื่อง ไม่แตะ remote · migrate remote = `pnpm db:migrate:remote`
   "d1_databases": [

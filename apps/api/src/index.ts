@@ -23,6 +23,7 @@ import { userRoutes } from './routes/users'
 import { runScheduled } from './scheduled'
 
 export { PresenceHub } from './do/presence-hub'
+export { InboxThreadHub } from './do/inbox-thread-hub'
 import type { AppEnv } from './types'
 
 const app = new Hono<AppEnv>()
@@ -89,6 +90,8 @@ app.use('/api/inbox/threads', requireAuth, teamOnly)
 app.use('/api/inbox/threads/*', requireAuth, teamOnly)
 app.use('/api/inbox/attachments/*', requireAuth, teamOnly)
 app.use('/api/inbox/compose', requireAuth, teamOnly)
+app.use('/api/inbox/canned', requireAuth, teamOnly)
+app.use('/api/inbox/canned/*', requireAuth, teamOnly)
 // การติดตั้ง (settings/clients/mailboxes/เชื่อม Google) = owner เท่านั้น
 app.use('/api/inbox/settings', requireAuth, ownerOnly)
 app.use('/api/inbox/clients', requireAuth, ownerOnly)
@@ -98,6 +101,18 @@ app.use('/api/inbox/mailboxes/*', requireAuth, ownerOnly)
 app.use('/api/inbox/google/*', requireAuth, ownerOnly)
 app.route('/api/inbox', inboxThreadRoutes)
 app.route('/api/inbox', inboxSettingsRoutes)
+
+// collision WebSocket ของอีเมลกลาง (SPEC §4.12) — DO ต่อ thread · owner+member (อยู่ใต้ middleware /api/inbox/threads/* แล้ว)
+app.get('/api/inbox/threads/:id/ws', async (c) => {
+  if (c.req.header('upgrade')?.toLowerCase() !== 'websocket')
+    return c.json({ error: 'expected_websocket' }, 426)
+  const me = c.get('user')
+  const headers = new Headers(c.req.raw.headers)
+  headers.set('x-user-id', me.id)
+  headers.set('x-user-name', me.name)
+  const stub = c.env.INBOX_HUB.get(c.env.INBOX_HUB.idFromName(c.req.param('id')))
+  return stub.fetch(new Request(c.req.raw.url, { headers }))
+})
 
 // presence WebSocket (SPEC §4.15 realtime) — owner+member · ส่งต่อให้ DO พร้อมตัวตนที่ auth แล้ว
 app.get('/api/presence/ws', requireAuth, teamOnly, async (c) => {

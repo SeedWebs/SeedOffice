@@ -260,5 +260,10 @@
 - UI: ช่องตอบส่งได้จริง (สถานะ sending/error · กล่องหลุด = บล็อกพร้อมคำแนะนำ) + compose modal
 - **Verify ✓:** เทสต์ 162 (mime+send 5) เขียว · UI ผ่าน preview (ไม่กดส่งจริง) — **ค้าง: ทดสอบส่งจริง 1 ฉบับ (ask-first)** · canned replies → ย้ายไป E5
 
-### ☐ E5 — โน้ตภายใน + tags + collision detection (DO) + canned replies + snooze UI
+### ☑ E5 — โน้ตภายใน + tags + collision (DO) + canned replies + snooze ✅ (11 มิ.ย. 69)
+- schema 0015: `inbox_notes` + `inbox_canned` (soft-delete) · tags = json บน thread
+- API: POST notes (โผล่ใน detail พร้อมชื่อ) · PATCH tags (≤10) · canned CRUD (team) · snooze = status snoozed + snoozeUntil อนาคต (refine) → **cron นาทีปลุกกลับ open+unread**
+- **collision = `InboxThreadHub` DO ราย thread** (WebSocket Hibernation · idFromName(threadId) · wrangler migration v2) — badge "👀 กำลังดูอยู่ / ✏️ กำลังพิมพ์…" + auto-reconnect 5s · บั๊กที่เจอ: ตอน close ต้อง broadcast แบบ exclude socket ที่กำลังออก (getWebSockets ยังเห็นมัน)
+- UI: timeline ผสมเมล+โน้ตเหลือง · lock toggle โหมดโน้ต · tag chips ใน header · canned picker (⚡ + บันทึกร่างเป็นสำเร็จรูป) · เมนูเลื่อน (พรุ่งนี้/3 วัน/สัปดาห์ — 9:00 BKK)
+- **Verify ✓:** เทสต์ 167 เขียว · จริงบน preview: โน้ต/แท็ก/snooze pill/collision 2 session (ดู→พิมพ์→ออก badge หาย) · console สะอาด
 ### ☐ E6 — GCal sync (calendar.readonly ผ่าน client SW) + ICS feed
