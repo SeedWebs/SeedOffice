@@ -26,7 +26,7 @@
 
   // ค่า production — local override ที่ .dev.vars · GOOGLE_CLIENT_SECRET = secret (wrangler secret put)
   "vars": {
-    "APP_URL": "https://seedoffice.example.com", // TODO: เปลี่ยนเป็นโดเมนจริงก่อน deploy
+    "APP_URL": "https://office.seedwebs.com",
     "DEV_AUTH": "0",
     "GOOGLE_CLIENT_ID": "TODO-google-oauth-client-id"
   },
