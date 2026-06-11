@@ -5,7 +5,7 @@ import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 import { z } from 'zod'
 import { writeAudit } from '../lib/audit'
 import { decryptSecret, encryptSecret } from '../lib/crypto'
-import { syncMailbox } from '../lib/inbox-sync'
+import { ReconnectError, reprocessMailboxBodies, syncMailbox } from '../lib/inbox-sync'
 import { newToken } from '../lib/session'
 import type { AppEnv } from '../types'
 
@@ -238,6 +238,30 @@ export const inboxSettingsRoutes = new Hono<AppEnv>()
       .from(gmailSyncState)
       .where(eq(gmailSyncState.mailboxId, box.id))
     return c.json({ ok: true, lastSyncAt: state?.lastSyncAt ?? null, lastError: state?.lastError ?? null })
+  })
+
+  // ซ่อมการแสดงผล: ดึง body เก่ามา decode ใหม่ (แก้เมล charset เพี้ยนที่ backfill ไปแล้ว)
+  .post('/mailboxes/:id/reprocess', async (c) => {
+    const db = createDb(c.env.DB)
+    const [box] = await db
+      .select({ id: inboxMailboxes.id, status: inboxMailboxes.status })
+      .from(inboxMailboxes)
+      .where(eq(inboxMailboxes.id, c.req.param('id')))
+    if (!box) return c.json({ error: 'not_found' }, 404)
+    if (box.status !== 'connected') return c.json({ error: 'not_connected' }, 400)
+    try {
+      const res = await reprocessMailboxBodies(c.env, box.id)
+      return c.json({ ok: true, ...res })
+    } catch (e) {
+      if (e instanceof ReconnectError) {
+        await db
+          .update(inboxMailboxes)
+          .set({ status: 'disconnected' })
+          .where(eq(inboxMailboxes.id, box.id))
+        return c.json({ error: 'mailbox_disconnected' }, 409)
+      }
+      return c.json({ error: 'reprocess_failed' }, 502)
+    }
   })
 
   // เริ่มเชื่อม Gmail — redirect ไป Google (offline + consent การันตี refresh token)

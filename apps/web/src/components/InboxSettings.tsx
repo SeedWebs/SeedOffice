@@ -210,6 +210,21 @@ export function InboxSettings() {
     }
   }
 
+  const [fixingId, setFixingId] = useState<string | null>(null)
+  const reprocess = async (m: InboxMailbox) => {
+    setFixingId(m.id)
+    try {
+      const res = await api.post<{ updated: number; total: number }>(
+        `/api/inbox/mailboxes/${m.id}/reprocess`,
+      )
+      setActionError(`ซ่อมการแสดงผล "${m.name}" แล้ว — อัปเดต ${res.updated}/${res.total} ฉบับ`)
+    } catch {
+      setActionError(`ซ่อม "${m.name}" ไม่สำเร็จ — ลองอีกครั้ง`)
+    } finally {
+      setFixingId(null)
+    }
+  }
+
   const timeLabel = (iso: string) =>
     new Date(iso).toLocaleString('th-TH', {
       day: 'numeric',
@@ -345,6 +360,16 @@ export function InboxSettings() {
                       >
                         <RefreshCw className={`w-3 h-3 ${syncingId === m.id ? 'animate-spin' : ''}`} />
                         sync
+                      </button>
+                    )}
+                    {m.status === 'connected' && (
+                      <button
+                        onClick={() => void reprocess(m)}
+                        disabled={fixingId === m.id}
+                        title="ดึงอีเมลเก่ามาแสดงผลใหม่ — แก้ภาษาไทยที่เพี้ยน"
+                        className="text-[11px] text-slate-400 hover:text-slate-600 disabled:opacity-40"
+                      >
+                        {fixingId === m.id ? 'กำลังซ่อม…' : 'ซ่อมภาษา'}
                       </button>
                     )}
                     {m.status !== 'disabled' && (

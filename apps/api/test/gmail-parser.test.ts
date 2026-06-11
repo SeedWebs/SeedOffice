@@ -14,6 +14,13 @@ const b64url = (s: string) =>
     .replace(/\//g, '_')
     .replace(/=+$/, '')
 
+/** base64url ของ raw bytes (สำหรับจำลอง body ที่ไม่ใช่ utf-8 เช่น windows-874) */
+const b64urlBytes = (bytes: number[]) =>
+  btoa(String.fromCharCode(...bytes))
+    .replace(/\+/g, '-')
+    .replace(/\//g, '_')
+    .replace(/=+$/, '')
+
 const baseMsg = (over: Partial<GmailMessage>): GmailMessage => ({
   id: 'm-1',
   threadId: 't-1',
@@ -107,6 +114,33 @@ describe('E2 — gmail parser', () => {
     expect(decodeRfc2047('=?utf-8?Q?=E0=B8=81?=')).toBe('ก')
     // สองก้อนติดกันคั่นช่องว่าง → ต่อกันไม่เหลือช่องว่าง
     expect(decodeRfc2047('=?utf-8?Q?ab?= =?utf-8?Q?cd?=')).toBe('abcd')
+  })
+
+  it('charset ผิด: ประกาศ windows-874 แต่ bytes เป็น UTF-8 (เคสจริง #6) → ต้องได้ไทยถูก', () => {
+    // bytes ของ "สอบถาม" แบบ UTF-8 = e0 b8 aa ...
+    const utf8Bytes = [...new TextEncoder().encode('สอบถามครับ')]
+    const msg = baseMsg({
+      payload: {
+        mimeType: 'text/html',
+        headers: [{ name: 'Content-Type', value: 'text/html; charset="windows-874"' }],
+        body: { data: b64urlBytes(utf8Bytes) },
+      },
+    })
+    const p = parseGmailMessage(msg)
+    expect(p.body?.content).toBe('สอบถามครับ')
+    expect(p.body?.content).not.toContain('เธ') // ไม่เพี้ยนเป็น เธชเธญ
+  })
+
+  it('windows-874 ของแท้ (bytes ไม่ใช่ UTF-8) → fallback ถอดถูกตาม charset', () => {
+    // "สอบ" ใน windows-874 = 0xCA 0xCD 0xBA (ไม่เป็น UTF-8 ที่ถูกต้อง → fatal utf-8 จะ fail)
+    const msg = baseMsg({
+      payload: {
+        mimeType: 'text/plain',
+        headers: [{ name: 'Content-Type', value: 'text/plain; charset="windows-874"' }],
+        body: { data: b64urlBytes([0xca, 0xcd, 0xba]) },
+      },
+    })
+    expect(parseGmailMessage(msg).body?.content).toBe('สอบ')
   })
 
   it('extractEmail + decodeEntities', () => {

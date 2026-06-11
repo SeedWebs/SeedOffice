@@ -1,8 +1,8 @@
 /**
  * แปลงข้อความจาก Gmail API (users.messages.get format=full) เป็นโครงที่ระบบใช้
  * pure ทั้งไฟล์ — ไม่แตะเครือข่าย/DB เทสต์ด้วย fixture ตรงๆ
- * ข้อจำกัดที่รู้: TextDecoder บน workerd รองรับ utf-8 เท่านั้น — เมล charset เก่า (tis-620 ฯลฯ)
- * จะ fallback เป็น utf-8 (อาจเพี้ยน) · เมลยุคปัจจุบันแทบทั้งหมดเป็น utf-8
+ * charset: workerd/TextDecoder รองรับทั้ง utf-8 และ windows-874 (=tis-620) · เมลไทยจำนวนมาก
+ * ประกาศ charset ผิด (บอก windows-874 แต่ bytes เป็น UTF-8) → จึงลอง UTF-8 แบบเข้มก่อนเสมอ (decodeBytes)
  */
 
 export interface GmailHeader {
@@ -59,10 +59,21 @@ function b64UrlDecodeBytes(data: string): Uint8Array {
 }
 
 function decodeBytes(bytes: Uint8Array, charset?: string): string {
+  // 1) ลองอ่านเป็น UTF-8 แบบเข้ม — ถ้า bytes เป็น UTF-8 จริงจะผ่าน (ข้อความไทยใน 874 ของแท้
+  //    จะ fail เพราะ high-byte ของ 874 ไม่เป็น UTF-8 sequence ที่ถูกต้อง) → กันเคสประกาศ charset ผิด
   try {
-    return new TextDecoder(charset || 'utf-8').decode(bytes)
+    return new TextDecoder('utf-8', { fatal: true, ignoreBOM: false }).decode(bytes)
   } catch {
-    return new TextDecoder('utf-8').decode(bytes)
+    // 2) ไม่ใช่ UTF-8 → เชื่อ charset ที่ประกาศ (windows-874/tis-620 ของแท้ ฯลฯ) แล้วค่อย fallback
+    for (const cs of [charset, 'windows-874']) {
+      if (!cs) continue
+      try {
+        return new TextDecoder(cs).decode(bytes)
+      } catch {
+        // charset ที่ประกาศไม่รองรับ — ลองตัวถัดไป
+      }
+    }
+    return new TextDecoder('utf-8').decode(bytes) // ยอมแพ้: utf-8 แบบไม่ fatal (อาจมี replacement char)
   }
 }
 

@@ -9,7 +9,7 @@ import {
   type Db,
   type InboxMailbox,
 } from '@seedoffice/db'
-import { and, eq, isNull, lte } from 'drizzle-orm'
+import { and, eq, isNotNull, isNull, lte } from 'drizzle-orm'
 import { decryptSecret } from './crypto'
 import { extractEmail, parseGmailMessage, type GmailMessage } from './gmail'
 
@@ -344,6 +344,45 @@ export async function syncAllMailboxes(env: Env): Promise<void> {
     .from(inboxMailboxes)
     .where(eq(inboxMailboxes.status, 'connected'))
   for (const b of boxes) await syncMailbox(env, b.id)
+}
+
+/**
+ * ดึง body ขาเข้าเดิมจาก Gmail มา decode ใหม่ — แก้เมลที่ backfill ไว้ตอน parser ยัง decode charset ผิด
+ * (เมลประกาศ windows-874 แต่ bytes เป็น UTF-8) · idempotent · รันครั้งเดียวต่อกล่องหลังแก้ parser
+ * เฉพาะ direction='in' (ขาออกเราเก็บ plaintext เองอยู่แล้ว ถูกต้อง)
+ */
+export async function reprocessMailboxBodies(
+  env: Env,
+  mailboxId: string,
+): Promise<{ updated: number; total: number }> {
+  const db = createDb(env.DB)
+  const [mailbox] = await db.select().from(inboxMailboxes).where(eq(inboxMailboxes.id, mailboxId))
+  if (!mailbox || mailbox.status !== 'connected') return { updated: 0, total: 0 }
+  const token = await getAccessToken(env, mailbox) // โยน ReconnectError ถ้า token เพิกถอน — ให้ route จัดการ
+  const rows = await db
+    .select({ gmailMessageId: inboxMessages.gmailMessageId, bodyKey: inboxMessages.bodyKey })
+    .from(inboxMessages)
+    .innerJoin(inboxThreads, eq(inboxThreads.id, inboxMessages.threadId))
+    .where(
+      and(
+        eq(inboxThreads.mailboxId, mailbox.id),
+        eq(inboxMessages.direction, 'in'),
+        isNotNull(inboxMessages.bodyKey),
+      ),
+    )
+  let updated = 0
+  for (const r of rows) {
+    if (!r.bodyKey) continue
+    const { status, data } = await gmailGet<GmailMessage>(token, `/messages/${r.gmailMessageId}?format=full`)
+    if (status !== 200) continue
+    const parsed = parseGmailMessage(data)
+    if (!parsed.body) continue
+    await env.FILES.put(r.bodyKey, parsed.body.content, {
+      httpMetadata: { contentType: parsed.body.contentType },
+    })
+    updated++
+  }
+  return { updated, total: rows.length }
 }
 
 /** ปลุก thread ที่ snooze ครบเวลา (cron ทุกนาที) — กลับมา open + unread ให้ทีมเห็น */
