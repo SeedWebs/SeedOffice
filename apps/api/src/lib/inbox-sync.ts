@@ -28,13 +28,14 @@ const INITIAL_BACKFILL = 50
 const MAX_HISTORY_PAGES = 10
 
 /** token ของกล่องถูกเพิกถอน (เปลี่ยนรหัสผ่าน/ถอนสิทธิ์) — ต้องให้ owner กดเชื่อมใหม่ */
-class ReconnectError extends Error {
+export class ReconnectError extends Error {
   constructor() {
     super('token_revoked')
   }
 }
 
-async function getAccessToken(env: Env, mailbox: InboxMailbox): Promise<string> {
+/** ขอ access token ของกล่อง (refresh flow) — ใช้ร่วมกันทั้ง sync/ไฟล์แนบ/ส่งเมล */
+export async function getAccessToken(env: Env, mailbox: InboxMailbox): Promise<string> {
   const db = createDb(env.DB)
   const [client] = await db
     .select()

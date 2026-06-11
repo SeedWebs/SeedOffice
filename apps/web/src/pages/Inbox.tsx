@@ -13,7 +13,7 @@ import {
 import { useEffect, useRef, useState } from 'react'
 import { Link } from 'react-router'
 import { PageHeader } from '../components/PageHeader'
-import { api } from '../lib/api'
+import { api, ApiError } from '../lib/api'
 import { useLoad } from '../lib/useLoad'
 
 /**
@@ -27,6 +27,7 @@ interface MailboxOpt {
   name: string
   companyLabel: string
   emailAddress: string | null
+  status: 'connected' | 'disconnected' | 'disabled'
   unread: number
 }
 interface ThreadRow {
@@ -316,9 +317,32 @@ function ThreadDetail({
     () => api.get(`/api/inbox/threads/${id}`),
     [id],
   )
+  const [draft, setDraft] = useState('')
+  const [sending, setSending] = useState(false)
+  const [sendError, setSendError] = useState('')
   useEffect(() => {
     if (data) onChanged() // เปิดแล้ว server mark read — ให้ list/badge รีเฟรช
   }, [data?.thread.id])
+  useEffect(() => setDraft(''), [id]) // เปลี่ยน thread = เริ่มร่างใหม่
+
+  const sendReply = async () => {
+    setSending(true)
+    setSendError('')
+    try {
+      await api.post(`/api/inbox/threads/${id}/reply`, { body: draft.trim() })
+      setDraft('')
+      await reload()
+      onChanged()
+    } catch (e) {
+      setSendError(
+        e instanceof ApiError && e.message === 'mailbox_disconnected'
+          ? 'กล่องหลุดการเชื่อมต่อ — เชื่อมใหม่ที่ ตั้งค่า → อีเมลกลาง'
+          : 'ส่งไม่สำเร็จ — ลองอีกครั้ง',
+      )
+    } finally {
+      setSending(false)
+    }
+  }
   if (loading || !data)
     return <div className="p-10 text-center text-sm text-slate-400">กำลังโหลดอีเมล…</div>
   const { thread, messages, client, past } = data
@@ -404,24 +428,30 @@ function ThreadDetail({
           ))}
         </div>
 
-        {/* ช่องตอบกว้าง — ปุ่มส่งเปิดใช้ใน E4 */}
+        {/* ช่องตอบกว้าง — ส่งผ่าน Gmail จาก address ของกล่อง (reply-from อัตโนมัติ) */}
         <div className="p-3 border-t border-slate-200">
           <div className="border border-slate-200 rounded-xl p-3">
             <div className="text-[11px] text-slate-400 mb-2">
               ตอบกลับ {thread.contactEmail ?? '—'} · ส่งจาก{' '}
               <span className="text-slate-500">{mailbox?.emailAddress ?? mailbox?.name ?? '—'}</span>
+              {mailbox?.status !== 'connected' && (
+                <span className="ml-2 text-rose-500">— กล่องหลุดการเชื่อมต่อ ส่งไม่ได้ (เชื่อมใหม่ที่ ตั้งค่า)</span>
+              )}
             </div>
             <textarea
+              value={draft}
+              onChange={(e) => setDraft(e.target.value)}
               className="w-full h-28 resize-none text-sm focus:outline-hidden"
               placeholder="เขียนคำตอบ... (เขียนยาวได้เต็มที่)"
             />
+            {sendError && <div className="text-xs text-rose-600 mb-1">{sendError}</div>}
             <div className="flex items-center justify-end pt-1">
               <button
-                disabled
-                title="การส่งอีเมลเปิดใช้ในเฟสถัดไป (E4)"
-                className="bg-brand-600 disabled:opacity-40 text-white text-sm px-4 py-1.5 rounded-lg flex items-center gap-1"
+                onClick={() => void sendReply()}
+                disabled={!draft.trim() || sending || mailbox?.status !== 'connected'}
+                className="bg-brand-600 hover:bg-brand-700 disabled:opacity-40 text-white text-sm px-4 py-1.5 rounded-lg flex items-center gap-1"
               >
-                <Send className="w-3.5 h-3.5" /> ส่ง
+                <Send className="w-3.5 h-3.5" /> {sending ? 'กำลังส่ง…' : 'ส่ง'}
               </button>
             </div>
           </div>
@@ -472,11 +502,99 @@ function ThreadDetail({
   )
 }
 
+/** เขียนอีเมลใหม่ — สร้าง thread ใหม่ + มอบหมายให้คนส่ง */
+function ComposeModal({
+  mailboxes,
+  onClose,
+  onSent,
+}: {
+  mailboxes: MailboxOpt[]
+  onClose: () => void
+  onSent: (threadId: string) => void
+}) {
+  const connected = mailboxes.filter((m) => m.status === 'connected')
+  const [form, setForm] = useState({ mailboxId: connected[0]?.id ?? '', to: '', subject: '', body: '' })
+  const [sending, setSending] = useState(false)
+  const [error, setError] = useState('')
+  const submit = async () => {
+    setSending(true)
+    setError('')
+    try {
+      const res = await api.post<{ threadId: string }>('/api/inbox/compose', form)
+      onSent(res.threadId)
+    } catch (e) {
+      setError(e instanceof Error && e.message === 'invalid_body' ? 'กรอกอีเมลผู้รับให้ถูกต้อง' : 'ส่งไม่สำเร็จ — ลองอีกครั้ง')
+      setSending(false)
+    }
+  }
+  return (
+    <div className="fixed inset-0 bg-slate-900/30 z-50 grid place-items-center p-4" onClick={onClose}>
+      <div
+        className="w-[36rem] max-w-full bg-white rounded-xl shadow-lg p-5 space-y-3"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="font-semibold text-slate-900">เขียนอีเมลใหม่</div>
+        {connected.length === 0 ? (
+          <div className="text-sm text-slate-400 py-4">ยังไม่มีกล่องที่เชื่อมอยู่ — เชื่อมที่ ตั้งค่า → อีเมลกลาง</div>
+        ) : (
+          <>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              <select
+                value={form.mailboxId}
+                onChange={(e) => setForm({ ...form, mailboxId: e.target.value })}
+                className="text-sm bg-white shadow-xs rounded-lg px-3 py-2"
+              >
+                {connected.map((m) => (
+                  <option key={m.id} value={m.id}>
+                    ส่งจาก: {m.name} ({m.emailAddress})
+                  </option>
+                ))}
+              </select>
+              <input
+                placeholder="ถึง (อีเมลผู้รับ)"
+                value={form.to}
+                onChange={(e) => setForm({ ...form, to: e.target.value })}
+                className="text-sm bg-white shadow-xs rounded-lg px-3 py-2"
+              />
+            </div>
+            <input
+              placeholder="เรื่อง"
+              value={form.subject}
+              onChange={(e) => setForm({ ...form, subject: e.target.value })}
+              className="w-full text-sm bg-white shadow-xs rounded-lg px-3 py-2"
+            />
+            <textarea
+              placeholder="เนื้อหา..."
+              value={form.body}
+              onChange={(e) => setForm({ ...form, body: e.target.value })}
+              className="w-full h-44 resize-none text-sm bg-white shadow-xs rounded-lg px-3 py-2 focus:outline-hidden"
+            />
+            {error && <div className="text-xs text-rose-600">{error}</div>}
+            <div className="flex items-center justify-end gap-2">
+              <button onClick={onClose} className="text-sm px-3.5 py-2 rounded-lg text-slate-600 hover:bg-slate-50">
+                ยกเลิก
+              </button>
+              <button
+                onClick={() => void submit()}
+                disabled={sending || !form.mailboxId || !form.to || !form.subject || !form.body}
+                className="bg-brand-600 hover:bg-brand-700 disabled:opacity-40 text-white text-sm px-4 py-2 rounded-lg flex items-center gap-1"
+              >
+                <Send className="w-3.5 h-3.5" /> {sending ? 'กำลังส่ง…' : 'ส่ง'}
+              </button>
+            </div>
+          </>
+        )}
+      </div>
+    </div>
+  )
+}
+
 export function InboxPage() {
   const [mb, setMb] = useState<string>('all')
   const [folder, setFolder] = useState<FolderKey>('unassigned')
   const [q, setQ] = useState('')
   const [searchOpen, setSearchOpen] = useState(false)
+  const [composeOpen, setComposeOpen] = useState(false)
   const [openId, setOpenId] = useState<string | null>(null)
   const searchRef = useRef<HTMLInputElement>(null)
 
@@ -524,9 +642,9 @@ export function InboxPage() {
               <Search className="w-4 h-4" />
             </button>
             <button
-              disabled
-              title="เขียนอีเมลใหม่ — เปิดใช้ใน E4"
-              className="w-9 h-9 grid place-items-center rounded-lg border border-slate-200 bg-white text-slate-300"
+              onClick={() => setComposeOpen(true)}
+              title="เขียนอีเมลใหม่"
+              className="w-9 h-9 grid place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
             >
               <PenLine className="w-4 h-4" />
             </button>
@@ -655,6 +773,18 @@ export function InboxPage() {
           )}
         </div>
       </div>
+
+      {composeOpen && (
+        <ComposeModal
+          mailboxes={mailboxes}
+          onClose={() => setComposeOpen(false)}
+          onSent={(threadId) => {
+            setComposeOpen(false)
+            setOpenId(threadId)
+            void reload()
+          }}
+        />
+      )}
 
       {/* ค้นหา ⌘K */}
       {searchOpen && (

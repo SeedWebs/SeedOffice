@@ -253,6 +253,12 @@
 - API teamOnly (แยกสิทธิ์จาก settings ownerOnly): GET threads (folder/counts/ตัวเลือกกล่อง/⌘K q) · GET :id (mark read + body จาก R2 + การ์ดลูกค้าเทียบ contactEmail + อีเมลที่ผ่านมา) · PATCH (status/assignee — vendor เป็น assignee ไม่ได้) · GET attachments/:id/download (lazy Gmail → cache R2 · ชื่อไฟล์ไทย RFC5987)
 - UI ตาม mockup: nav อีเมลกลาง (vendor ❌) · folder bar + counts · ตาราง ลูกค้า/เรื่อง/เลขที่(rowid)/รอแล้ว + จุดสีกล่องโหมดทั้งหมด · detail: status pill + มอบหมาย + **body ใน iframe sandbox (กัน XSS)** + ช่องตอบ (ส่ง = E4) + พาเนลขวา
 - **Verify ✓:** เทสต์ 114 (threads 8 ใหม่) · จริง: 42 threads render ครบ · เปิดเรื่องใหม่/มอบหมาย/ของฉัน อัปเดตสด · console สะอาด
-### ☐ E4 — ตอบ/compose ผ่าน Gmail API (reply-from ตามกล่อง + threading References/In-Reply-To) + canned replies
-### ☐ E5 — assign/สถานะ/tags + โน้ตภายใน + collision detection (DO) + ⌘K
+### ☑ E4 — ตอบ/compose ผ่าน Gmail API ✅ (11 มิ.ย. 69 — โค้ดเสร็จ · **ส่งจริงรอเจ้าของอนุมัติ §11**)
+- `lib/mime.ts` (pure): RFC2047 header ไทย · base64 wrap 76 · In-Reply-To/References ต่อสาย · Re: ไม่ซ้อน
+- POST /threads/:id/reply: ดึง Message-ID/References/Reply-To/Cc สดจาก Gmail ณ ตอนตอบ (ไม่ต้องเก็บเพิ่ม) · To = Reply-To ?? From · Cc คงเดิมตัดตัวเองกันวน · ส่งเข้า gmailThreadId เดิม · บันทึกขาออก (กันซ้ำกับ sync ผ่าน onConflict) + R2 + audit + lastMessageAt
+- POST /compose: thread ใหม่จาก threadId ที่ Gmail คืน (เมลตอบกลับ sync เข้าอัตโนมัติ) · มอบหมายให้คนส่ง
+- UI: ช่องตอบส่งได้จริง (สถานะ sending/error · กล่องหลุด = บล็อกพร้อมคำแนะนำ) + compose modal
+- **Verify ✓:** เทสต์ 162 (mime+send 5) เขียว · UI ผ่าน preview (ไม่กดส่งจริง) — **ค้าง: ทดสอบส่งจริง 1 ฉบับ (ask-first)** · canned replies → ย้ายไป E5
+
+### ☐ E5 — โน้ตภายใน + tags + collision detection (DO) + canned replies + snooze UI
 ### ☐ E6 — GCal sync (calendar.readonly ผ่าน client SW) + ICS feed

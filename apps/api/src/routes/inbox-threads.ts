@@ -11,7 +11,11 @@ import {
 import { and, desc, eq, isNull, like, ne, or, sql } from 'drizzle-orm'
 import { Hono } from 'hono'
 import { z } from 'zod'
+import { writeAudit } from '../lib/audit'
 import { decryptSecret } from '../lib/crypto'
+import { extractEmail } from '../lib/gmail'
+import { getAccessToken, ReconnectError } from '../lib/inbox-sync'
+import { buildMime, formatAddress, replySubject, toBase64Url } from '../lib/mime'
 import type { AppEnv } from '../types'
 
 /**
@@ -252,6 +256,225 @@ export const inboxThreadRoutes = new Hono<AppEnv>()
       .returning({ id: inboxThreads.id, status: inboxThreads.status })
     if (!updated[0]) return c.json({ error: 'not_found' }, 404)
     return c.json({ ok: true, status: updated[0].status })
+  })
+
+  // ตอบจากในระบบ → ส่งผ่าน Gmail API จาก address ของกล่อง + threading ถูกต้อง (SPEC §4.12)
+  .post('/threads/:id/reply', async (c) => {
+    const parsed = z
+      .object({ body: z.string().trim().min(1).max(50_000) })
+      .safeParse(await c.req.json().catch(() => null))
+    if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
+    const db = createDb(c.env.DB)
+    const me = c.get('user')
+
+    const [thread] = await db
+      .select()
+      .from(inboxThreads)
+      .where(eq(inboxThreads.id, c.req.param('id')))
+    if (!thread) return c.json({ error: 'not_found' }, 404)
+    const [mailbox] = await db
+      .select()
+      .from(inboxMailboxes)
+      .where(eq(inboxMailboxes.id, thread.mailboxId))
+    if (!mailbox || mailbox.status !== 'connected' || !mailbox.emailAddress)
+      return c.json({ error: 'mailbox_disconnected' }, 409)
+
+    // ฉบับอ้างอิง: เมลเข้าใหม่สุด (ถ้าไม่มี = thread ที่เราเริ่มเอง ใช้ฉบับล่าสุด)
+    const [refMsg] =
+      (await db
+        .select()
+        .from(inboxMessages)
+        .where(and(eq(inboxMessages.threadId, thread.id), eq(inboxMessages.direction, 'in')))
+        .orderBy(desc(inboxMessages.sentAt))
+        .limit(1)) ??
+      []
+    const [anyMsg] = refMsg
+      ? [refMsg]
+      : await db
+          .select()
+          .from(inboxMessages)
+          .where(eq(inboxMessages.threadId, thread.id))
+          .orderBy(desc(inboxMessages.sentAt))
+          .limit(1)
+    if (!anyMsg) return c.json({ error: 'empty_thread' }, 400)
+
+    let token: string
+    try {
+      token = await getAccessToken(c.env, mailbox)
+    } catch (e) {
+      if (e instanceof ReconnectError) {
+        await db
+          .update(inboxMailboxes)
+          .set({ status: 'disconnected' })
+          .where(eq(inboxMailboxes.id, mailbox.id))
+        return c.json({ error: 'mailbox_disconnected' }, 409)
+      }
+      return c.json({ error: 'token_refresh_failed' }, 502)
+    }
+
+    // ดึง header ที่ไม่ได้เก็บไว้ (Message-ID/References/Reply-To/Cc) จาก Gmail ณ ตอนตอบ
+    const metaRes = await fetch(
+      `${GMAIL_API}/messages/${anyMsg.gmailMessageId}?format=metadata` +
+        '&metadataHeaders=Message-ID&metadataHeaders=References&metadataHeaders=Reply-To' +
+        '&metadataHeaders=From&metadataHeaders=Cc',
+      { headers: { authorization: `Bearer ${token}` } },
+    )
+    if (!metaRes.ok) return c.json({ error: 'gmail_fetch_failed' }, 502)
+    const meta = (await metaRes.json()) as {
+      payload?: { headers?: { name: string; value: string }[] }
+    }
+    const header = (name: string) =>
+      meta.payload?.headers?.find((h) => h.name.toLowerCase() === name.toLowerCase())?.value ?? null
+
+    const to =
+      anyMsg.direction === 'in'
+        ? (header('Reply-To') ?? header('From') ?? anyMsg.fromAddr)
+        : anyMsg.toAddr
+    // reply-all เฉพาะ Cc เดิม — ตัด address กล่องเราเองกันวนกลับ
+    const ccRaw = anyMsg.direction === 'in' ? header('Cc') : anyMsg.ccAddr
+    const cc = ccRaw
+      ?.split(',')
+      .map((s) => s.trim())
+      .filter((s) => s && extractEmail(s) !== mailbox.emailAddress!.toLowerCase())
+      .join(', ')
+
+    const mime = buildMime({
+      from: formatAddress(mailbox.name, mailbox.emailAddress),
+      to,
+      cc: cc || null,
+      subject: replySubject(thread.subject),
+      bodyText: parsed.data.body,
+      inReplyTo: header('Message-ID'),
+      references: header('References'),
+    })
+    const sendRes = await fetch(`${GMAIL_API}/messages/send`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ raw: toBase64Url(mime), threadId: thread.gmailThreadId }),
+    })
+    if (!sendRes.ok) return c.json({ error: 'gmail_send_failed' }, 502)
+    const sent = (await sendRes.json()) as { id?: string }
+    if (!sent.id) return c.json({ error: 'gmail_send_failed' }, 502)
+
+    const now = new Date()
+    const bodyKey = `inbox/${mailbox.id}/${sent.id}.txt`
+    await c.env.FILES.put(bodyKey, parsed.data.body, {
+      httpMetadata: { contentType: 'text/plain; charset=utf-8' },
+    })
+    const [row] = await db
+      .insert(inboxMessages)
+      .values({
+        threadId: thread.id,
+        gmailMessageId: sent.id,
+        direction: 'out',
+        fromAddr: `${mailbox.name} <${mailbox.emailAddress}>`,
+        toAddr: to,
+        ccAddr: cc || null,
+        snippet: parsed.data.body.replace(/\s+/g, ' ').slice(0, 120),
+        bodyKey,
+        sentAt: now,
+      })
+      .onConflictDoNothing() // cron sync อาจเก็บฉบับนี้จาก SENT มาก่อนเรา — ไม่ซ้ำ
+      .returning({ id: inboxMessages.id })
+    await db
+      .update(inboxThreads)
+      .set({ lastMessageAt: now })
+      .where(eq(inboxThreads.id, thread.id))
+    await writeAudit(c.env, {
+      actorId: me.id,
+      action: 'inbox_message.send',
+      entity: 'inbox_threads',
+      entityId: thread.id,
+      meta: { to, gmailMessageId: sent.id },
+    })
+    return c.json({ ok: true, messageId: row?.id ?? null }, 201)
+  })
+
+  // เขียนอีเมลใหม่ (compose) — สร้าง thread ใหม่ มอบหมายให้คนส่ง
+  .post('/compose', async (c) => {
+    const parsed = z
+      .object({
+        mailboxId: z.string().min(1),
+        to: z.string().trim().email(),
+        subject: z.string().trim().min(1).max(500),
+        body: z.string().trim().min(1).max(50_000),
+      })
+      .safeParse(await c.req.json().catch(() => null))
+    if (!parsed.success) return c.json({ error: 'invalid_body' }, 400)
+    const db = createDb(c.env.DB)
+    const me = c.get('user')
+    const [mailbox] = await db
+      .select()
+      .from(inboxMailboxes)
+      .where(eq(inboxMailboxes.id, parsed.data.mailboxId))
+    if (!mailbox || mailbox.status !== 'connected' || !mailbox.emailAddress)
+      return c.json({ error: 'mailbox_disconnected' }, 409)
+
+    let token: string
+    try {
+      token = await getAccessToken(c.env, mailbox)
+    } catch (e) {
+      if (e instanceof ReconnectError) {
+        await db
+          .update(inboxMailboxes)
+          .set({ status: 'disconnected' })
+          .where(eq(inboxMailboxes.id, mailbox.id))
+        return c.json({ error: 'mailbox_disconnected' }, 409)
+      }
+      return c.json({ error: 'token_refresh_failed' }, 502)
+    }
+
+    const mime = buildMime({
+      from: formatAddress(mailbox.name, mailbox.emailAddress),
+      to: parsed.data.to,
+      subject: parsed.data.subject,
+      bodyText: parsed.data.body,
+    })
+    const sendRes = await fetch(`${GMAIL_API}/messages/send`, {
+      method: 'POST',
+      headers: { authorization: `Bearer ${token}`, 'content-type': 'application/json' },
+      body: JSON.stringify({ raw: toBase64Url(mime) }),
+    })
+    if (!sendRes.ok) return c.json({ error: 'gmail_send_failed' }, 502)
+    const sent = (await sendRes.json()) as { id?: string; threadId?: string }
+    if (!sent.id || !sent.threadId) return c.json({ error: 'gmail_send_failed' }, 502)
+
+    const now = new Date()
+    const [thread] = await db
+      .insert(inboxThreads)
+      .values({
+        mailboxId: mailbox.id,
+        gmailThreadId: sent.threadId,
+        subject: parsed.data.subject,
+        contactEmail: parsed.data.to.toLowerCase(),
+        status: 'open',
+        assigneeId: me.id,
+        lastMessageAt: now,
+      })
+      .returning({ id: inboxThreads.id })
+    if (!thread) return c.json({ error: 'insert_failed' }, 500)
+    const bodyKey = `inbox/${mailbox.id}/${sent.id}.txt`
+    await c.env.FILES.put(bodyKey, parsed.data.body, {
+      httpMetadata: { contentType: 'text/plain; charset=utf-8' },
+    })
+    await db.insert(inboxMessages).values({
+      threadId: thread.id,
+      gmailMessageId: sent.id,
+      direction: 'out',
+      fromAddr: `${mailbox.name} <${mailbox.emailAddress}>`,
+      toAddr: parsed.data.to,
+      snippet: parsed.data.body.replace(/\s+/g, ' ').slice(0, 120),
+      bodyKey,
+      sentAt: now,
+    })
+    await writeAudit(c.env, {
+      actorId: me.id,
+      action: 'inbox_message.compose',
+      entity: 'inbox_threads',
+      entityId: thread.id,
+      meta: { to: parsed.data.to },
+    })
+    return c.json({ ok: true, threadId: thread.id }, 201)
   })
 
   // โหลดไฟล์แนบ — lazy: ครั้งแรกดึงจาก Gmail แล้ว cache ลง R2 (SPEC §6)

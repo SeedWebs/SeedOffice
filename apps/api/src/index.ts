@@ -88,6 +88,7 @@ app.route('/api/team-activity', teamActivityRoutes)
 app.use('/api/inbox/threads', requireAuth, teamOnly)
 app.use('/api/inbox/threads/*', requireAuth, teamOnly)
 app.use('/api/inbox/attachments/*', requireAuth, teamOnly)
+app.use('/api/inbox/compose', requireAuth, teamOnly)
 // การติดตั้ง (settings/clients/mailboxes/เชื่อม Google) = owner เท่านั้น
 app.use('/api/inbox/settings', requireAuth, ownerOnly)
 app.use('/api/inbox/clients', requireAuth, ownerOnly)
