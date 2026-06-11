@@ -22,6 +22,8 @@ interface InboxMailbox {
   name: string
   emailAddress: string | null
   status: 'connected' | 'disconnected' | 'disabled'
+  lastSyncAt: string | null
+  lastError: string | null
 }
 interface Settings {
   clients: InboxClient[]
@@ -197,6 +199,25 @@ export function InboxSettings() {
     await reload()
   }
 
+  const [syncingId, setSyncingId] = useState<string | null>(null)
+  const syncNow = async (m: InboxMailbox) => {
+    setSyncingId(m.id)
+    try {
+      await api.post(`/api/inbox/mailboxes/${m.id}/sync`)
+      await reload()
+    } finally {
+      setSyncingId(null)
+    }
+  }
+
+  const timeLabel = (iso: string) =>
+    new Date(iso).toLocaleString('th-TH', {
+      day: 'numeric',
+      month: 'short',
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+
   return (
     <div className="bg-white rounded-lg shadow-xs overflow-hidden">
       <div className="p-5 border-b border-slate-200 flex items-center gap-2">
@@ -311,12 +332,26 @@ export function InboxSettings() {
                     {badge.label}
                   </span>
                   <span className="ml-auto flex items-center gap-3">
+                    {m.status === 'connected' && (
+                      <span className="text-[11px] text-slate-400">
+                        {m.lastSyncAt ? `sync ${timeLabel(m.lastSyncAt)}` : 'รอ sync แรก'}
+                      </span>
+                    )}
+                    {m.status === 'connected' && (
+                      <button
+                        onClick={() => void syncNow(m)}
+                        disabled={syncingId === m.id}
+                        className="flex items-center gap-1 text-[11px] text-brand-600 hover:text-brand-700 disabled:opacity-40 font-medium"
+                      >
+                        <RefreshCw className={`w-3 h-3 ${syncingId === m.id ? 'animate-spin' : ''}`} />
+                        sync
+                      </button>
+                    )}
                     {m.status !== 'disabled' && (
                       <a
                         href={`/api/inbox/mailboxes/${m.id}/connect`}
-                        className="flex items-center gap-1 text-[11px] text-brand-600 hover:text-brand-700 font-medium"
+                        className="text-[11px] text-brand-600 hover:text-brand-700 font-medium"
                       >
-                        <RefreshCw className="w-3 h-3" />
                         {m.status === 'connected' ? 'เชื่อมใหม่' : 'เชื่อม Gmail'}
                       </a>
                     )}
@@ -327,6 +362,9 @@ export function InboxSettings() {
                       {m.status === 'disabled' ? 'เปิดใช้งาน' : 'ปิดการใช้งาน'}
                     </button>
                   </span>
+                  {m.lastError && (
+                    <div className="w-full text-[11px] text-rose-600">sync ติดปัญหา: {m.lastError}</div>
+                  )}
                 </div>
               )
             })}

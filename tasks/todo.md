@@ -244,7 +244,11 @@
 - **AC:** member/vendor 403 ทุก endpoint · secret/token ไม่หลุดใน response ใดๆ · เชื่อมบัญชีเดิมซ้ำข้ามกล่อง → error · scope โดน untick → error ชัดเจน
 - **Verify ✓:** typecheck+lint+test เขียว (เทสต์ inbox 16 + crypto 5) + manual ผ่าน preview (เพิ่ม client/กล่องผ่าน UI จริง · connect 302 → Google · banner error) · เพิ่มจาก AC: PATCH ย้ายกล่องไป client ใหม่ได้ (กันค้างกับ client ที่ลบ) · migration 0012
 
-### ☐ E2 — Sync ขาเข้า: Cron polling (History API) → threads/messages ลง D1 (+body ใหญ่/แนบ → R2)
+### ☑ E2 — Sync ขาเข้า: Cron polling (History API) → threads/messages ลง D1 + body → R2 ✅ (11 มิ.ย. 69)
+- schema: `inbox_threads` (unread/status/ปลุก closed เมื่อมีเมลเข้า) + `inbox_messages` (body → R2 เสมอ) + `inbox_attachments` (metadata · โหลด lazy E3) + `gmail_sync_state` (lastError) — migration 0014
+- `lib/gmail.ts` parser (multipart/RFC2047 ชื่อไทย/charset/entities) + `lib/inbox-sync.ts` (initial backfill 50 · history incremental · 404 → fallback ตามช่วงเวลา · invalid_grant → กล่อง disconnected) — idempotent ทั้งสาย
+- cron `* * * * *` (gate แยกจาก sweep 30 นาที) · เชื่อมเสร็จ sync ทันทีผ่าน waitUntil · ปุ่ม sync + เวลาล่าสุด + error ใน ตั้งค่า
+- **Verify ✓:** เทสต์ 105 ตัวเขียว (parser 5 + sync 8 + settings 17) · manual: UI sync state + error path จริงกับ Google (token ปลอม → 401 → โชว์ "sync ติดปัญหา") — ยังไม่ทดสอบกับ Gmail จริง (รอ client id/secret จากเจ้าของ)
 ### ☐ E3 — UI inbox: list ตาราง + detail + folder bar + ตัวเลือกกล่อง + unread badge
 ### ☐ E4 — ตอบ/compose ผ่าน Gmail API (reply-from ตามกล่อง + threading References/In-Reply-To) + canned replies
 ### ☐ E5 — assign/สถานะ/tags + โน้ตภายใน + collision detection (DO) + ⌘K

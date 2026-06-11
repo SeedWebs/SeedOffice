@@ -12,7 +12,15 @@ const json = (cookie: string, body: unknown, method = 'POST') => ({
 
 beforeEach(async () => {
   await seedUsers()
-  for (const t of ['inbox_mailboxes', 'inbox_google_clients'])
+  // ลบลูกก่อนแม่ — callback ในเทสต์ก่อนหน้าอาจทิ้ง sync state/threads ไว้ (initial sync หลังเชื่อม)
+  for (const t of [
+    'inbox_attachments',
+    'inbox_messages',
+    'inbox_threads',
+    'gmail_sync_state',
+    'inbox_mailboxes',
+    'inbox_google_clients',
+  ])
     await env.DB.prepare(`DELETE FROM ${t}`).run()
 })
 
@@ -269,7 +277,11 @@ describe('E1 — callback (mock Google)', () => {
       if (url.startsWith('https://gmail.googleapis.com/gmail/v1/users/me/profile'))
         return opts.profileStatus
           ? new Response('denied', { status: opts.profileStatus })
-          : Response.json({ emailAddress: opts.profileEmail ?? 'support@brand-a.test' })
+          : Response.json({
+              emailAddress: opts.profileEmail ?? 'support@brand-a.test',
+              historyId: '1', // ให้ initial sync (waitUntil หลัง callback) จบสะอาดในเทสต์
+            })
+      if (url.includes('/messages?')) return Response.json({ messages: [] })
       throw new Error(`unexpected fetch in test: ${url}`)
     })
   }
@@ -355,6 +367,31 @@ describe('E1 — callback (mock Google)', () => {
     ).json()) as { id: string }
     const res = await callCallback(owner, box2.id)
     expect(res.headers.get('location')).toBe('/admin?inbox_error=already_connected')
+  })
+
+  it('POST /sync: member 403 · กล่องยังไม่เชื่อม 400 · เชื่อมแล้ว → ok + สถานะ sync โผล่ใน settings', async () => {
+    const owner = await loginAs(app, 'owner@example-co.test')
+    const member = await loginAs(app, 'pond@example-co.test')
+    const { box } = await seedClientAndBox(owner)
+
+    expect(
+      (await app.request(`/api/inbox/mailboxes/${box.id}/sync`, json(member, {}), env)).status,
+    ).toBe(403)
+    expect(
+      (await app.request(`/api/inbox/mailboxes/${box.id}/sync`, json(owner, {}), env)).status,
+    ).toBe(400) // ยังไม่เชื่อม
+
+    mockGoogle({})
+    await callCallback(owner, box.id) // เชื่อม (initial sync จบใน mock)
+    const res = await app.request(`/api/inbox/mailboxes/${box.id}/sync`, json(owner, {}), env)
+    expect(res.status).toBe(200)
+    expect(((await res.json()) as { ok: boolean }).ok).toBe(true)
+
+    const settings = (await (
+      await app.request('/api/inbox/settings', { headers: { cookie: owner } }, env)
+    ).json()) as { mailboxes: { lastSyncAt: string | null; lastError: string | null }[] }
+    expect(settings.mailboxes[0]?.lastSyncAt).not.toBeNull()
+    expect(settings.mailboxes[0]?.lastError).toBeNull()
   })
 
   it('เชื่อมใหม่กล่องเดิม (reconnect) → อัปเดต token ได้ ไม่ติด dup ตัวเอง', async () => {

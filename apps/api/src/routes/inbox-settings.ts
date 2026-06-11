@@ -1,10 +1,11 @@
-import { createDb, inboxGoogleClients, inboxMailboxes } from '@seedoffice/db'
+import { createDb, gmailSyncState, inboxGoogleClients, inboxMailboxes } from '@seedoffice/db'
 import { and, eq, isNull, ne } from 'drizzle-orm'
-import { Hono } from 'hono'
+import { Hono, type Context } from 'hono'
 import { deleteCookie, getCookie, setCookie } from 'hono/cookie'
 import { z } from 'zod'
 import { writeAudit } from '../lib/audit'
 import { decryptSecret, encryptSecret } from '../lib/crypto'
+import { syncMailbox } from '../lib/inbox-sync'
 import { newToken } from '../lib/session'
 import type { AppEnv } from '../types'
 
@@ -84,7 +85,17 @@ export const inboxSettingsRoutes = new Hono<AppEnv>()
       })
       .from(inboxMailboxes)
       .orderBy(inboxMailboxes.companyLabel, inboxMailboxes.name)
-    return c.json({ clients, mailboxes })
+    // สถานะ sync ราย mailbox (E2) — โชว์ "ล่าสุด/ติดอะไรอยู่" ใน ตั้งค่า
+    const states = await db.select().from(gmailSyncState)
+    const byMailbox = new Map(states.map((s) => [s.mailboxId, s]))
+    return c.json({
+      clients,
+      mailboxes: mailboxes.map((m) => ({
+        ...m,
+        lastSyncAt: byMailbox.get(m.id)?.lastSyncAt ?? null,
+        lastError: byMailbox.get(m.id)?.lastError ?? null,
+      })),
+    })
   })
 
   .post('/clients', async (c) => {
@@ -212,6 +223,23 @@ export const inboxSettingsRoutes = new Hono<AppEnv>()
     return c.json({ ok: true, status })
   })
 
+  // sync เดี๋ยวนี้ (ปุ่มใน ตั้งค่า) — รอให้เสร็จเลย owner จะได้เห็นผล/ error ทันที
+  .post('/mailboxes/:id/sync', async (c) => {
+    const db = createDb(c.env.DB)
+    const [box] = await db
+      .select({ id: inboxMailboxes.id, status: inboxMailboxes.status })
+      .from(inboxMailboxes)
+      .where(eq(inboxMailboxes.id, c.req.param('id')))
+    if (!box) return c.json({ error: 'not_found' }, 404)
+    if (box.status !== 'connected') return c.json({ error: 'not_connected' }, 400)
+    await syncMailbox(c.env, box.id)
+    const [state] = await db
+      .select()
+      .from(gmailSyncState)
+      .where(eq(gmailSyncState.mailboxId, box.id))
+    return c.json({ ok: true, lastSyncAt: state?.lastSyncAt ?? null, lastError: state?.lastError ?? null })
+  })
+
   // เริ่มเชื่อม Gmail — redirect ไป Google (offline + consent การันตี refresh token)
   .get('/mailboxes/:id/connect', async (c) => {
     const db = createDb(c.env.DB)
@@ -327,5 +355,16 @@ export const inboxSettingsRoutes = new Hono<AppEnv>()
       entityId: box.id,
       meta: { emailAddress: profile.emailAddress },
     })
+    // เชื่อมเสร็จ → backfill เมลล่าสุดทันที ไม่ต้องรอ cron (waitUntil = ไม่หน่วง redirect)
+    runAfter(c, syncMailbox(c.env, box.id))
     return c.redirect('/admin?inbox=connected')
   })
+
+/** waitUntil ถ้ามี executionCtx (production) — ไม่มี (เทสต์) ก็ปล่อยให้จบเอง ผลถูกเก็บใน sync state */
+function runAfter(c: Context<AppEnv>, p: Promise<unknown>): void {
+  try {
+    c.executionCtx.waitUntil(p)
+  } catch {
+    void p.catch(() => {})
+  }
+}

@@ -19,9 +19,9 @@
     "head_sampling_rate": 1
   },
 
-  // cron: */30 = กวาด timer ค้าง + ล้าง session · 0 20 UTC (03:00 ไทย) = backup D1 → R2 (เก็บ 30 ชุด)
+  // cron: * = sync อีเมลกลางทุกนาที (P3 E2) · */30 = กวาด timer ค้าง + ล้าง session · 0 20 UTC (03:00 ไทย) = backup D1 → R2 (เก็บ 30 ชุด)
   "triggers": {
-    "crons": ["*/30 * * * *", "0 20 * * *"]
+    "crons": ["* * * * *", "*/30 * * * *", "0 20 * * *"]
   },
 
   // ค่า production — local override ที่ .dev.vars · GOOGLE_CLIENT_SECRET = secret (wrangler secret put)

@@ -1,4 +1,4 @@
-import { sqliteTable, text, integer, index } from 'drizzle-orm/sqlite-core'
+import { sqliteTable, text, integer, index, uniqueIndex } from 'drizzle-orm/sqlite-core'
 
 /**
  * Conventions (SPEC §5/§9)
@@ -532,6 +532,100 @@ export const calendarEvents = sqliteTable(
 )
 
 /**
+ * [P3 §4.12] thread ในอีเมลกลาง — folder (unassigned/mine/assigned/closed/spam) derive จาก assignee+status
+ * unread = true เมื่อมีเมลเข้าใหม่ (sync) · เปิดอ่านในระบบ → false · เมลเข้าบน thread closed → เปิดใหม่
+ */
+export const inboxThreads = sqliteTable(
+  'inbox_threads',
+  {
+    id: id(),
+    mailboxId: text('mailbox_id')
+      .notNull()
+      .references(() => inboxMailboxes.id),
+    gmailThreadId: text('gmail_thread_id').notNull(),
+    subject: text('subject').notNull().default(''),
+    contactEmail: text('contact_email'), // คู่สนทนา (อีเมลเปล่า lowercase) — ผูกการ์ดลูกค้า/ประวัติ
+    status: text('status', { enum: ['open', 'snoozed', 'closed', 'spam'] })
+      .notNull()
+      .default('open'),
+    unread: integer('unread', { mode: 'boolean' }).notNull().default(false),
+    assigneeId: text('assignee_id').references(() => users.id),
+    tags: text('tags', { mode: 'json' }).$type<string[]>(),
+    lastMessageAt: integer('last_message_at', { mode: 'timestamp_ms' }).notNull(),
+    snoozeUntil: integer('snooze_until', { mode: 'timestamp_ms' }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [
+    uniqueIndex('inbox_threads_mailbox_gmail_idx').on(t.mailboxId, t.gmailThreadId),
+    index('inbox_threads_mailbox_last_idx').on(t.mailboxId, t.lastMessageAt),
+    index('inbox_threads_folder_idx').on(t.status, t.assigneeId),
+  ],
+)
+
+/** [P3 §4.12] ข้อความในอีเมลกลาง — metadata ใน D1, body เต็มอยู่ R2 เสมอ (กัน D1 บวม — §13) */
+export const inboxMessages = sqliteTable(
+  'inbox_messages',
+  {
+    id: id(),
+    threadId: text('thread_id')
+      .notNull()
+      .references(() => inboxThreads.id),
+    gmailMessageId: text('gmail_message_id').notNull(),
+    direction: text('direction', { enum: ['in', 'out'] }).notNull(),
+    fromAddr: text('from_addr').notNull().default(''), // header เต็ม "ชื่อ <email>" ไว้แสดงผล
+    toAddr: text('to_addr').notNull().default(''),
+    ccAddr: text('cc_addr'),
+    snippet: text('snippet').notNull().default(''),
+    bodyKey: text('body_key'), // R2 key (contentType อยู่ใน R2 metadata) — null = เมลไม่มี body
+    sentAt: integer('sent_at', { mode: 'timestamp_ms' }).notNull(), // = internalDate ของ Gmail
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [
+    uniqueIndex('inbox_messages_thread_gmail_idx').on(t.threadId, t.gmailMessageId),
+    index('inbox_messages_thread_sent_idx').on(t.threadId, t.sentAt),
+  ],
+)
+
+/** [P3 §4.12] ไฟล์แนบ — เก็บ metadata ตอน sync · ตัวไฟล์โหลด lazy ครั้งแรกที่เปิดแล้ว cache ลง R2 */
+export const inboxAttachments = sqliteTable(
+  'inbox_attachments',
+  {
+    id: id(),
+    messageId: text('message_id')
+      .notNull()
+      .references(() => inboxMessages.id),
+    gmailAttachmentId: text('gmail_attachment_id').notNull(),
+    r2Key: text('r2_key'), // null = ยังไม่เคยโหลด
+    filename: text('filename').notNull(),
+    mime: text('mime').notNull(),
+    sizeBytes: integer('size_bytes').notNull(),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [index('inbox_attachments_message_idx').on(t.messageId)],
+)
+
+/** [P3 §4.12] สถานะ sync ราย mailbox — lastHistoryId เป็น text (uint64) · lastError โชว์ใน ตั้งค่า */
+export const gmailSyncState = sqliteTable(
+  'gmail_sync_state',
+  {
+    id: id(),
+    mailboxId: text('mailbox_id')
+      .notNull()
+      .references(() => inboxMailboxes.id),
+    lastHistoryId: text('last_history_id'),
+    lastSyncAt: integer('last_sync_at', { mode: 'timestamp_ms' }),
+    lastError: text('last_error'),
+  },
+  (t) => [uniqueIndex('gmail_sync_state_mailbox_idx').on(t.mailboxId)],
+)
+
+/**
  * [P3 §4.12] OAuth client (Internal) ของอีเมลกลาง — ต่อบริษัท/Workspace
  * เพิ่มผ่านหน้า ตั้งค่า เท่านั้น (repo public — ห้าม hardcode/seed) · secret เข้ารหัส AES-GCM ก่อนเก็บ
  */
@@ -622,3 +716,7 @@ export type Expense = typeof expenses.$inferSelect
 export type CalendarEvent = typeof calendarEvents.$inferSelect
 export type InboxGoogleClient = typeof inboxGoogleClients.$inferSelect
 export type InboxMailbox = typeof inboxMailboxes.$inferSelect
+export type InboxThread = typeof inboxThreads.$inferSelect
+export type InboxMessage = typeof inboxMessages.$inferSelect
+export type InboxAttachment = typeof inboxAttachments.$inferSelect
+export type GmailSyncState = typeof gmailSyncState.$inferSelect
