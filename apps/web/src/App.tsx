@@ -9,6 +9,7 @@ import { ClientsPage } from './pages/Clients'
 import { DashboardPage } from './pages/Dashboard'
 import { DocsPage } from './pages/Docs'
 import { ExpensesPage } from './pages/Expenses'
+import { InboxPage } from './pages/Inbox'
 import { Login } from './pages/Login'
 import { ProjectDetailPage } from './pages/ProjectDetail'
 import { PayrollPage } from './pages/Payroll'
@@ -59,6 +60,14 @@ const router = createBrowserRouter([
         element: (
           <Protected roles={['owner', 'member']}>
             <DocsPage />
+          </Protected>
+        ),
+      },
+      {
+        path: 'inbox',
+        element: (
+          <Protected roles={['owner', 'member']}>
+            <InboxPage />
           </Protected>
         ),
       },

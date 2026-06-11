@@ -9,6 +9,7 @@ import { expenseRoutes } from './routes/expenses'
 import { teamActivityRoutes } from './routes/team-activity'
 import { financeRoutes } from './routes/finance'
 import { inboxSettingsRoutes } from './routes/inbox-settings'
+import { inboxThreadRoutes } from './routes/inbox-threads'
 import { overviewRoutes } from './routes/overview'
 import { payrollAdminRoutes } from './routes/payroll-admin'
 import { payrollRoutes } from './routes/payroll'
@@ -82,9 +83,19 @@ app.use('/api/calendar/*', requireAuth, teamOnly)
 app.route('/api/calendar', calendarRoutes)
 app.use('/api/team-activity', requireAuth, teamOnly)
 app.route('/api/team-activity', teamActivityRoutes)
-// อีเมลกลาง (SPEC §4.12) — E1 มีแต่การติดตั้ง: owner เท่านั้น
-// (E2/E3 threads ค่อยแยก: ตั้งค่า/เชื่อมกล่อง = owner · ใช้งาน inbox = owner+member)
-app.use('/api/inbox/*', requireAuth, ownerOnly)
+// อีเมลกลาง (SPEC §4.12) — สิทธิ์สองชั้น:
+// ใช้งาน inbox (threads/attachments) = owner+member (vendor ❌ ตาม §3)
+app.use('/api/inbox/threads', requireAuth, teamOnly)
+app.use('/api/inbox/threads/*', requireAuth, teamOnly)
+app.use('/api/inbox/attachments/*', requireAuth, teamOnly)
+// การติดตั้ง (settings/clients/mailboxes/เชื่อม Google) = owner เท่านั้น
+app.use('/api/inbox/settings', requireAuth, ownerOnly)
+app.use('/api/inbox/clients', requireAuth, ownerOnly)
+app.use('/api/inbox/clients/*', requireAuth, ownerOnly)
+app.use('/api/inbox/mailboxes', requireAuth, ownerOnly)
+app.use('/api/inbox/mailboxes/*', requireAuth, ownerOnly)
+app.use('/api/inbox/google/*', requireAuth, ownerOnly)
+app.route('/api/inbox', inboxThreadRoutes)
 app.route('/api/inbox', inboxSettingsRoutes)
 
 // presence WebSocket (SPEC §4.15 realtime) — owner+member · ส่งต่อให้ DO พร้อมตัวตนที่ auth แล้ว

@@ -249,7 +249,10 @@
 - `lib/gmail.ts` parser (multipart/RFC2047 ชื่อไทย/charset/entities) + `lib/inbox-sync.ts` (initial backfill 50 · history incremental · 404 → fallback ตามช่วงเวลา · invalid_grant → กล่อง disconnected) — idempotent ทั้งสาย
 - cron `* * * * *` (gate แยกจาก sweep 30 นาที) · เชื่อมเสร็จ sync ทันทีผ่าน waitUntil · ปุ่ม sync + เวลาล่าสุด + error ใน ตั้งค่า
 - **Verify ✓:** เทสต์ 106 ตัวเขียว (parser 5 + sync 9 + settings 17) · manual: UI sync state + error path (token ปลอม → 401 → "sync ติดปัญหา") · **ของจริงผ่าน (11 มิ.ย. 69):** เชื่อม support@ จริง → 42 threads/50 msgs/7 แนบ · ไทย+อีโมจิถอดครบ · history sync รอบสองผ่าน — backfill เปลี่ยนเป็นดึงทั้งกล่อง (ของเคลียร์แล้ว = closed/อ่านแล้ว) จาก insight ข้อมูลจริง
-### ☐ E3 — UI inbox: list ตาราง + detail + folder bar + ตัวเลือกกล่อง + unread badge
+### ☑ E3 — UI inbox: list + detail + folder bar + ตัวเลือกกล่อง + unread badge ✅ (11 มิ.ย. 69)
+- API teamOnly (แยกสิทธิ์จาก settings ownerOnly): GET threads (folder/counts/ตัวเลือกกล่อง/⌘K q) · GET :id (mark read + body จาก R2 + การ์ดลูกค้าเทียบ contactEmail + อีเมลที่ผ่านมา) · PATCH (status/assignee — vendor เป็น assignee ไม่ได้) · GET attachments/:id/download (lazy Gmail → cache R2 · ชื่อไฟล์ไทย RFC5987)
+- UI ตาม mockup: nav อีเมลกลาง (vendor ❌) · folder bar + counts · ตาราง ลูกค้า/เรื่อง/เลขที่(rowid)/รอแล้ว + จุดสีกล่องโหมดทั้งหมด · detail: status pill + มอบหมาย + **body ใน iframe sandbox (กัน XSS)** + ช่องตอบ (ส่ง = E4) + พาเนลขวา
+- **Verify ✓:** เทสต์ 114 (threads 8 ใหม่) · จริง: 42 threads render ครบ · เปิดเรื่องใหม่/มอบหมาย/ของฉัน อัปเดตสด · console สะอาด
 ### ☐ E4 — ตอบ/compose ผ่าน Gmail API (reply-from ตามกล่อง + threading References/In-Reply-To) + canned replies
 ### ☐ E5 — assign/สถานะ/tags + โน้ตภายใน + collision detection (DO) + ⌘K
 ### ☐ E6 — GCal sync (calendar.readonly ผ่าน client SW) + ICS feed
