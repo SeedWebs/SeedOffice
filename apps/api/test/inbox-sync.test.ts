@@ -212,14 +212,15 @@ describe('E2 — initial sync (หลังเชื่อมกล่อง)', 
     expect(messages[0]!.direction).toBe('out')
   })
 
-  it('SPAM → thread เป็น spam · TRASH/DRAFT ถูกข้าม', async () => {
+  it('SPAM → thread เป็น spam · TRASH/DRAFT/CHAT ถูกข้าม', async () => {
     const box = await seedConnectedMailbox()
     mockGmail({
-      list: [{ id: 'm-spam' }, { id: 'm-trash' }, { id: 'm-draft' }],
+      list: [{ id: 'm-spam' }, { id: 'm-trash' }, { id: 'm-draft' }, { id: 'm-chat' }],
       messages: {
         'm-spam': fullMessage({ id: 'm-spam', threadId: 't-s', labels: ['SPAM'] }),
         'm-trash': fullMessage({ id: 'm-trash', threadId: 't-t', labels: ['TRASH'] }),
         'm-draft': fullMessage({ id: 'm-draft', threadId: 't-d', labels: ['DRAFT'] }),
+        'm-chat': fullMessage({ id: 'm-chat', threadId: 't-c', labels: ['CHAT'] }),
       },
       calls: [],
     })
@@ -227,6 +228,36 @@ describe('E2 — initial sync (หลังเชื่อมกล่อง)', 
     const threads = (await q.threads()).results as Record<string, unknown>[]
     expect(threads).toHaveLength(1)
     expect(threads[0]!.status).toBe('spam')
+  })
+
+  it('backfill เมลที่เคลียร์จาก INBOX แล้ว (archived) → เข้าเป็น closed/อ่านแล้ว — ไม่รก inbox วันแรก', async () => {
+    const box = await seedConnectedMailbox()
+    mockGmail({
+      // list ทั้งกล่อง (ไม่กรอง label) — ใหม่ → เก่า
+      list: [{ id: 'm-pending' }, { id: 'm-done' }],
+      messages: {
+        'm-pending': fullMessage({
+          id: 'm-pending',
+          threadId: 't-pending',
+          labels: ['INBOX', 'UNREAD'], // ยังค้างกล่องจริง
+          sentAt: 1_765_000_002_000,
+        }),
+        'm-done': fullMessage({
+          id: 'm-done',
+          threadId: 't-done',
+          labels: [], // archived — เคลียร์ไปแล้ว
+          sentAt: 1_765_000_001_000,
+        }),
+      },
+      calls: [],
+    })
+    await syncMailbox(env, box.id)
+    const threads = (await q.threads()).results as Record<string, unknown>[]
+    expect(threads).toHaveLength(2)
+    const done = threads.find((t) => t.gmail_thread_id === 't-done')
+    const pending = threads.find((t) => t.gmail_thread_id === 't-pending')
+    expect(done).toMatchObject({ status: 'closed', unread: 0 })
+    expect(pending).toMatchObject({ status: 'open', unread: 1 })
   })
 })
 

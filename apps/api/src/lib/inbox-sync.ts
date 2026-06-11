@@ -70,20 +70,27 @@ async function gmailGet<T>(token: string, path: string): Promise<{ status: numbe
   return { status: res.status, data }
 }
 
-/** เก็บ 1 ข้อความลง D1 + body ลง R2 — คืน true ถ้าเป็นข้อความใหม่ (ไม่ใช่ของซ้ำ) */
+/**
+ * เก็บ 1 ข้อความลง D1 + body ลง R2 — คืน true ถ้าเป็นข้อความใหม่ (ไม่ใช่ของซ้ำ)
+ * mode 'backfill' = ดึงประวัติตอนเพิ่งเชื่อม: ของที่เคลียร์จาก INBOX แล้วเข้าเป็น closed/อ่านแล้ว
+ * (ทีมใช้ Gmail แบบเคลียร์กล่อง — เจอจริงตอนเชื่อมกล่องแรก: ทั้งกล่อง 201 ฉบับ แต่ INBOX = 0)
+ * mode 'live' = เมลเดินปกติ: เมลเข้า → unread + ปลุก closed/snoozed
+ */
 async function ingestMessage(
   db: Db,
   env: Env,
   mailbox: InboxMailbox,
   full: GmailMessage,
+  mode: 'live' | 'backfill' = 'live',
 ): Promise<boolean> {
   const msg = parseGmailMessage(full)
-  if (msg.labelIds.includes('TRASH') || msg.labelIds.includes('DRAFT')) return false
+  if (['TRASH', 'DRAFT', 'CHAT'].some((l) => msg.labelIds.includes(l))) return false
   const direction =
     mailbox.emailAddress && extractEmail(msg.fromAddr) === mailbox.emailAddress.toLowerCase()
       ? 'out'
       : 'in'
   const isSpam = msg.labelIds.includes('SPAM')
+  const inInbox = msg.labelIds.includes('INBOX')
   const contact =
     direction === 'in'
       ? extractEmail(msg.fromAddr)
@@ -104,8 +111,11 @@ async function ingestMessage(
         gmailThreadId: msg.gmailThreadId,
         subject: msg.subject,
         contactEmail: contact || null,
-        status: isSpam ? 'spam' : 'open',
-        unread: direction === 'in',
+        // backfill: เฉพาะที่ยังค้าง INBOX = งานเปิด · ที่เคลียร์แล้ว = ประวัติ (closed/อ่านแล้ว)
+        status: isSpam ? 'spam' : mode === 'backfill' && !inInbox ? 'closed' : 'open',
+        unread:
+          direction === 'in' &&
+          (mode === 'live' || (inInbox && msg.labelIds.includes('UNREAD'))),
         lastMessageAt: new Date(msg.sentAt),
       })
       .onConflictDoNothing() // cron ซ้อนกันอาจสร้างพร้อมกัน — แพ้ก็ไป select เอา
@@ -170,7 +180,8 @@ async function ingestMessage(
       .insert(inboxAttachments)
       .values(msg.attachments.map((a) => ({ ...a, messageId: row.id })))
 
-  // อัปเดต thread: เวลาให้ล่าสุด · เมลเข้า = unread + ปลุก closed/snoozed กลับมา open · SPAM → spam
+  // อัปเดต thread: เวลาให้ล่าสุด · live + เมลเข้า = unread + ปลุก closed/snoozed กลับมา open · SPAM → spam
+  // backfill ไม่แตะ status/unread — list มาใหม่→เก่า สถานะ thread ถูกตั้งจากฉบับล่าสุดตอนสร้างแล้ว
   const newLast = Math.max(thread.lastMessageAt.getTime(), msg.sentAt)
   await db
     .update(inboxThreads)
@@ -179,7 +190,7 @@ async function ingestMessage(
       subject: thread.subject === '' && msg.subject !== '' ? msg.subject : thread.subject,
       ...(isSpam
         ? { status: 'spam' as const }
-        : direction === 'in'
+        : mode === 'live' && direction === 'in'
           ? {
               unread: true,
               status: thread.status === 'closed' || thread.status === 'snoozed' ? 'open' : thread.status,
@@ -198,13 +209,14 @@ async function ingestByIds(
   mailbox: InboxMailbox,
   token: string,
   ids: string[],
+  mode: 'live' | 'backfill' = 'live',
 ): Promise<number> {
   let count = 0
   for (const id of ids) {
     const { status, data } = await gmailGet<GmailMessage>(token, `/messages/${id}?format=full`)
     if (status === 404) continue
     if (status !== 200) throw new Error(`messages.get ${id} → ${status}`)
-    if (await ingestMessage(db, env, mailbox, data)) count++
+    if (await ingestMessage(db, env, mailbox, data, mode)) count++
   }
   return count
 }
@@ -221,6 +233,7 @@ async function listAndIngest(
   mailbox: InboxMailbox,
   token: string,
   query: string,
+  mode: 'live' | 'backfill',
 ): Promise<string> {
   const { status: pStatus, data: profile } = await gmailGet<Profile>(token, '/profile')
   if (pStatus !== 200 || !profile.historyId) throw new Error(`profile → ${pStatus}`)
@@ -229,7 +242,7 @@ async function listAndIngest(
     `/messages?maxResults=${INITIAL_BACKFILL}${query}`,
   )
   if (status !== 200) throw new Error(`messages.list → ${status}`)
-  await ingestByIds(db, env, mailbox, token, (data.messages ?? []).map((m) => m.id))
+  await ingestByIds(db, env, mailbox, token, (data.messages ?? []).map((m) => m.id), mode)
   return profile.historyId
 }
 
@@ -267,8 +280,8 @@ export async function syncMailbox(env: Env, mailboxId: string): Promise<void> {
     const token = await getAccessToken(env, mailbox)
 
     if (!state?.lastHistoryId) {
-      // เพิ่งเชื่อม — backfill กล่องเข้า ~50 ฉบับล่าสุด
-      const baseline = await listAndIngest(db, env, mailbox, token, '&labelIds=INBOX')
+      // เพิ่งเชื่อม — backfill ~50 ฉบับล่าสุด "ทั้งกล่อง" (รวม archived/sent — ทีมเคลียร์ INBOX เป็นนิสัย)
+      const baseline = await listAndIngest(db, env, mailbox, token, '', 'backfill')
       await writeState({ lastHistoryId: baseline, lastError: null })
       return
     }
@@ -295,6 +308,7 @@ export async function syncMailbox(env: Env, mailboxId: string): Promise<void> {
           mailbox,
           token,
           `&q=${encodeURIComponent(`after:${sinceSec}`)}`,
+          'live', // ช่วงที่หายไปคือเมลเดินปกติ — พฤติกรรม unread/ปลุก thread ต้องเหมือน live
         )
         await writeState({ lastHistoryId: baseline, lastError: null })
         return
