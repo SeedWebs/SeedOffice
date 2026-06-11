@@ -659,6 +659,31 @@ export const gmailSyncState = sqliteTable(
 )
 
 /**
+ * [P3 §4.14 · E6] บัญชี Google Calendar ที่เชื่อมเพื่อ sync ขาเข้า (read-only)
+ * ใช้ OAuth client (Internal) ตัวเดียวกับอีเมลกลางฝั่ง SeedWebs (scope calendar.readonly)
+ * event ที่ sync เข้ามาอยู่ใน calendar_events (source='gcal', gcalId) · syncToken = incremental
+ */
+export const calendarConnections = sqliteTable('calendar_connections', {
+  id: id(),
+  clientId: text('client_id')
+    .notNull()
+    .references(() => inboxGoogleClients.id),
+  googleEmail: text('google_email'),
+  googleAccountId: text('google_account_id'),
+  refreshTokenEnc: text('refresh_token_enc'),
+  status: text('status', { enum: ['connected', 'disconnected'] })
+    .notNull()
+    .default('disconnected'),
+  syncToken: text('sync_token'), // Google incremental sync token (หมดอายุ → full resync)
+  lastSyncAt: integer('last_sync_at', { mode: 'timestamp_ms' }),
+  lastError: text('last_error'),
+  connectedAt: integer('connected_at', { mode: 'timestamp_ms' }),
+  createdAt: integer('created_at', { mode: 'timestamp_ms' })
+    .notNull()
+    .$defaultFn(() => new Date()),
+})
+
+/**
  * [P3 §4.12] OAuth client (Internal) ของอีเมลกลาง — ต่อบริษัท/Workspace
  * เพิ่มผ่านหน้า ตั้งค่า เท่านั้น (repo public — ห้าม hardcode/seed) · secret เข้ารหัส AES-GCM ก่อนเก็บ
  */
@@ -755,3 +780,4 @@ export type InboxNote = typeof inboxNotes.$inferSelect
 export type InboxCanned = typeof inboxCanned.$inferSelect
 export type InboxAttachment = typeof inboxAttachments.$inferSelect
 export type GmailSyncState = typeof gmailSyncState.$inferSelect
+export type CalendarConnection = typeof calendarConnections.$inferSelect

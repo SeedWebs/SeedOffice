@@ -1,6 +1,7 @@
 import { createDb, tasks, timerSessions } from '@seedoffice/db'
 import { eq, lt } from 'drizzle-orm'
 import { runBackup } from './lib/backup'
+import { syncAllCalendars } from './lib/gcal-sync'
 import { syncAllMailboxes, wakeSnoozedThreads } from './lib/inbox-sync'
 import { purgeExpiredSessions } from './lib/session'
 import { closeSession, getCapMinutes } from './lib/time-core'
@@ -11,7 +12,7 @@ const INBOX_SYNC_CRON = '* * * * *'
 /**
  * Cron 3 จังหวะ:
  * - ทุก 1 นาที: sync อีเมลกลาง (E2 — เฉพาะกล่อง connected · ไม่มีกล่อง = จบทันที)
- * - ทุก 30 นาที: กวาด timer วิ่งเกินเพดาน (ปิดให้ที่เพดาน) + ล้าง session login หมดอายุ
+ * - ทุก 30 นาที: กวาด timer วิ่งเกินเพดาน (ปิดที่เพดาน) + ล้าง session หมดอายุ + sync Google Calendar (E6)
  * - รายวัน 03:00 BKK: backup D1 → R2 (T18 — ต้องมาก่อนปิดงวดจริงครั้งแรก)
  */
 export async function runScheduled(env: Env, cron: string): Promise<void> {
@@ -31,6 +32,7 @@ export async function runScheduled(env: Env, cron: string): Promise<void> {
     await closeSession(env, s, task?.projectId ?? '', Date.now())
   }
   await purgeExpiredSessions(env)
+  await syncAllCalendars(env) // E6 — sync ขาเข้า Google Calendar (กลืน error รายตัวเอง)
 
   if (cron === BACKUP_CRON) await runBackup(env)
 }

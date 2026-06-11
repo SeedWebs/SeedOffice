@@ -2,6 +2,7 @@ import { formatSatang } from '@seedoffice/core'
 import { CalendarDays, Check, Copy, UserPlus, X } from 'lucide-react'
 import { Fragment, useState } from 'react'
 import { useDialog } from '../components/Dialog'
+import { GcalSettings } from '../components/GcalSettings'
 import { InboxSettings } from '../components/InboxSettings'
 import { PageHeader } from '../components/PageHeader'
 import { api } from '../lib/api'
@@ -452,6 +453,8 @@ export function AdminPage() {
         </div>
 
         <IcsLinkCard />
+
+        <GcalSettings />
 
         <InboxSettings />
       </div>

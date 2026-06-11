@@ -4,6 +4,7 @@ import { ownerOnly, teamOnly } from './middleware/roles'
 import { adminRoutes } from './routes/admin'
 import { authRoutes } from './routes/auth'
 import { calendarRoutes } from './routes/calendar'
+import { calendarConnectRoutes } from './routes/calendar-connect'
 import { docRoutes } from './routes/docs'
 import { expenseRoutes } from './routes/expenses'
 import { teamActivityRoutes } from './routes/team-activity'
@@ -88,6 +89,10 @@ app.route('/api/expenses', expenseRoutes)
 app.use('/api/calendar', requireAuth, teamOnly)
 app.use('/api/calendar/*', requireAuth, teamOnly)
 app.route('/api/calendar', calendarRoutes)
+// เชื่อม Google Calendar (sync ขาเข้า · SPEC §4.14 E6) = owner เท่านั้น
+app.use('/api/calendar-connect', requireAuth, ownerOnly)
+app.use('/api/calendar-connect/*', requireAuth, ownerOnly)
+app.route('/api/calendar-connect', calendarConnectRoutes)
 app.use('/api/team-activity', requireAuth, teamOnly)
 app.route('/api/team-activity', teamActivityRoutes)
 // อีเมลกลาง (SPEC §4.12) — สิทธิ์สองชั้น:
