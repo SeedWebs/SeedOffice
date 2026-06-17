@@ -129,15 +129,15 @@ export function DialogProvider({ children }: { children: ReactNode }) {
         <div className="fixed inset-0 z-[70]" role="dialog" aria-modal="true" aria-label={opts.title}>
           <div
             onClick={cancel}
-            className={`absolute inset-0 bg-slate-900/40 backdrop-blur-[1.5px] ${closing ? 'so-fade-out' : 'so-fade-in'}`}
+            className={`absolute inset-0 bg-ink/40 backdrop-blur-[1.5px] ${closing ? 'so-fade-out' : 'so-fade-in'}`}
           />
           <div className="absolute inset-0 grid place-items-center p-4 pointer-events-none">
             <div
               className={`pointer-events-auto w-full max-w-sm bg-white rounded-2xl shadow-2xl p-5 ${closing ? 'so-pop-out' : 'so-pop-in'}`}
             >
-              <div className="font-semibold text-slate-900">{opts.title}</div>
+              <div className="font-semibold text-ink">{opts.title}</div>
               {opts.message && (
-                <p className="text-sm text-slate-500 mt-1.5 whitespace-pre-line leading-relaxed">
+                <p className="text-sm text-dim mt-1.5 whitespace-pre-line leading-relaxed">
                   {opts.message}
                 </p>
               )}
@@ -154,7 +154,7 @@ export function DialogProvider({ children }: { children: ReactNode }) {
               <div className="flex justify-end gap-2 mt-5">
                 <button
                   onClick={cancel}
-                  className="text-sm px-3.5 py-2 rounded-lg text-slate-600 hover:bg-slate-50"
+                  className="text-sm px-3.5 py-2 rounded-lg text-soft hover:bg-hover"
                 >
                   {(pending.kind === 'confirm' && pending.opts.cancelLabel) || 'ยกเลิก'}
                 </button>
@@ -162,7 +162,7 @@ export function DialogProvider({ children }: { children: ReactNode }) {
                   ref={okRef}
                   onClick={ok}
                   className={`text-sm font-medium text-white px-4 py-2 rounded-lg ${
-                    danger ? 'bg-rose-600 hover:bg-rose-700' : 'bg-brand-600 hover:bg-brand-700'
+                    danger ? 'bg-danger-600 hover:bg-danger-700' : 'bg-brand-600 hover:bg-brand-700'
                   }`}
                 >
                   {opts.confirmLabel ?? 'ตกลง'}

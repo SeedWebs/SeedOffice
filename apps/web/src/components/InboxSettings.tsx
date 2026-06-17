@@ -31,9 +31,9 @@ interface Settings {
 }
 
 const STATUS_BADGE: Record<InboxMailbox['status'], { label: string; cls: string }> = {
-  connected: { label: 'เชื่อมแล้ว', cls: 'bg-emerald-100 text-emerald-700' },
-  disconnected: { label: 'ยังไม่เชื่อม', cls: 'bg-amber-100 text-amber-700' },
-  disabled: { label: 'ปิดอยู่', cls: 'bg-slate-100 text-slate-500' },
+  connected: { label: 'เชื่อมแล้ว', cls: 'bg-success-100 text-success-700' },
+  disconnected: { label: 'ยังไม่เชื่อม', cls: 'bg-warning-100 text-warning-700' },
+  disabled: { label: 'ปิดอยู่', cls: 'bg-divider text-dim' },
 }
 
 const CALLBACK_ERROR: Record<string, string> = {
@@ -57,7 +57,7 @@ function AddClientForm({ onDone }: { onDone: () => void }) {
     }
   }
   return (
-    <div className="p-4 bg-slate-50 rounded-lg space-y-2">
+    <div className="p-4 bg-hover rounded-lg space-y-2">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <input
           placeholder="ชื่อเรียก (เช่นชื่อบริษัท)"
@@ -80,9 +80,9 @@ function AddClientForm({ onDone }: { onDone: () => void }) {
           className="text-sm bg-white shadow-xs rounded-lg px-3 py-2"
         />
       </div>
-      {error && <div className="text-xs text-rose-600">{error}</div>}
+      {error && <div className="text-xs text-danger-600">{error}</div>}
       <div className="flex items-center justify-between gap-3">
-        <p className="text-[11px] text-slate-400">
+        <p className="text-[11px] text-muted">
           จาก GCP console → Google Auth Platform (ต้องเป็นแบบ <b>Internal</b>) · secret
           ถูกเข้ารหัสเก็บ และจะไม่แสดงอีก
         </p>
@@ -110,7 +110,7 @@ function AddMailboxForm({ clients, onDone }: { clients: InboxClient[]; onDone: (
     }
   }
   return (
-    <div className="p-4 bg-slate-50 rounded-lg space-y-2">
+    <div className="p-4 bg-hover rounded-lg space-y-2">
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
         <select
           value={form.clientId}
@@ -136,9 +136,9 @@ function AddMailboxForm({ clients, onDone }: { clients: InboxClient[]; onDone: (
           className="text-sm bg-white shadow-xs rounded-lg px-3 py-2"
         />
       </div>
-      {error && <div className="text-xs text-rose-600">{error}</div>}
+      {error && <div className="text-xs text-danger-600">{error}</div>}
       <div className="flex items-center justify-between gap-3">
-        <p className="text-[11px] text-slate-400">
+        <p className="text-[11px] text-muted">
           อีเมลของกล่องจะถูกดึงจากบัญชี Google ที่กด "เชื่อม Gmail" — ไม่ต้องพิมพ์เอง
         </p>
         <button
@@ -235,40 +235,40 @@ export function InboxSettings() {
 
   return (
     <div className="bg-white rounded-lg shadow-xs overflow-hidden">
-      <div className="p-5 border-b border-slate-200 flex items-center gap-2">
-        <Mail className="w-4 h-4 text-slate-400" />
-        <div className="font-semibold text-slate-900">อีเมลกลาง</div>
-        <span className="text-xs text-slate-400">เชื่อมกล่อง Gmail ของทีม — จัดการรวมที่เดียว</span>
+      <div className="p-5 border-b border-border-subtle flex items-center gap-2">
+        <Mail className="w-4 h-4 text-muted" />
+        <div className="font-semibold text-ink">อีเมลกลาง</div>
+        <span className="text-xs text-muted">เชื่อมกล่อง Gmail ของทีม — จัดการรวมที่เดียว</span>
       </div>
 
       {connected && (
-        <div className="mx-5 mt-4 px-4 py-2.5 rounded-lg bg-emerald-50 text-emerald-700 text-sm flex items-center justify-between">
+        <div className="mx-5 mt-4 px-4 py-2.5 rounded-lg bg-success-50 text-success-700 text-sm flex items-center justify-between">
           เชื่อมกล่องสำเร็จ — พร้อมใช้งาน
-          <button onClick={clearBanner} className="text-emerald-500 hover:text-emerald-700">
+          <button onClick={clearBanner} className="text-success-500 hover:text-success-700">
             <X className="w-4 h-4" />
           </button>
         </div>
       )}
       {callbackError && (
-        <div className="mx-5 mt-4 px-4 py-2.5 rounded-lg bg-rose-50 text-rose-700 text-sm flex items-center justify-between">
+        <div className="mx-5 mt-4 px-4 py-2.5 rounded-lg bg-danger-50 text-danger-700 text-sm flex items-center justify-between">
           {CALLBACK_ERROR[callbackError] ?? `เชื่อมไม่สำเร็จ (${callbackError})`}
-          <button onClick={clearBanner} className="text-rose-400 hover:text-rose-600">
+          <button onClick={clearBanner} className="text-danger-400 hover:text-danger-600">
             <X className="w-4 h-4" />
           </button>
         </div>
       )}
-      {actionError && <div className="mx-5 mt-4 text-xs text-rose-600">{actionError}</div>}
+      {actionError && <div className="mx-5 mt-4 text-xs text-danger-600">{actionError}</div>}
 
       {loading ? (
-        <div className="p-8 text-center text-sm text-slate-400">กำลังโหลด…</div>
+        <div className="p-8 text-center text-sm text-muted">กำลังโหลด…</div>
       ) : (
         <div className="p-5 space-y-5">
           {/* Google OAuth clients */}
           <div className="space-y-2">
             <div className="flex items-center justify-between">
-              <div className="text-sm font-medium text-slate-700">
+              <div className="text-sm font-medium text-body">
                 Google client{' '}
-                <span className="text-xs font-normal text-slate-400">
+                <span className="text-xs font-normal text-muted">
                   (OAuth client แบบ Internal — ตัวละ Workspace/บริษัท)
                 </span>
               </div>
@@ -288,18 +288,18 @@ export function InboxSettings() {
               />
             )}
             {(data?.clients ?? []).length === 0 && !addingClient && (
-              <div className="text-sm text-slate-400 py-2">
+              <div className="text-sm text-muted py-2">
                 ยังไม่มี client — เริ่มจากสร้าง OAuth client (Internal) ใน GCP console
                 แล้วนำ client ID/secret มาวางที่นี่
               </div>
             )}
             {(data?.clients ?? []).map((c) => (
               <div key={c.id} className="flex items-center gap-3 text-sm py-1">
-                <span className="font-medium text-slate-700">{c.label}</span>
-                <span className="text-xs text-slate-400 truncate max-w-60">{c.clientId}</span>
+                <span className="font-medium text-body">{c.label}</span>
+                <span className="text-xs text-muted truncate max-w-60">{c.clientId}</span>
                 <button
                   onClick={() => void removeClient(c)}
-                  className="ml-auto text-[11px] text-slate-400 hover:text-rose-600 underline"
+                  className="ml-auto text-[11px] text-muted hover:text-danger-600 underline"
                 >
                   ลบ
                 </button>
@@ -308,9 +308,9 @@ export function InboxSettings() {
           </div>
 
           {/* กล่องเมล */}
-          <div className="space-y-2 border-t border-slate-100 pt-4">
+          <div className="space-y-2 border-t border-divider pt-4">
             <div className="flex items-center justify-between">
-              <div className="text-sm font-medium text-slate-700">กล่องเมล</div>
+              <div className="text-sm font-medium text-body">กล่องเมล</div>
               <button
                 onClick={() => setAddingBox((v) => !v)}
                 disabled={(data?.clients ?? []).length === 0}
@@ -329,7 +329,7 @@ export function InboxSettings() {
               />
             )}
             {(data?.mailboxes ?? []).length === 0 && !addingBox && (
-              <div className="text-sm text-slate-400 py-2">
+              <div className="text-sm text-muted py-2">
                 ยังไม่มีกล่อง — เพิ่มกล่องแล้วกด "เชื่อม Gmail" ด้วยบัญชีของกล่องนั้น
               </div>
             )}
@@ -340,15 +340,15 @@ export function InboxSettings() {
                   key={m.id}
                   className={`flex flex-wrap items-center gap-x-3 gap-y-1 text-sm py-1 ${m.status === 'disabled' ? 'opacity-50' : ''}`}
                 >
-                  <span className="font-medium text-slate-700">{m.name}</span>
-                  <span className="text-xs text-slate-400">{m.companyLabel}</span>
-                  <span className="text-xs text-slate-400">{m.emailAddress ?? '— ยังไม่ผูกอีเมล —'}</span>
+                  <span className="font-medium text-body">{m.name}</span>
+                  <span className="text-xs text-muted">{m.companyLabel}</span>
+                  <span className="text-xs text-muted">{m.emailAddress ?? '— ยังไม่ผูกอีเมล —'}</span>
                   <span className={`text-[11px] px-2 py-0.5 rounded-full ${badge.cls}`}>
                     {badge.label}
                   </span>
                   <span className="ml-auto flex items-center gap-3">
                     {m.status === 'connected' && (
-                      <span className="text-[11px] text-slate-400">
+                      <span className="text-[11px] text-muted">
                         {m.lastSyncAt ? `sync ${timeLabel(m.lastSyncAt)}` : 'รอ sync แรก'}
                       </span>
                     )}
@@ -367,7 +367,7 @@ export function InboxSettings() {
                         onClick={() => void reprocess(m)}
                         disabled={fixingId === m.id}
                         title="ดึงอีเมลเก่ามาแสดงผลใหม่ — แก้ภาษาไทยที่เพี้ยน"
-                        className="text-[11px] text-slate-400 hover:text-slate-600 disabled:opacity-40"
+                        className="text-[11px] text-muted hover:text-soft disabled:opacity-40"
                       >
                         {fixingId === m.id ? 'กำลังซ่อม…' : 'ซ่อมภาษา'}
                       </button>
@@ -382,20 +382,20 @@ export function InboxSettings() {
                     )}
                     <button
                       onClick={() => void toggleBox(m)}
-                      className="text-[11px] text-slate-400 hover:text-slate-600 underline"
+                      className="text-[11px] text-muted hover:text-soft underline"
                     >
                       {m.status === 'disabled' ? 'เปิดใช้งาน' : 'ปิดการใช้งาน'}
                     </button>
                   </span>
                   {m.lastError && (
-                    <div className="w-full text-[11px] text-rose-600">sync ติดปัญหา: {m.lastError}</div>
+                    <div className="w-full text-[11px] text-danger-600">sync ติดปัญหา: {m.lastError}</div>
                   )}
                 </div>
               )
             })}
           </div>
 
-          <p className="text-[11px] text-slate-400 border-t border-slate-100 pt-3">
+          <p className="text-[11px] text-muted border-t border-divider pt-3">
             เชื่อมด้วยสิทธิ์ Gmail แบบ read/labels/send (scope เดียว: gmail.modify) · token
             เข้ารหัสเก็บในระบบ · เปลี่ยนรหัสผ่านบัญชีกล่อง = ต้องกดเชื่อมใหม่
           </p>

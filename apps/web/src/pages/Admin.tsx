@@ -5,6 +5,7 @@ import { useDialog } from '../components/Dialog'
 import { GcalSettings } from '../components/GcalSettings'
 import { InboxSettings } from '../components/InboxSettings'
 import { PageHeader } from '../components/PageHeader'
+import { ProjectStatusSettings } from '../components/ProjectStatusSettings'
 import { api } from '../lib/api'
 import { useLoad } from '../lib/useLoad'
 
@@ -30,8 +31,8 @@ interface RateRow {
 
 const ROLE_BADGE: Record<AdminUser['role'], string> = {
   owner: 'bg-brand-100 text-brand-700',
-  member: 'bg-slate-100 text-slate-600',
-  vendor: 'bg-amber-100 text-amber-700',
+  member: 'bg-divider text-soft',
+  vendor: 'bg-warning-100 text-warning-700',
 }
 
 const todayISO = () => {
@@ -58,7 +59,7 @@ function AddUserForm({ memberDomain, onDone }: { memberDomain?: string; onDone: 
     }
   }
   return (
-    <div className="p-4 bg-slate-50 rounded-lg space-y-2">
+    <div className="p-4 bg-hover rounded-lg space-y-2">
       <div className="grid grid-cols-1 sm:grid-cols-4 gap-2">
         <input
           placeholder="ชื่อ"
@@ -89,7 +90,7 @@ function AddUserForm({ memberDomain, onDone }: { memberDomain?: string; onDone: 
           className="text-sm bg-white shadow-xs rounded-lg px-3 py-2"
         />
       </div>
-      {error && <div className="text-xs text-rose-600">{error}</div>}
+      {error && <div className="text-xs text-danger-600">{error}</div>}
       <div className="flex justify-end gap-2">
         <button
           onClick={() => void submit()}
@@ -99,7 +100,7 @@ function AddUserForm({ memberDomain, onDone }: { memberDomain?: string; onDone: 
           เพิ่มผู้ใช้
         </button>
       </div>
-      <p className="text-[11px] text-slate-400">
+      <p className="text-[11px] text-muted">
         {memberDomain
           ? `member = โดเมน ${memberDomain} (login ได้เองอยู่แล้ว)`
           : 'member = ยังไม่ตั้งโดเมน auto-provision (ตั้งได้ที่ ค่าบริษัท)'}{' '}
@@ -126,10 +127,10 @@ function RatePanel({ user, onClose, onSaved }: { user: AdminUser; onClose: () =>
     onSaved()
   }
   return (
-    <div className="border-t border-slate-100 bg-slate-50/60 px-5 py-4">
+    <div className="border-t border-divider bg-hover/60 px-5 py-4">
       <div className="flex items-center justify-between mb-2">
-        <div className="text-sm font-medium text-slate-700">rate ของ {user.name}</div>
-        <button onClick={onClose} className="text-slate-400 hover:text-slate-600">
+        <div className="text-sm font-medium text-body">rate ของ {user.name}</div>
+        <button onClick={onClose} className="text-muted hover:text-soft">
           <X className="w-4 h-4" />
         </button>
       </div>
@@ -161,7 +162,7 @@ function RatePanel({ user, onClose, onSaved }: { user: AdminUser; onClose: () =>
           ตั้ง rate ใหม่
         </button>
       </div>
-      <div className="text-[11px] text-slate-400 mb-1">
+      <div className="text-[11px] text-muted mb-1">
         ประวัติ (เปลี่ยน rate ไม่แก้ของเก่า — เวลาเดิมใช้ rate snapshot เดิม)
       </div>
       <div className="space-y-1">
@@ -170,15 +171,15 @@ function RatePanel({ user, onClose, onSaved }: { user: AdminUser; onClose: () =>
           .reverse()
           .map((r) => (
             <div key={r.id} className="flex items-center gap-3 text-sm">
-              <span className="tabular-nums text-slate-700 w-24">
+              <span className="tabular-nums text-body w-24">
                 {formatSatang(r.rateSatangPerHour)}/ชม.
               </span>
-              <span className="text-xs text-slate-400">มีผล {r.effectiveFrom}</span>
-              {r.note && <span className="text-xs text-slate-400">· {r.note}</span>}
+              <span className="text-xs text-muted">มีผล {r.effectiveFrom}</span>
+              {r.note && <span className="text-xs text-muted">· {r.note}</span>}
             </div>
           ))}
         {data && data.history.length === 0 && (
-          <div className="text-sm text-slate-400">ยังไม่ตั้ง rate — ลงเวลาไม่ได้จนกว่าจะมี rate</div>
+          <div className="text-sm text-muted">ยังไม่ตั้ง rate — ลงเวลาไม่ได้จนกว่าจะมี rate</div>
         )}
       </div>
     </div>
@@ -229,9 +230,9 @@ function IcsLinkCard() {
     <div className="bg-white rounded-lg shadow-xs p-5 max-w-md">
       <div className="flex items-center gap-2 mb-1">
         <CalendarDays className="w-4 h-4 text-brand-600" />
-        <div className="font-semibold text-slate-900">ลิงก์ปฏิทิน (ICS)</div>
+        <div className="font-semibold text-ink">ลิงก์ปฏิทิน (ICS)</div>
       </div>
-      <p className="text-[11px] text-slate-400 mb-3">
+      <p className="text-[11px] text-muted mb-3">
         ลิงก์ subscribe ปฏิทินทีม (วันลา/ประชุม/วันหยุด + ตัดรอบ/จ่ายเงินเดือน) — เพิ่มใน Google/Apple
         Calendar บนมือถือ · ใครมีลิงก์เห็นได้ทั้งทีม
       </p>
@@ -242,15 +243,15 @@ function IcsLinkCard() {
               readOnly
               value={url}
               onFocus={(e) => e.target.select()}
-              className="flex-1 min-w-0 text-xs bg-slate-50 shadow-xs rounded-lg px-3 py-2 text-slate-600"
+              className="flex-1 min-w-0 text-xs bg-hover shadow-xs rounded-lg px-3 py-2 text-soft"
             />
             <button
               onClick={() => void copy()}
-              className="shrink-0 text-sm px-3 py-2 rounded-lg bg-slate-100 hover:bg-slate-200 flex items-center gap-1.5"
+              className="shrink-0 text-sm px-3 py-2 rounded-lg bg-divider hover:bg-border-subtle flex items-center gap-1.5"
             >
               {copied ? (
                 <>
-                  <Check className="w-4 h-4 text-emerald-600" /> คัดลอกแล้ว
+                  <Check className="w-4 h-4 text-success-600" /> คัดลอกแล้ว
                 </>
               ) : (
                 <>
@@ -260,10 +261,10 @@ function IcsLinkCard() {
             </button>
           </div>
           <div className="flex gap-3 text-xs">
-            <button onClick={() => void generate()} className="text-slate-500 hover:text-slate-700 underline">
+            <button onClick={() => void generate()} className="text-dim hover:text-body underline">
               สร้างลิงก์ใหม่
             </button>
-            <button onClick={() => void disable()} className="text-rose-500 hover:text-rose-600 underline">
+            <button onClick={() => void disable()} className="text-danger-500 hover:text-danger-600 underline">
               ปิดลิงก์
             </button>
           </div>
@@ -322,15 +323,15 @@ export function AdminPage() {
         )}
 
         <div className="bg-white rounded-lg shadow-xs overflow-hidden">
-          <div className="p-5 border-b border-slate-200">
-            <div className="font-semibold text-slate-900">ผู้ใช้ & rate</div>
+          <div className="p-5 border-b border-border-subtle">
+            <div className="font-semibold text-ink">ผู้ใช้ & rate</div>
           </div>
           {loading ? (
-            <div className="p-8 text-center text-sm text-slate-400">กำลังโหลด…</div>
+            <div className="p-8 text-center text-sm text-muted">กำลังโหลด…</div>
           ) : (
             <div className="overflow-x-auto">
               <table className="w-full text-sm min-w-[560px]">
-                <thead className="bg-slate-50 text-slate-500 text-xs">
+                <thead className="bg-hover text-dim text-xs">
                   <tr>
                     <th className="text-left font-medium px-5 py-3">ชื่อ</th>
                     <th className="text-left font-medium px-3 py-3">อีเมล</th>
@@ -339,15 +340,15 @@ export function AdminPage() {
                     <th className="text-right font-medium px-5 py-3"></th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-100">
+                <tbody className="divide-y divide-divider">
                   {(usersList ?? []).map((u) => (
                     <Fragment key={u.id}>
                       <tr
                         onClick={() => setRateUser(rateUser?.id === u.id ? null : u)}
-                        className={`hover:bg-slate-50 cursor-pointer ${u.status === 'disabled' ? 'opacity-40' : ''}`}
+                        className={`hover:bg-hover cursor-pointer ${u.status === 'disabled' ? 'opacity-40' : ''}`}
                       >
                         <td className="px-5 py-3">{u.name}</td>
-                        <td className="px-3 text-slate-400">{u.email}</td>
+                        <td className="px-3 text-muted">{u.email}</td>
                         <td className="px-3">
                           <span className={`text-[11px] px-2 py-0.5 rounded-full ${ROLE_BADGE[u.role]}`}>
                             {u.role}
@@ -364,7 +365,7 @@ export function AdminPage() {
                               e.stopPropagation()
                               void toggleStatus(u)
                             }}
-                            className="text-[11px] text-slate-400 hover:text-slate-600 underline"
+                            className="text-[11px] text-muted hover:text-soft underline"
                           >
                             {u.status === 'active' ? 'ปิดการใช้งาน' : 'เปิดใช้งาน'}
                           </button>
@@ -390,17 +391,17 @@ export function AdminPage() {
               </table>
             </div>
           )}
-          <p className="text-xs text-slate-400 px-5 py-3 border-t border-slate-100">
+          <p className="text-xs text-muted px-5 py-3 border-t border-divider">
             คลิกแถวเพื่อดู/ตั้ง rate (เก็บประวัติ effective-dated) · ปิดการใช้งาน = login ไม่ได้ทันที
           </p>
         </div>
 
         <div className="bg-white rounded-lg shadow-xs p-5 max-w-md">
-          <div className="font-semibold text-slate-900 mb-3">ค่าบริษัท</div>
+          <div className="font-semibold text-ink mb-3">ค่าบริษัท</div>
           {cfg && (
             <div className="space-y-3 text-sm">
               <label className="flex items-center justify-between gap-3">
-                <span className="text-slate-600">วันตัดรอบเงินเดือน (งวด = วันนี้ → วันก่อนหน้าเดือนถัดไป)</span>
+                <span className="text-soft">วันตัดรอบเงินเดือน (งวด = วันนี้ → วันก่อนหน้าเดือนถัดไป)</span>
                 <input
                   type="number"
                   min={1}
@@ -414,7 +415,7 @@ export function AdminPage() {
                 />
               </label>
               <label className="flex items-center justify-between gap-3">
-                <span className="text-slate-600">เพดานชั่วโมงทำงาน/วัน (นาที)</span>
+                <span className="text-soft">เพดานชั่วโมงทำงาน/วัน (นาที)</span>
                 <input
                   type="number"
                   min={60}
@@ -429,7 +430,7 @@ export function AdminPage() {
                 />
               </label>
               <label className="flex items-center justify-between gap-3">
-                <span className="text-slate-600">โดเมน auto-provision member (ว่าง = ปิด)</span>
+                <span className="text-soft">โดเมน auto-provision member (ว่าง = ปิด)</span>
                 <input
                   type="text"
                   placeholder="@example.com"
@@ -441,7 +442,7 @@ export function AdminPage() {
                   className="w-44 text-sm shadow-xs bg-white rounded-lg px-3 py-2"
                 />
               </label>
-              <p className="text-[11px] text-slate-400">
+              <p className="text-[11px] text-muted">
                 ตอนนี้: งวด {cfg.cutoffDay} → {cfg.cutoffDay - 1} · เพดาน{' '}
                 {(cfg.workHourCapMinutes / 60).toFixed(1)} ชม./วัน (ชนเพดาน = timer หยุด + บล็อก)
                 {cfg.memberDomain
@@ -453,6 +454,8 @@ export function AdminPage() {
         </div>
 
         <IcsLinkCard />
+
+        <ProjectStatusSettings />
 
         <GcalSettings />
 

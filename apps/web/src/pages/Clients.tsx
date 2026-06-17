@@ -36,7 +36,7 @@ interface ClientList {
 }
 
 export const expiryCls = (days: number) =>
-  days <= 7 ? 'text-rose-600 font-medium' : days <= 30 ? 'text-amber-600' : 'text-slate-500'
+  days <= 7 ? 'text-danger-600 font-medium' : days <= 30 ? 'text-warning-600' : 'text-dim'
 
 type Tab = 'all' | 'chase' | 'expiring'
 
@@ -55,12 +55,12 @@ function NewClientModal({ onClose, onCreated }: { onClose: () => void; onCreated
   }
   return (
     <div className="fixed inset-0 z-50">
-      <div onClick={onClose} className="absolute inset-0 bg-slate-900/30" />
+      <div onClick={onClose} className="absolute inset-0 bg-ink/30" />
       <div className="absolute inset-x-0 top-24 mx-auto w-full max-w-md px-4">
         <div className="bg-white rounded-lg shadow-2xl p-5">
           <div className="flex items-center justify-between mb-3">
-            <div className="font-semibold text-slate-900">เพิ่มลูกค้า</div>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
+            <div className="font-semibold text-ink">เพิ่มลูกค้า</div>
+            <button onClick={onClose} className="text-muted hover:text-soft"><X className="w-5 h-5" /></button>
           </div>
           <div className="space-y-2">
             <div className="flex gap-2">
@@ -74,7 +74,7 @@ function NewClientModal({ onClose, onCreated }: { onClose: () => void; onCreated
             </div>
           </div>
           <div className="flex justify-end gap-2 mt-4">
-            <button onClick={onClose} className="text-sm px-3 py-2 rounded-lg hover:bg-slate-50">ยกเลิก</button>
+            <button onClick={onClose} className="text-sm px-3 py-2 rounded-lg hover:bg-hover">ยกเลิก</button>
             <button onClick={() => void submit()} disabled={!form.name.trim()} className="text-sm bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 disabled:opacity-40">เพิ่มลูกค้า</button>
           </div>
         </div>
@@ -89,21 +89,21 @@ function SearchModal({ rows, onClose }: { rows: ClientRow[]; onClose: () => void
   const hits = rows.filter((r) => (r.name + ' ' + (r.contactEmail ?? '')).toLowerCase().includes(q.trim().toLowerCase()))
   return (
     <div className="fixed inset-0 z-50">
-      <div onClick={onClose} className="absolute inset-0 bg-slate-900/40" />
+      <div onClick={onClose} className="absolute inset-0 bg-ink/40" />
       <div className="absolute inset-x-0 top-20 mx-auto w-full max-w-xl px-4">
         <div className="bg-white rounded-2xl shadow-2xl overflow-hidden">
-          <div className="flex items-center gap-2.5 px-4 py-3 border-b border-slate-200">
-            <Search className="w-4 h-4 text-slate-400" />
-            <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="ค้นหาลูกค้า (ชื่อ/อีเมล)..." className="flex-1 text-sm bg-transparent focus:outline-hidden placeholder:text-slate-400" />
-            <kbd className="text-[10px] text-slate-400 border border-slate-200 rounded px-1.5 py-0.5">esc</kbd>
+          <div className="flex items-center gap-2.5 px-4 py-3 border-b border-border-subtle">
+            <Search className="w-4 h-4 text-muted" />
+            <input autoFocus value={q} onChange={(e) => setQ(e.target.value)} placeholder="ค้นหาลูกค้า (ชื่อ/อีเมล)..." className="flex-1 text-sm bg-transparent focus:outline-hidden placeholder:text-muted" />
+            <kbd className="text-[10px] text-muted border border-border-subtle rounded px-1.5 py-0.5">esc</kbd>
           </div>
           <div className="max-h-[52vh] overflow-y-auto p-2">
-            {hits.length === 0 && <div className="text-sm text-slate-400 text-center py-8">ไม่พบลูกค้า</div>}
+            {hits.length === 0 && <div className="text-sm text-muted text-center py-8">ไม่พบลูกค้า</div>}
             {hits.map((r) => (
-              <div key={r.id} onClick={() => { onClose(); navigate(`/clients/${r.id}`) }} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-slate-50 cursor-pointer text-sm">
+              <div key={r.id} onClick={() => { onClose(); navigate(`/clients/${r.id}`) }} className="flex items-center gap-3 px-3 py-2.5 rounded-lg hover:bg-hover cursor-pointer text-sm">
                 <span className="text-lg">{r.logo ?? '🏢'}</span>
-                <span className="flex-1 min-w-0 truncate text-slate-800">{r.name}</span>
-                <span className="text-[11px] text-slate-400 truncate max-w-[40%]">{r.contactEmail ?? ''}</span>
+                <span className="flex-1 min-w-0 truncate text-strong">{r.name}</span>
+                <span className="text-[11px] text-muted truncate max-w-[40%]">{r.contactEmail ?? ''}</span>
               </div>
             ))}
           </div>
@@ -147,15 +147,15 @@ export function ClientsPage() {
     <div className="bg-white rounded-lg shadow-xs p-4 flex items-start gap-3">
       <div className={`w-10 h-10 rounded-lg grid place-items-center shrink-0 ${colorCls}`}>{icon}</div>
       <div className="min-w-0">
-        <div className="text-xs text-slate-500">{label}</div>
-        <div className="text-xl font-bold text-slate-900 tabular-nums leading-tight mt-0.5">{big}</div>
-        <div className="text-[11px] text-slate-400 mt-0.5">{sub}</div>
+        <div className="text-xs text-dim">{label}</div>
+        <div className="text-xl font-bold text-ink tabular-nums leading-tight mt-0.5">{big}</div>
+        <div className="text-[11px] text-muted mt-0.5">{sub}</div>
       </div>
     </div>
   )
   const tabBtn = (k: Tab, name: string, n: number) => (
-    <button onClick={() => setTab(k)} className={`shrink-0 whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium ${tab === k ? 'bg-white shadow-xs text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}>
-      {name} <span className={`text-[11px] tabular-nums ${tab === k ? 'text-brand-600' : 'text-slate-400'}`}>{n}</span>
+    <button onClick={() => setTab(k)} className={`shrink-0 whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium ${tab === k ? 'bg-white shadow-xs text-ink' : 'text-dim hover:text-body'}`}>
+      {name} <span className={`text-[11px] tabular-nums ${tab === k ? 'text-brand-600' : 'text-muted'}`}>{n}</span>
     </button>
   )
 
@@ -165,7 +165,7 @@ export function ClientsPage() {
         title="ลูกค้า"
         action={
           <div className="flex items-center gap-2">
-            <button onClick={() => setSearchOpen(true)} title="ค้นหา (⌘K)" className="w-9 h-9 grid place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"><Search className="w-4 h-4" /></button>
+            <button onClick={() => setSearchOpen(true)} title="ค้นหา (⌘K)" className="w-9 h-9 grid place-items-center rounded-lg border border-border-subtle text-dim hover:bg-hover"><Search className="w-4 h-4" /></button>
             <button onClick={() => setNewOpen(true)} className="flex items-center gap-2 bg-brand-600 hover:bg-brand-700 text-white text-sm font-medium px-3.5 py-2 rounded-lg"><Plus className="w-4 h-4" /> เพิ่มลูกค้า</button>
           </div>
         }
@@ -174,13 +174,13 @@ export function ClientsPage() {
         {s && (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-4">
             {card(<TrendingUp className="w-5 h-5" />, 'bg-brand-50 text-brand-600', `ยอดขายปีนี้ (ปี ${new Date().getFullYear() + 543})`, formatSatang(s.salesThisYearSatang), s.salesThisYearSatang > 0 ? `เก็บแล้ว ${formatSatang(s.paidThisYearSatang)}` : 'ยังไม่มีโปรเจกต์เริ่มปีนี้')}
-            {card(<Repeat className="w-5 h-5" />, 'bg-sky-50 text-sky-600', 'รายได้ต่อเนื่อง', <>{formatSatang(s.mrrSatang)}<span className="text-sm font-medium text-slate-400">/ด</span></>, `ARR ${formatSatang(s.arrSatang)}/ปี`)}
-            {card(<AlertCircle className="w-5 h-5" />, 'bg-rose-50 text-rose-600', 'ต้องตามเงิน', formatSatang(s.overdueSatang), `${s.overdueClients} ราย เกินกำหนด`)}
-            {card(<CalendarClock className="w-5 h-5" />, 'bg-amber-50 text-amber-600', 'ใกล้หมดอายุ', `${s.expiringCount} บริการ`, 'ต่ออายุภายใน 30 วัน')}
+            {card(<Repeat className="w-5 h-5" />, 'bg-info-50 text-info-600', 'รายได้ต่อเนื่อง', <>{formatSatang(s.mrrSatang)}<span className="text-sm font-medium text-muted">/ด</span></>, `ARR ${formatSatang(s.arrSatang)}/ปี`)}
+            {card(<AlertCircle className="w-5 h-5" />, 'bg-danger-50 text-danger-600', 'ต้องตามเงิน', formatSatang(s.overdueSatang), `${s.overdueClients} ราย เกินกำหนด`)}
+            {card(<CalendarClock className="w-5 h-5" />, 'bg-warning-50 text-warning-600', 'ใกล้หมดอายุ', `${s.expiringCount} บริการ`, 'ต่ออายุภายใน 30 วัน')}
           </div>
         )}
 
-        <div className="flex flex-nowrap items-center gap-1 bg-slate-100 rounded-xl p-1 mb-4 w-full sm:w-fit overflow-x-auto">
+        <div className="flex flex-nowrap items-center gap-1 bg-divider rounded-xl p-1 mb-4 w-full sm:w-fit overflow-x-auto">
           {tabBtn('all', 'ลูกค้าทั้งหมด', (data?.rows ?? []).length)}
           {tabBtn('chase', 'ต้องตามเงิน', (data?.rows ?? []).filter((r) => r.overdueSatang > 0).length)}
           {tabBtn('expiring', 'ใกล้หมดอายุ', (data?.rows ?? []).filter((r) => r.nextExpiry && r.nextExpiry.daysUntil <= 30).length)}
@@ -189,7 +189,7 @@ export function ClientsPage() {
         <div className="bg-white rounded-lg shadow-xs overflow-hidden">
           <div className="overflow-x-auto">
             <table className="w-full text-sm min-w-[860px]">
-              <thead className="bg-slate-50 text-slate-500 text-xs">
+              <thead className="bg-hover text-dim text-xs">
                 <tr>
                   <th className="text-left font-medium px-4 py-3">ลูกค้า</th>
                   <th className="text-center font-medium px-2 py-3">โปรเจกต์</th>
@@ -202,38 +202,38 @@ export function ClientsPage() {
               </thead>
               <tbody>
                 {rows.length === 0 && (
-                  <tr><td colSpan={7} className="text-center text-slate-400 py-10 text-sm">{tab === 'all' ? 'ยังไม่มีลูกค้า — กด "เพิ่มลูกค้า" หรือสร้างพร้อมโปรเจกต์ใหม่' : 'ไม่มีลูกค้าในมุมมองนี้'}</td></tr>
+                  <tr><td colSpan={7} className="text-center text-muted py-10 text-sm">{tab === 'all' ? 'ยังไม่มีลูกค้า — กด "เพิ่มลูกค้า" หรือสร้างพร้อมโปรเจกต์ใหม่' : 'ไม่มีลูกค้าในมุมมองนี้'}</td></tr>
                 )}
                 {rows.map((r) => (
-                  <tr key={r.id} onClick={() => navigate(`/clients/${r.id}`)} className="border-t border-slate-100 hover:bg-slate-50 cursor-pointer">
+                  <tr key={r.id} onClick={() => navigate(`/clients/${r.id}`)} className="border-t border-divider hover:bg-hover cursor-pointer">
                     <td className="px-4 py-3">
                       <div className="flex items-center gap-2.5">
                         <span className="text-lg leading-none">{r.logo ?? '🏢'}</span>
                         <div className="min-w-0">
-                          <div className="font-medium text-slate-800 flex items-center gap-1.5 min-w-0">
+                          <div className="font-medium text-strong flex items-center gap-1.5 min-w-0">
                             <span className="truncate">{r.name}</span>
-                            {r.hasNotes && <StickyNote className="w-3.5 h-3.5 text-amber-400 shrink-0" />}
+                            {r.hasNotes && <StickyNote className="w-3.5 h-3.5 text-warning-400 shrink-0" />}
                           </div>
-                          <div className="text-[11px] text-slate-400 truncate">{r.contactEmail ?? ''}</div>
+                          <div className="text-[11px] text-muted truncate">{r.contactEmail ?? ''}</div>
                         </div>
                       </div>
                     </td>
-                    <td className="px-2 text-center text-slate-600 tabular-nums">{r.projectCount || '—'}</td>
-                    <td className="px-3 text-right text-slate-700 tabular-nums">{r.quotedSatang ? formatSatang(r.quotedSatang) : '—'}</td>
+                    <td className="px-2 text-center text-soft tabular-nums">{r.projectCount || '—'}</td>
+                    <td className="px-3 text-right text-body tabular-nums">{r.quotedSatang ? formatSatang(r.quotedSatang) : '—'}</td>
                     <td className="px-3 text-right tabular-nums">
-                      {r.paidPct != null ? (<><span className="text-slate-700">{formatSatang(r.paidSatang)}</span> <span className="text-[11px] text-slate-400">{r.paidPct}%</span></>) : '—'}
+                      {r.paidPct != null ? (<><span className="text-body">{formatSatang(r.paidSatang)}</span> <span className="text-[11px] text-muted">{r.paidPct}%</span></>) : '—'}
                     </td>
                     <td className="px-3 text-right tabular-nums">
-                      {r.overdueSatang > 0 ? <span className="text-rose-600 font-medium">{formatSatang(r.overdueSatang)}</span> : <span className="text-slate-300">—</span>}
+                      {r.overdueSatang > 0 ? <span className="text-danger-600 font-medium">{formatSatang(r.overdueSatang)}</span> : <span className="text-border">—</span>}
                     </td>
-                    <td className={`px-3 text-right tabular-nums ${r.mrrSatang > 0 ? 'text-slate-700' : 'text-slate-300'}`}>
-                      {r.mrrSatang > 0 ? (<>{formatSatang(r.mrrSatang)}<span className="text-[11px] text-slate-400">/ด</span></>) : '—'}
+                    <td className={`px-3 text-right tabular-nums ${r.mrrSatang > 0 ? 'text-body' : 'text-border'}`}>
+                      {r.mrrSatang > 0 ? (<>{formatSatang(r.mrrSatang)}<span className="text-[11px] text-muted">/ด</span></>) : '—'}
                     </td>
                     <td className="px-4">
                       {r.nextExpiry ? (
-                        <><span className={expiryCls(r.nextExpiry.daysUntil)}>{fmtThaiDate(r.nextExpiry.nextDueDate)}</span> <span className="text-[11px] text-slate-400">· อีก {r.nextExpiry.daysUntil}ว</span></>
+                        <><span className={expiryCls(r.nextExpiry.daysUntil)}>{fmtThaiDate(r.nextExpiry.nextDueDate)}</span> <span className="text-[11px] text-muted">· อีก {r.nextExpiry.daysUntil}ว</span></>
                       ) : (
-                        <span className="text-slate-300">—</span>
+                        <span className="text-border">—</span>
                       )}
                     </td>
                   </tr>
@@ -242,7 +242,7 @@ export function ClientsPage() {
             </table>
           </div>
         </div>
-        <p className="text-[11px] text-slate-400 mt-3">มุมมองช่วยตามเอง — ระบบไม่ส่งอีเมลหาลูกค้าอัตโนมัติ (SPEC §4.17)</p>
+        <p className="text-[11px] text-muted mt-3">มุมมองช่วยตามเอง — ระบบไม่ส่งอีเมลหาลูกค้าอัตโนมัติ (SPEC §4.17)</p>
       </div>
       {searchOpen && <SearchModal rows={data?.rows ?? []} onClose={() => setSearchOpen(false)} />}
       {newOpen && (

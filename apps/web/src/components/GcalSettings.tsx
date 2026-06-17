@@ -79,39 +79,39 @@ export function GcalSettings() {
 
   return (
     <div className="bg-white rounded-lg shadow-xs overflow-hidden">
-      <div className="p-5 border-b border-slate-200 flex items-center gap-2">
-        <CalendarDays className="w-4 h-4 text-slate-400" />
-        <div className="font-semibold text-slate-900">Google Calendar</div>
-        <span className="text-xs text-slate-400">sync ปฏิทินเข้ามาแสดงในปฏิทินทีม (อ่านอย่างเดียว)</span>
+      <div className="p-5 border-b border-border-subtle flex items-center gap-2">
+        <CalendarDays className="w-4 h-4 text-muted" />
+        <div className="font-semibold text-ink">Google Calendar</div>
+        <span className="text-xs text-muted">sync ปฏิทินเข้ามาแสดงในปฏิทินทีม (อ่านอย่างเดียว)</span>
       </div>
 
       {connected && (
-        <div className="mx-5 mt-4 px-4 py-2.5 rounded-lg bg-emerald-50 text-emerald-700 text-sm flex items-center justify-between">
+        <div className="mx-5 mt-4 px-4 py-2.5 rounded-lg bg-success-50 text-success-700 text-sm flex items-center justify-between">
           เชื่อมปฏิทินสำเร็จ — sync รอบแรกแล้ว
-          <button onClick={clearBanner} className="text-emerald-500 hover:text-emerald-700"><X className="w-4 h-4" /></button>
+          <button onClick={clearBanner} className="text-success-500 hover:text-success-700"><X className="w-4 h-4" /></button>
         </div>
       )}
       {callbackError && (
-        <div className="mx-5 mt-4 px-4 py-2.5 rounded-lg bg-rose-50 text-rose-700 text-sm flex items-center justify-between">
+        <div className="mx-5 mt-4 px-4 py-2.5 rounded-lg bg-danger-50 text-danger-700 text-sm flex items-center justify-between">
           {CALLBACK_ERROR[callbackError] ?? `เชื่อมไม่สำเร็จ (${callbackError})`}
-          <button onClick={clearBanner} className="text-rose-400 hover:text-rose-600"><X className="w-4 h-4" /></button>
+          <button onClick={clearBanner} className="text-danger-400 hover:text-danger-600"><X className="w-4 h-4" /></button>
         </div>
       )}
 
       {loading ? (
-        <div className="p-8 text-center text-sm text-slate-400">กำลังโหลด…</div>
+        <div className="p-8 text-center text-sm text-muted">กำลังโหลด…</div>
       ) : (
         <div className="p-5 space-y-4">
           {(data?.connections ?? []).map((conn) => (
             <div key={conn.id} className="flex flex-wrap items-center gap-x-3 gap-y-1 text-sm">
-              <span className="font-medium text-slate-700">{conn.googleEmail ?? '— บัญชี Google —'}</span>
-              <span className={`text-[11px] px-2 py-0.5 rounded-full ${conn.status === 'connected' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'}`}>
+              <span className="font-medium text-body">{conn.googleEmail ?? '— บัญชี Google —'}</span>
+              <span className={`text-[11px] px-2 py-0.5 rounded-full ${conn.status === 'connected' ? 'bg-success-100 text-success-700' : 'bg-warning-100 text-warning-700'}`}>
                 {conn.status === 'connected' ? 'เชื่อมแล้ว' : 'หลุดการเชื่อมต่อ'}
               </span>
               <span className="ml-auto flex items-center gap-3">
                 {conn.status === 'connected' && (
                   <>
-                    <span className="text-[11px] text-slate-400">
+                    <span className="text-[11px] text-muted">
                       {conn.lastSyncAt ? `sync ${timeLabel(conn.lastSyncAt)}` : 'รอ sync แรก'}
                     </span>
                     <button
@@ -128,21 +128,21 @@ export function GcalSettings() {
                     เชื่อมใหม่
                   </a>
                 )}
-                <button onClick={() => void disconnect(conn)} className="text-[11px] text-slate-400 hover:text-rose-600 underline">
+                <button onClick={() => void disconnect(conn)} className="text-[11px] text-muted hover:text-danger-600 underline">
                   ปลดการเชื่อม
                 </button>
               </span>
-              {conn.lastError && <div className="w-full text-[11px] text-rose-600">sync ติดปัญหา: {conn.lastError}</div>}
+              {conn.lastError && <div className="w-full text-[11px] text-danger-600">sync ติดปัญหา: {conn.lastError}</div>}
             </div>
           ))}
 
           {/* เชื่อมบัญชีใหม่ */}
           {clients.length === 0 ? (
-            <div className="text-sm text-slate-400">
+            <div className="text-sm text-muted">
               ยังไม่มี Google client — เพิ่มที่ส่วน "อีเมลกลาง" ด้านล่างก่อน (ใช้ client ตัวเดียวกัน)
             </div>
           ) : (
-            <div className="flex flex-wrap items-center gap-2 border-t border-slate-100 pt-4">
+            <div className="flex flex-wrap items-center gap-2 border-t border-divider pt-4">
               <select
                 value={selectedClient}
                 onChange={(e) => setClientId(e.target.value)}
@@ -162,7 +162,7 @@ export function GcalSettings() {
             </div>
           )}
 
-          <p className="text-[11px] text-slate-400 border-t border-slate-100 pt-3">
+          <p className="text-[11px] text-muted border-t border-divider pt-3">
             อ่านปฏิทิน primary ของบัญชีที่เชื่อม (scope calendar.readonly) · sync อัตโนมัติทุก 30 นาที ·
             event ขึ้นเป็นประเภท "ประชุม" ในปฏิทินทีม
           </p>

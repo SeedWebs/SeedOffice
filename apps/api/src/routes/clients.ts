@@ -1,7 +1,8 @@
-import { bkkDateOf, clientMoney, mrrSatang, nextExpiry, arrSatang } from '@seedoffice/core'
+import { bkkDateOf, clientMoney, isArchivedStatus, mrrSatang, nextExpiry, arrSatang, resolveStatuses, statusById } from '@seedoffice/core'
 import {
   clientNotes,
   clients,
+  companyConfig,
   createDb,
   payments,
   projects,
@@ -33,9 +34,10 @@ export const clientRoutes = new Hono<AppEnv>()
     const allPayments = await db.select().from(payments)
     const allServices = await db.select().from(recurringServices)
     const allNotes = await db.select({ clientId: clientNotes.clientId }).from(clientNotes)
+    const statuses = resolveStatuses((await db.select({ projectStatuses: companyConfig.projectStatuses }).from(companyConfig).limit(1))[0]?.projectStatuses)
 
     const rows = allClients.map((cl) => {
-      const myProjects = allProjects.filter((p) => p.clientId === cl.id && p.status !== 'archived')
+      const myProjects = allProjects.filter((p) => p.clientId === cl.id && !isArchivedStatus(statuses, p.status))
       const myProjectIds = new Set(myProjects.map((p) => p.id))
       const myPayments = allPayments.filter((p) => myProjectIds.has(p.projectId))
       const myServices = allServices.filter((s) => s.clientId === cl.id)
@@ -130,7 +132,8 @@ export const clientRoutes = new Hono<AppEnv>()
       .where(eq(clientNotes.clientId, client.id))
       .orderBy(desc(clientNotes.createdAt))
 
-    const activeProjects = myProjects.filter((p) => p.status !== 'archived')
+    const statuses = resolveStatuses((await db.select({ projectStatuses: companyConfig.projectStatuses }).from(companyConfig).limit(1))[0]?.projectStatuses)
+    const activeProjects = myProjects.filter((p) => !isArchivedStatus(statuses, p.status))
     return c.json({
       ...client,
       today,
@@ -143,14 +146,20 @@ export const clientRoutes = new Hono<AppEnv>()
       ),
       mrrSatang: mrrSatang(services),
       arrSatang: arrSatang(services),
-      projects: myProjects.map((p) => ({
-        id: p.id,
-        name: p.name,
-        logo: p.logo,
-        status: p.status,
-        type: p.type,
-        quotedSatang: p.quotedSatang,
-      })),
+      projects: myProjects.map((p) => {
+        const s = statusById(statuses, p.status)
+        return {
+          id: p.id,
+          name: p.name,
+          logo: p.logo,
+          status: p.status,
+          statusName: s?.name ?? p.status,
+          statusColor: s?.color ?? 'slate',
+          statusKind: s?.kind ?? 'active',
+          type: p.type,
+          quotedSatang: p.quotedSatang,
+        }
+      }),
       payments: myPayments.map((p) => ({ ...p.payment, projectName: p.projectName })),
       services,
       notes: notes.map((n) => ({ ...n.note, byName: n.byName })),

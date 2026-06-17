@@ -12,6 +12,7 @@ import { ExpensesPage } from './pages/Expenses'
 import { InboxPage } from './pages/Inbox'
 import { Login } from './pages/Login'
 import { ProjectDetailPage } from './pages/ProjectDetail'
+import { ProjectEditPage } from './pages/ProjectEdit'
 import { PayrollPage } from './pages/Payroll'
 import { ProjectsPage } from './pages/Projects'
 
@@ -19,7 +20,7 @@ function Protected({ children, roles }: { children: ReactNode; roles?: Me['role'
   const { user, loading } = useAuth()
   if (loading)
     return (
-      <div className="min-h-dvh grid place-items-center text-sm text-slate-400">กำลังโหลด…</div>
+      <div className="min-h-dvh grid place-items-center text-sm text-muted">กำลังโหลด…</div>
     )
   if (!user) return <Navigate to="/login" replace />
   if (roles && !roles.includes(user.role)) return <Navigate to="/" replace />
@@ -38,6 +39,14 @@ const router = createBrowserRouter([
     children: [
       { index: true, element: <DashboardPage /> },
       { path: 'projects', element: <ProjectsPage /> },
+      {
+        path: 'projects/:id/edit',
+        element: (
+          <Protected roles={['owner', 'member']}>
+            <ProjectEditPage />
+          </Protected>
+        ),
+      },
       { path: 'projects/:id', element: <ProjectDetailPage /> },
       {
         path: 'clients',

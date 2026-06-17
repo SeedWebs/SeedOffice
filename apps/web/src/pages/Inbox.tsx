@@ -108,13 +108,13 @@ const FOLDERS = [
 ] as const
 type FolderKey = (typeof FOLDERS)[number]['k']
 
-const DOTS = ['bg-brand-500', 'bg-sky-500', 'bg-amber-500', 'bg-violet-500', 'bg-rose-500']
+const DOTS = ['bg-brand-500', 'bg-info-500', 'bg-warning-500', 'bg-violet-500', 'bg-danger-500']
 
 const STATUS_PILL: Record<string, { label: string; cls: string }> = {
-  open: { label: 'รอตอบ', cls: 'bg-amber-100 text-amber-700' },
-  snoozed: { label: 'เลื่อนไว้', cls: 'bg-sky-100 text-sky-700' },
-  closed: { label: 'ปิดแล้ว', cls: 'bg-slate-100 text-slate-600' },
-  spam: { label: 'สแปม', cls: 'bg-rose-100 text-rose-600' },
+  open: { label: 'รอตอบ', cls: 'bg-warning-100 text-warning-700' },
+  snoozed: { label: 'เลื่อนไว้', cls: 'bg-info-100 text-info-700' },
+  closed: { label: 'ปิดแล้ว', cls: 'bg-divider text-soft' },
+  spam: { label: 'สแปม', cls: 'bg-danger-100 text-danger-600' },
 }
 
 /** "ชื่อ <a@b>" → ชื่อ (ไม่มีชื่อ = อีเมล) */
@@ -195,11 +195,11 @@ function MailboxSelector({
         onPick(key)
         setOpen(false)
       }}
-      className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-slate-50 ${sel === key ? 'bg-slate-50' : ''}`}
+      className={`w-full flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-hover ${sel === key ? 'bg-hover' : ''}`}
     >
       <span className={`w-2 h-2 rounded-full ${dot}`} />
-      <span className={`flex-1 text-left text-sm ${bold ? 'font-medium ' : ''}text-slate-700`}>{name}</span>
-      <span className={`text-[11px] ${unread ? 'bg-rose-100 text-rose-600' : 'text-slate-300'} px-1.5 rounded-full`}>
+      <span className={`flex-1 text-left text-sm ${bold ? 'font-medium ' : ''}text-body`}>{name}</span>
+      <span className={`text-[11px] ${unread ? 'bg-danger-100 text-danger-600' : 'text-border'} px-1.5 rounded-full`}>
         {unread}
       </span>
     </button>
@@ -208,27 +208,27 @@ function MailboxSelector({
     <div className="relative" onClick={(e) => e.stopPropagation()}>
       <button
         onClick={() => setOpen((v) => !v)}
-        className="flex items-center gap-2 text-sm border border-slate-200 bg-white rounded-lg pl-3 pr-2 py-2 hover:bg-slate-50"
+        className="flex items-center gap-2 text-sm border border-border-subtle bg-white rounded-lg pl-3 pr-2 py-2 hover:bg-hover"
       >
-        <InboxIcon className="w-4 h-4 text-slate-400" />
-        <span className="font-medium text-slate-700">{cur ? cur.name : 'ทั้งหมด'}</span>
-        <span className="text-[11px] bg-rose-100 text-rose-600 px-1.5 rounded-full">
+        <InboxIcon className="w-4 h-4 text-muted" />
+        <span className="font-medium text-body">{cur ? cur.name : 'ทั้งหมด'}</span>
+        <span className="text-[11px] bg-danger-100 text-danger-600 px-1.5 rounded-full">
           {cur ? cur.unread : total}
         </span>
-        <ChevronDown className="w-4 h-4 text-slate-400" />
+        <ChevronDown className="w-4 h-4 text-muted" />
       </button>
       {open && (
-        <div className="absolute right-0 mt-1.5 w-60 bg-white rounded-xl shadow-lg border border-slate-200 p-1.5 z-50">
-          {row('all', 'bg-slate-300', 'ทั้งหมด', total, true)}
-          <div className="my-1 border-t border-slate-100" />
+        <div className="absolute right-0 mt-1.5 w-60 bg-white rounded-xl shadow-lg border border-border-subtle p-1.5 z-50">
+          {row('all', 'bg-border', 'ทั้งหมด', total, true)}
+          <div className="my-1 border-t border-divider" />
           {groups.map((g) => (
             <div key={g}>
-              <div className="px-2.5 pt-2 pb-1 text-[10px] font-medium text-slate-400 uppercase tracking-wide">
+              <div className="px-2.5 pt-2 pb-1 text-[10px] font-medium text-muted uppercase tracking-wide">
                 {g}
               </div>
               {mailboxes
                 .filter((m) => m.companyLabel === g)
-                .map((m) => row(m.id, dotOf(m.id) ?? 'bg-slate-300', m.name, m.unread))}
+                .map((m) => row(m.id, dotOf(m.id) ?? 'bg-border', m.name, m.unread))}
             </div>
           ))}
         </div>
@@ -241,10 +241,10 @@ function MailboxSelector({
 function MessageCard({ m }: { m: Msg }) {
   return (
     <div
-      className={`bg-white border rounded-xl p-4 max-w-3xl ${m.direction === 'out' ? 'border-brand-200 ml-6' : 'border-slate-200'}`}
+      className={`bg-white border rounded-xl p-4 max-w-3xl ${m.direction === 'out' ? 'border-brand-200 ml-6' : 'border-border-subtle'}`}
     >
       <div className="flex items-start justify-between gap-2">
-        <div className="font-semibold text-slate-800">
+        <div className="font-semibold text-strong">
           {displayName(m.fromAddr)}
           {m.direction === 'out' && (
             <span className="ml-2 text-[10px] font-medium bg-brand-50 text-brand-600 px-1.5 py-0.5 rounded">
@@ -252,25 +252,25 @@ function MessageCard({ m }: { m: Msg }) {
             </span>
           )}
         </div>
-        <div className="text-xs text-slate-400 shrink-0">{dtLabel(m.sentAt)}</div>
+        <div className="text-xs text-muted shrink-0">{dtLabel(m.sentAt)}</div>
       </div>
-      <div className="text-xs text-slate-400 mt-1">
+      <div className="text-xs text-muted mt-1">
         <span>ถึง</span> {m.toAddr || '—'}
       </div>
       {m.ccAddr && (
-        <div className="text-xs text-slate-400 mt-0.5">
+        <div className="text-xs text-muted mt-0.5">
           <span>Cc</span> {m.ccAddr}
         </div>
       )}
-      <hr className="my-3 border-slate-100" />
+      <hr className="my-3 border-divider" />
       {m.body ? (
         m.body.contentType.includes('html') ? (
           <EmailFrame html={m.body.content} />
         ) : (
-          <div className="text-sm text-slate-700 whitespace-pre-line leading-relaxed">{m.body.content}</div>
+          <div className="text-sm text-body whitespace-pre-line leading-relaxed">{m.body.content}</div>
         )
       ) : (
-        <div className="text-sm text-slate-400">{m.snippet || '(ไม่มีเนื้อหา)'}</div>
+        <div className="text-sm text-muted">{m.snippet || '(ไม่มีเนื้อหา)'}</div>
       )}
       {m.attachments.length > 0 && (
         <div className="mt-3">
@@ -278,11 +278,11 @@ function MessageCard({ m }: { m: Msg }) {
             <a
               key={a.id}
               href={`/api/inbox/attachments/${a.id}/download`}
-              className="inline-flex items-center gap-2 border border-slate-200 rounded-lg px-3 py-2 text-sm text-brand-700 mt-1 mr-2 hover:bg-slate-50"
+              className="inline-flex items-center gap-2 border border-border-subtle rounded-lg px-3 py-2 text-sm text-brand-700 mt-1 mr-2 hover:bg-hover"
             >
-              <Paperclip className="w-4 h-4 text-slate-400" />
+              <Paperclip className="w-4 h-4 text-muted" />
               {a.filename}
-              <span className="text-[10px] text-slate-400">{(a.sizeBytes / 1024).toFixed(0)} KB</span>
+              <span className="text-[10px] text-muted">{(a.sizeBytes / 1024).toFixed(0)} KB</span>
             </a>
           ))}
         </div>
@@ -351,7 +351,7 @@ function ThreadActions({
     <button
       key={label}
       onClick={onClick}
-      className={`w-full text-left text-sm px-3 py-2 rounded-lg hover:bg-slate-50 ${active ? 'bg-slate-50 font-medium' : 'text-slate-700'}`}
+      className={`w-full text-left text-sm px-3 py-2 rounded-lg hover:bg-hover ${active ? 'bg-hover font-medium' : 'text-body'}`}
     >
       {label}
     </button>
@@ -370,7 +370,7 @@ function ThreadActions({
           <ChevronDown className="w-3.5 h-3.5" />
         </button>
         {menu === 'status' && (
-          <div className="absolute right-0 mt-1.5 w-56 bg-white rounded-xl shadow-lg border border-slate-200 p-1.5 z-50">
+          <div className="absolute right-0 mt-1.5 w-56 bg-white rounded-xl shadow-lg border border-border-subtle p-1.5 z-50">
             {statusItems.map((s) => item(s.label, () => void patch(s.body)))}
           </div>
         )}
@@ -379,7 +379,7 @@ function ThreadActions({
         <button
           title="ติดแท็ก"
           onClick={() => setMenu(menu === 'tags' ? null : 'tags')}
-          className={`h-8 px-2 grid place-items-center rounded-lg hover:bg-slate-100 ${tags.length ? 'text-brand-600' : 'text-slate-500'}`}
+          className={`h-8 px-2 grid place-items-center rounded-lg hover:bg-divider ${tags.length ? 'text-brand-600' : 'text-dim'}`}
         >
           <span className="flex items-center gap-1 text-sm">
             <Tag className="w-4 h-4" />
@@ -387,18 +387,18 @@ function ThreadActions({
           </span>
         </button>
         {menu === 'tags' && (
-          <div className="absolute right-0 mt-1.5 w-60 bg-white rounded-xl shadow-lg border border-slate-200 p-2.5 z-50 space-y-2">
+          <div className="absolute right-0 mt-1.5 w-60 bg-white rounded-xl shadow-lg border border-border-subtle p-2.5 z-50 space-y-2">
             <div className="flex flex-wrap gap-1.5">
-              {tags.length === 0 && <span className="text-xs text-slate-400">ยังไม่มีแท็ก</span>}
+              {tags.length === 0 && <span className="text-xs text-muted">ยังไม่มีแท็ก</span>}
               {tags.map((t) => (
                 <span
                   key={t}
-                  className="inline-flex items-center gap-1 text-[11px] bg-slate-100 text-slate-600 px-2 py-0.5 rounded-full"
+                  className="inline-flex items-center gap-1 text-[11px] bg-divider text-soft px-2 py-0.5 rounded-full"
                 >
                   {t}
                   <button
                     onClick={() => void setTags(tags.filter((x) => x !== t))}
-                    className="text-slate-400 hover:text-rose-600"
+                    className="text-muted hover:text-danger-600"
                   >
                     <X className="w-3 h-3" />
                   </button>
@@ -415,7 +415,7 @@ function ThreadActions({
                 }
               }}
               placeholder="พิมพ์แท็กแล้ว Enter"
-              className="w-full text-sm bg-slate-50 rounded-lg px-2.5 py-1.5 focus:outline-hidden"
+              className="w-full text-sm bg-hover rounded-lg px-2.5 py-1.5 focus:outline-hidden"
             />
           </div>
         )}
@@ -424,7 +424,7 @@ function ThreadActions({
         <button
           title="มอบหมาย"
           onClick={() => setMenu(menu === 'assign' ? null : 'assign')}
-          className={`h-8 px-2 grid place-items-center rounded-lg hover:bg-slate-100 text-sm ${assignee ? 'text-slate-700' : 'text-slate-500'}`}
+          className={`h-8 px-2 grid place-items-center rounded-lg hover:bg-divider text-sm ${assignee ? 'text-body' : 'text-dim'}`}
         >
           {assignee ? (
             <span className="flex items-center gap-1">
@@ -435,7 +435,7 @@ function ThreadActions({
           )}
         </button>
         {menu === 'assign' && (
-          <div className="absolute right-0 mt-1.5 w-48 bg-white rounded-xl shadow-lg border border-slate-200 p-1.5 z-50 max-h-72 overflow-y-auto">
+          <div className="absolute right-0 mt-1.5 w-48 bg-white rounded-xl shadow-lg border border-border-subtle p-1.5 z-50 max-h-72 overflow-y-auto">
             {item('— ไม่มอบหมาย', () => void patch({ assigneeId: null }), !thread.assigneeId)}
             {team.map((u) =>
               item(u.name, () => void patch({ assigneeId: u.id }), u.id === thread.assigneeId),
@@ -567,7 +567,7 @@ function ThreadDetail({
     await reloadCanned()
   }
   if (loading || !data)
-    return <div className="p-10 text-center text-sm text-slate-400">กำลังโหลดอีเมล…</div>
+    return <div className="p-10 text-center text-sm text-muted">กำลังโหลดอีเมล…</div>
   const { thread, messages, notes, client, past } = data
   const mailbox = mailboxes.find((m) => m.id === thread.mailboxId)
   // timeline = อีเมล + โน้ตภายใน เรียงตามเวลา
@@ -578,30 +578,30 @@ function ThreadDetail({
   return (
     <div className="flex">
       <div className="flex-1 min-w-0 flex flex-col">
-        <div className="px-4 py-3 border-b border-slate-200 flex items-center gap-2">
+        <div className="px-4 py-3 border-b border-border-subtle flex items-center gap-2">
           <button
             onClick={onBack}
-            className="w-8 h-8 grid place-items-center rounded-lg hover:bg-slate-100 text-slate-500"
+            className="w-8 h-8 grid place-items-center rounded-lg hover:bg-divider text-dim"
           >
             <ArrowLeft className="w-4 h-4" />
           </button>
-          <div className="font-semibold text-slate-900 truncate flex-1">
+          <div className="font-semibold text-ink truncate flex-1">
             {thread.subject || '(ไม่มีหัวข้อ)'}
-            <span className="ml-2 text-xs font-normal text-slate-400 tabular-nums">#{thread.number}</span>
+            <span className="ml-2 text-xs font-normal text-muted tabular-nums">#{thread.number}</span>
             {(thread.tags ?? []).map((t) => (
-              <span key={t} className="ml-1.5 text-[10px] font-normal bg-slate-100 text-slate-500 px-1.5 py-0.5 rounded-full">
+              <span key={t} className="ml-1.5 text-[10px] font-normal bg-divider text-dim px-1.5 py-0.5 rounded-full">
                 {t}
               </span>
             ))}
           </div>
           {/* collision: ใครกำลังดู/พิมพ์ thread นี้อยู่ (SPEC §4.12) */}
           {typers.length > 0 && (
-            <span className="text-[11px] bg-rose-100 text-rose-600 px-2 py-1 rounded-full whitespace-nowrap animate-pulse">
+            <span className="text-[11px] bg-danger-100 text-danger-600 px-2 py-1 rounded-full whitespace-nowrap animate-pulse">
               ✏️ {typers.map((v) => v.name).join(', ')} กำลังพิมพ์…
             </span>
           )}
           {watchers.length > 0 && (
-            <span className="text-[11px] bg-amber-100 text-amber-700 px-2 py-1 rounded-full whitespace-nowrap">
+            <span className="text-[11px] bg-warning-100 text-warning-700 px-2 py-1 rounded-full whitespace-nowrap">
               👀 {watchers.map((v) => v.name).join(', ')} กำลังดูอยู่
             </span>
           )}
@@ -614,16 +614,16 @@ function ThreadDetail({
           />
         </div>
 
-        <div className="flex-1 p-5 bg-slate-50/40 space-y-4">
+        <div className="flex-1 p-5 bg-hover/40 space-y-4">
           {timeline.map((item) =>
             item.kind === 'note' ? (
-              <div key={item.n.id} className="bg-amber-50 border border-amber-200 rounded-xl p-4 max-w-3xl ml-6">
-                <div className="flex items-center gap-1.5 text-xs text-amber-700">
+              <div key={item.n.id} className="bg-warning-50 border border-warning-200 rounded-xl p-4 max-w-3xl ml-6">
+                <div className="flex items-center gap-1.5 text-xs text-warning-700">
                   <Lock className="w-3.5 h-3.5" />
                   โน้ตภายใน · {item.n.userName}
-                  <span className="ml-auto text-amber-600/70">{dtLabel(item.n.createdAt)}</span>
+                  <span className="ml-auto text-warning-600/70">{dtLabel(item.n.createdAt)}</span>
                 </div>
-                <div className="text-sm text-slate-700 whitespace-pre-line leading-relaxed mt-2">
+                <div className="text-sm text-body whitespace-pre-line leading-relaxed mt-2">
                   {item.n.body}
                 </div>
               </div>
@@ -634,19 +634,19 @@ function ThreadDetail({
         </div>
 
         {/* ช่องตอบกว้าง / โน้ตภายใน — สลับด้วยปุ่มกุญแจ (mockup) */}
-        <div className="p-3 border-t border-slate-200">
+        <div className="p-3 border-t border-border-subtle">
           <div
-            className={`border rounded-xl p-3 ${composerMode === 'note' ? 'border-amber-300 bg-amber-50/60' : 'border-slate-200'}`}
+            className={`border rounded-xl p-3 ${composerMode === 'note' ? 'border-warning-300 bg-warning-50/60' : 'border-border-subtle'}`}
           >
-            <div className="text-[11px] text-slate-400 mb-2">
+            <div className="text-[11px] text-muted mb-2">
               {composerMode === 'note' ? (
-                <span className="text-amber-700">โน้ตภายใน — ทีมเห็นกันเอง ลูกค้าไม่เห็นข้อความนี้</span>
+                <span className="text-warning-700">โน้ตภายใน — ทีมเห็นกันเอง ลูกค้าไม่เห็นข้อความนี้</span>
               ) : (
                 <>
                   ตอบกลับ {thread.contactEmail ?? '—'} · ส่งจาก{' '}
-                  <span className="text-slate-500">{mailbox?.emailAddress ?? mailbox?.name ?? '—'}</span>
+                  <span className="text-dim">{mailbox?.emailAddress ?? mailbox?.name ?? '—'}</span>
                   {mailbox?.status !== 'connected' && (
-                    <span className="ml-2 text-rose-500">— กล่องหลุดการเชื่อมต่อ ส่งไม่ได้ (เชื่อมใหม่ที่ ตั้งค่า)</span>
+                    <span className="ml-2 text-danger-500">— กล่องหลุดการเชื่อมต่อ ส่งไม่ได้ (เชื่อมใหม่ที่ ตั้งค่า)</span>
                   )}
                 </>
               )}
@@ -662,13 +662,13 @@ function ThreadDetail({
                 composerMode === 'note' ? 'จดโน้ตถึงทีม...' : 'เขียนคำตอบ... (เขียนยาวได้เต็มที่)'
               }
             />
-            {sendError && <div className="text-xs text-rose-600 mb-1">{sendError}</div>}
+            {sendError && <div className="text-xs text-danger-600 mb-1">{sendError}</div>}
             <div className="flex items-center justify-between pt-1">
-              <div className="flex items-center gap-1 text-slate-400">
+              <div className="flex items-center gap-1 text-muted">
                 <button
                   title={composerMode === 'note' ? 'กลับไปโหมดตอบลูกค้า' : 'โน้ตภายใน (ลูกค้าไม่เห็น)'}
                   onClick={() => setComposerMode(composerMode === 'note' ? 'reply' : 'note')}
-                  className={`w-7 h-7 grid place-items-center rounded hover:bg-slate-100 ${composerMode === 'note' ? 'bg-amber-100 text-amber-700' : ''}`}
+                  className={`w-7 h-7 grid place-items-center rounded hover:bg-divider ${composerMode === 'note' ? 'bg-warning-100 text-warning-700' : ''}`}
                 >
                   <Lock className="w-4 h-4" />
                 </button>
@@ -679,17 +679,17 @@ function ThreadDetail({
                       e.stopPropagation()
                       setCannedOpen((v) => !v)
                     }}
-                    className="w-7 h-7 grid place-items-center rounded hover:bg-slate-100"
+                    className="w-7 h-7 grid place-items-center rounded hover:bg-divider"
                   >
                     <Zap className="w-4 h-4" />
                   </button>
                   {cannedOpen && (
                     <div
-                      className="absolute bottom-9 left-0 w-72 bg-white rounded-xl shadow-lg border border-slate-200 p-1.5 z-50 max-h-64 overflow-y-auto"
+                      className="absolute bottom-9 left-0 w-72 bg-white rounded-xl shadow-lg border border-border-subtle p-1.5 z-50 max-h-64 overflow-y-auto"
                       onClick={(e) => e.stopPropagation()}
                     >
                       {(canned?.items ?? []).length === 0 && (
-                        <div className="text-xs text-slate-400 px-2.5 py-2">
+                        <div className="text-xs text-muted px-2.5 py-2">
                           ยังไม่มีข้อความสำเร็จรูป — พิมพ์ร่างแล้วกด "บันทึกร่างนี้" ด้านล่าง
                         </div>
                       )}
@@ -700,13 +700,13 @@ function ThreadDetail({
                               setDraft((d) => (d.trim() ? `${d}\n\n${cn.body}` : cn.body))
                               setCannedOpen(false)
                             }}
-                            className="flex-1 text-left text-sm px-2.5 py-2 rounded-lg hover:bg-slate-50 text-slate-700 truncate"
+                            className="flex-1 text-left text-sm px-2.5 py-2 rounded-lg hover:bg-hover text-body truncate"
                           >
                             {cn.title}
                           </button>
                           <button
                             onClick={() => void removeCanned(cn.id, cn.title)}
-                            className="opacity-0 group-hover:opacity-100 text-slate-300 hover:text-rose-600 px-1.5"
+                            className="opacity-0 group-hover:opacity-100 text-border hover:text-danger-600 px-1.5"
                           >
                             <X className="w-3.5 h-3.5" />
                           </button>
@@ -718,7 +718,7 @@ function ThreadDetail({
                             setCannedOpen(false)
                             void saveDraftAsCanned()
                           }}
-                          className="w-full text-left text-xs px-2.5 py-2 mt-1 border-t border-slate-100 text-brand-600 hover:bg-slate-50 rounded-b-lg"
+                          className="w-full text-left text-xs px-2.5 py-2 mt-1 border-t border-divider text-brand-600 hover:bg-hover rounded-b-lg"
                         >
                           + บันทึกร่างนี้เป็นข้อความสำเร็จรูป
                         </button>
@@ -732,7 +732,7 @@ function ThreadDetail({
                 disabled={
                   !draft.trim() || sending || (composerMode === 'reply' && mailbox?.status !== 'connected')
                 }
-                className={`${composerMode === 'note' ? 'bg-amber-600 hover:bg-amber-700' : 'bg-brand-600 hover:bg-brand-700'} disabled:opacity-40 text-white text-sm px-4 py-1.5 rounded-lg flex items-center gap-1`}
+                className={`${composerMode === 'note' ? 'bg-warning-600 hover:bg-warning-700' : 'bg-brand-600 hover:bg-brand-700'} disabled:opacity-40 text-white text-sm px-4 py-1.5 rounded-lg flex items-center gap-1`}
               >
                 {composerMode === 'note' ? (
                   <>
@@ -750,13 +750,13 @@ function ThreadDetail({
       </div>
 
       {/* พาเนลขวา: การ์ดลูกค้า + อีเมลที่ผ่านมา */}
-      <div className="hidden md:block w-72 border-l border-slate-200 p-4 shrink-0 bg-white">
+      <div className="hidden md:block w-72 border-l border-border-subtle p-4 shrink-0 bg-white">
         <div className="flex items-center gap-3">
-          <div className="w-11 h-11 rounded-full bg-linear-to-br from-sky-200 to-violet-300 grid place-items-center text-lg shrink-0">
+          <div className="w-11 h-11 rounded-full bg-linear-to-br from-info-200 to-violet-300 grid place-items-center text-lg shrink-0">
             {client?.logo ?? ''}
           </div>
           <div className="min-w-0">
-            <div className="font-semibold text-slate-800 truncate">
+            <div className="font-semibold text-strong truncate">
               {client?.name ?? displayName(messages.find((m) => m.direction === 'in')?.fromAddr ?? thread.contactEmail)}
             </div>
             {client && (
@@ -770,22 +770,22 @@ function ThreadDetail({
           <span className="text-sm text-brand-600 break-all">{thread.contactEmail ?? '—'}</span>
         </div>
         <div className="mt-5">
-          <div className="text-[10px] font-semibold text-slate-400 uppercase tracking-wide mb-1">
+          <div className="text-[10px] font-semibold text-muted uppercase tracking-wide mb-1">
             อีเมลที่ผ่านมา
           </div>
-          {past.items.length === 0 && <div className="text-xs text-slate-400 px-2 py-2">— ไม่มี</div>}
+          {past.items.length === 0 && <div className="text-xs text-muted px-2 py-2">— ไม่มี</div>}
           {past.items.map((p) => (
             <button
               key={p.id}
               onClick={() => onOpenThread(p.id)}
-              className="w-full flex items-start gap-2 px-2 py-2 rounded-lg hover:bg-slate-50 text-left text-xs text-slate-600"
+              className="w-full flex items-start gap-2 px-2 py-2 rounded-lg hover:bg-hover text-left text-xs text-soft"
             >
-              <Mail className="w-3.5 h-3.5 text-slate-400 mt-0.5 shrink-0" />
+              <Mail className="w-3.5 h-3.5 text-muted mt-0.5 shrink-0" />
               <span className="line-clamp-2">{p.subject || '(ไม่มีหัวข้อ)'}</span>
             </button>
           ))}
           {past.total > past.items.length && (
-            <div className="px-2 py-2 text-xs text-slate-400">ทั้งหมด {past.total} เรื่อง</div>
+            <div className="px-2 py-2 text-xs text-muted">ทั้งหมด {past.total} เรื่อง</div>
           )}
         </div>
       </div>
@@ -819,14 +819,14 @@ function ComposeModal({
     }
   }
   return (
-    <div className="fixed inset-0 bg-slate-900/30 z-50 grid place-items-center p-4" onClick={onClose}>
+    <div className="fixed inset-0 bg-ink/30 z-50 grid place-items-center p-4" onClick={onClose}>
       <div
         className="w-[36rem] max-w-full bg-white rounded-xl shadow-lg p-5 space-y-3"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="font-semibold text-slate-900">เขียนอีเมลใหม่</div>
+        <div className="font-semibold text-ink">เขียนอีเมลใหม่</div>
         {connected.length === 0 ? (
-          <div className="text-sm text-slate-400 py-4">ยังไม่มีกล่องที่เชื่อมอยู่ — เชื่อมที่ ตั้งค่า → อีเมลกลาง</div>
+          <div className="text-sm text-muted py-4">ยังไม่มีกล่องที่เชื่อมอยู่ — เชื่อมที่ ตั้งค่า → อีเมลกลาง</div>
         ) : (
           <>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
@@ -860,9 +860,9 @@ function ComposeModal({
               onChange={(e) => setForm({ ...form, body: e.target.value })}
               className="w-full h-44 resize-none text-sm bg-white shadow-xs rounded-lg px-3 py-2 focus:outline-hidden"
             />
-            {error && <div className="text-xs text-rose-600">{error}</div>}
+            {error && <div className="text-xs text-danger-600">{error}</div>}
             <div className="flex items-center justify-end gap-2">
-              <button onClick={onClose} className="text-sm px-3.5 py-2 rounded-lg text-slate-600 hover:bg-slate-50">
+              <button onClick={onClose} className="text-sm px-3.5 py-2 rounded-lg text-soft hover:bg-hover">
                 ยกเลิก
               </button>
               <button
@@ -925,14 +925,14 @@ export function InboxPage() {
                 setSearchOpen(true)
                       }}
               title="ค้นหา (⌘K)"
-              className="w-9 h-9 grid place-items-center rounded-lg border border-slate-200 text-slate-500 hover:bg-slate-50"
+              className="w-9 h-9 grid place-items-center rounded-lg border border-border-subtle text-dim hover:bg-hover"
             >
               <Search className="w-4 h-4" />
             </button>
             <button
               onClick={() => setComposeOpen(true)}
               title="เขียนอีเมลใหม่"
-              className="w-9 h-9 grid place-items-center rounded-lg border border-slate-200 bg-white text-slate-500 hover:bg-slate-50"
+              className="w-9 h-9 grid place-items-center rounded-lg border border-border-subtle bg-white text-dim hover:bg-hover"
             >
               <PenLine className="w-4 h-4" />
             </button>
@@ -949,7 +949,7 @@ export function InboxPage() {
       />
       <div className="p-3 sm:p-6">
         {/* folder bar (segmented ใต้ h1 — SPEC §4.12) */}
-        <div className="flex flex-nowrap items-center gap-1 bg-slate-100 rounded-xl p-1 mb-4 w-full sm:w-fit overflow-x-auto">
+        <div className="flex flex-nowrap items-center gap-1 bg-divider rounded-xl p-1 mb-4 w-full sm:w-fit overflow-x-auto">
           {FOLDERS.map((f) => {
             const n = counts?.[f.k] ?? 0
             const act = folder === f.k
@@ -960,11 +960,11 @@ export function InboxPage() {
                   setFolder(f.k)
                   setOpenId(null)
                 }}
-                className={`shrink-0 whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium ${act ? 'bg-white shadow-xs text-slate-900' : 'text-slate-500 hover:text-slate-700'}`}
+                className={`shrink-0 whitespace-nowrap flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium ${act ? 'bg-white shadow-xs text-ink' : 'text-dim hover:text-body'}`}
               >
                 {f.name}
                 {n > 0 && (
-                  <span className={`text-[11px] ${act ? 'text-brand-600' : 'text-slate-400'} tabular-nums`}>
+                  <span className={`text-[11px] ${act ? 'text-brand-600' : 'text-muted'} tabular-nums`}>
                     {n}
                   </span>
                 )}
@@ -974,9 +974,9 @@ export function InboxPage() {
         </div>
 
         {q && (
-          <div className="mb-3 flex items-center gap-2 text-sm text-slate-500">
-            ผลค้นหา: <span className="font-medium text-slate-700">"{q}"</span>
-            <button onClick={() => setQ('')} className="text-slate-400 hover:text-slate-600">
+          <div className="mb-3 flex items-center gap-2 text-sm text-dim">
+            ผลค้นหา: <span className="font-medium text-body">"{q}"</span>
+            <button onClick={() => setQ('')} className="text-muted hover:text-soft">
               <X className="w-4 h-4" />
             </button>
           </div>
@@ -992,17 +992,17 @@ export function InboxPage() {
               onChanged={() => void reload()}
             />
           ) : loading ? (
-            <div className="p-10 text-center text-sm text-slate-400">กำลังโหลด…</div>
+            <div className="p-10 text-center text-sm text-muted">กำลังโหลด…</div>
           ) : (data?.threads.length ?? 0) === 0 ? (
-            <div className="p-12 text-center text-sm text-slate-400">
-              <Mail className="w-7 h-7 mx-auto mb-2 text-slate-300" />
+            <div className="p-12 text-center text-sm text-muted">
+              <Mail className="w-7 h-7 mx-auto mb-2 text-border" />
               {mailboxes.length === 0
                 ? 'ยังไม่ได้เชื่อมกล่องเมล — เริ่มที่ ตั้งค่า → อีเมลกลาง'
                 : 'ไม่มีอีเมลในกล่องนี้'}
             </div>
           ) : (
             <>
-              <div className="hidden sm:grid sm:grid-cols-[22px_minmax(0,1.3fr)_minmax(0,3fr)_72px_72px] items-center gap-3 px-4 py-2.5 border-b border-slate-200 text-xs text-slate-400">
+              <div className="hidden sm:grid sm:grid-cols-[22px_minmax(0,1.3fr)_minmax(0,3fr)_72px_72px] items-center gap-3 px-4 py-2.5 border-b border-border-subtle text-xs text-muted">
                 <span />
                 <span>ลูกค้า</span>
                 <span>เรื่อง</span>
@@ -1014,16 +1014,16 @@ export function InboxPage() {
                   <div
                     key={t.id}
                     onClick={() => setOpenId(t.id)}
-                    className={`grid grid-cols-[22px_minmax(0,1fr)_56px] sm:grid-cols-[22px_minmax(0,1.3fr)_minmax(0,3fr)_72px_72px] items-center gap-3 px-4 py-3 border-b border-slate-100 hover:bg-slate-50 cursor-pointer ${t.unread ? 'bg-brand-50/30' : ''}`}
+                    className={`grid grid-cols-[22px_minmax(0,1fr)_56px] sm:grid-cols-[22px_minmax(0,1.3fr)_minmax(0,3fr)_72px_72px] items-center gap-3 px-4 py-3 border-b border-divider hover:bg-hover cursor-pointer ${t.unread ? 'bg-brand-50/30' : ''}`}
                   >
                     <input
                       type="checkbox"
                       onClick={(e) => e.stopPropagation()}
-                      className="rounded-xs border-slate-300 w-4 h-4 sm:order-1"
+                      className="rounded-xs border-border w-4 h-4 sm:order-1"
                     />
                     <div className="min-w-0 sm:contents">
                       <div
-                        className={`text-[11px] font-medium text-slate-500 truncate sm:order-2 sm:text-sm ${t.unread ? 'sm:font-bold' : 'sm:font-semibold'} sm:text-slate-800`}
+                        className={`text-[11px] font-medium text-dim truncate sm:order-2 sm:text-sm ${t.unread ? 'sm:font-bold' : 'sm:font-semibold'} sm:text-strong`}
                       >
                         {displayName(t.latestFrom) !== '—'
                           ? displayName(t.latestFrom)
@@ -1031,14 +1031,14 @@ export function InboxPage() {
                       </div>
                       <div className="min-w-0 sm:order-3">
                         <div
-                          className={`text-sm text-slate-800 truncate flex items-center gap-1.5 ${t.unread ? 'font-bold' : 'font-semibold'}`}
+                          className={`text-sm text-strong truncate flex items-center gap-1.5 ${t.unread ? 'font-bold' : 'font-semibold'}`}
                         >
                           {t.subject || '(ไม่มีหัวข้อ)'}
                           {t.hasAttachment ? (
-                            <Paperclip className="w-3.5 h-3.5 text-slate-400 shrink-0" />
+                            <Paperclip className="w-3.5 h-3.5 text-muted shrink-0" />
                           ) : null}
                         </div>
-                        <div className="text-xs text-slate-500 truncate">
+                        <div className="text-xs text-dim truncate">
                           {mb === 'all' && (
                             <span
                               className={`inline-block w-1.5 h-1.5 rounded-full ${dotOf(t.mailboxId)} mr-1.5 align-middle`}
@@ -1048,10 +1048,10 @@ export function InboxPage() {
                         </div>
                       </div>
                     </div>
-                    <div className="hidden sm:block sm:order-4 text-sm text-slate-400 tabular-nums">
+                    <div className="hidden sm:block sm:order-4 text-sm text-muted tabular-nums">
                       {t.number}
                     </div>
-                    <div className="text-[11px] sm:text-sm text-slate-400 text-right sm:text-left whitespace-nowrap sm:order-5">
+                    <div className="text-[11px] sm:text-sm text-muted text-right sm:text-left whitespace-nowrap sm:order-5">
                       {waitLabel(t.lastMessageAt)}
                     </div>
                   </div>
@@ -1172,15 +1172,15 @@ function SearchModal({
 
   return (
     <div
-      className="fixed inset-0 bg-slate-900/30 z-50 grid place-items-start justify-center pt-24 px-4"
+      className="fixed inset-0 bg-ink/30 z-50 grid place-items-start justify-center pt-24 px-4"
       onClick={onClose}
     >
       <div
         className="w-[36rem] max-w-full bg-white rounded-xl shadow-lg overflow-hidden"
         onClick={(e) => e.stopPropagation()}
       >
-        <div className="flex items-center gap-2 px-4 border-b border-slate-100">
-          <Search className="w-4 h-4 text-slate-400" />
+        <div className="flex items-center gap-2 px-4 border-b border-divider">
+          <Search className="w-4 h-4 text-muted" />
           <input
             ref={inputRef}
             value={term}
@@ -1191,41 +1191,41 @@ function SearchModal({
               if (e.code === 'Enter' && term.trim()) onApplyFilter(term.trim())
             }}
           />
-          <span className="text-[10px] text-slate-300 border border-slate-200 rounded px-1">
+          <span className="text-[10px] text-border border border-border-subtle rounded px-1">
             Enter = กรองรายการ
           </span>
         </div>
 
         <div className="max-h-[26rem] overflow-y-auto p-2">
           {!term.trim() && (
-            <div className="px-3 py-6 text-center text-sm text-slate-400">
+            <div className="px-3 py-6 text-center text-sm text-muted">
               พิมพ์เพื่อค้น — ในระบบ + ย้อนหลังทั้งกล่องผ่าน Gmail
             </div>
           )}
 
           {res && res.local.length > 0 && (
             <>
-              <div className="px-3 pt-2 pb-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wide">
+              <div className="px-3 pt-2 pb-1 text-[10px] font-semibold text-muted uppercase tracking-wide">
                 ในระบบ
               </div>
               {res.local.map((l) => (
                 <button
                   key={l.id}
                   onClick={() => onOpen(l.id)}
-                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-50 text-left"
+                  className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-hover text-left"
                 >
                   <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotOf(l.mailboxId)}`} />
-                  <span className="text-sm text-slate-800 truncate">{l.subject || '(ไม่มีหัวข้อ)'}</span>
-                  <span className="ml-auto text-xs text-slate-400 shrink-0">{l.contactEmail ?? ''}</span>
+                  <span className="text-sm text-strong truncate">{l.subject || '(ไม่มีหัวข้อ)'}</span>
+                  <span className="ml-auto text-xs text-muted shrink-0">{l.contactEmail ?? ''}</span>
                 </button>
               ))}
             </>
           )}
 
           {term.trim() && (
-            <div className="px-3 pt-3 pb-1 text-[10px] font-semibold text-slate-400 uppercase tracking-wide flex items-center gap-2">
+            <div className="px-3 pt-3 pb-1 text-[10px] font-semibold text-muted uppercase tracking-wide flex items-center gap-2">
               จาก Gmail ทั้งกล่อง
-              {searching && <RefreshCw className="w-3 h-3 animate-spin text-slate-300" />}
+              {searching && <RefreshCw className="w-3 h-3 animate-spin text-border" />}
             </div>
           )}
           {res?.remote.map((r) => (
@@ -1233,12 +1233,12 @@ function SearchModal({
               key={`${r.mailboxId}:${r.gmailThreadId}`}
               onClick={() => void openRemote(r)}
               disabled={importing === r.gmailThreadId}
-              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-slate-50 text-left disabled:opacity-50"
+              className="w-full flex items-center gap-2 px-3 py-2 rounded-lg hover:bg-hover text-left disabled:opacity-50"
             >
               <span className={`w-1.5 h-1.5 rounded-full shrink-0 ${dotOf(r.mailboxId)}`} />
               <span className="min-w-0">
-                <span className="block text-sm text-slate-800 truncate">{r.subject || '(ไม่มีหัวข้อ)'}</span>
-                <span className="block text-xs text-slate-400 truncate">
+                <span className="block text-sm text-strong truncate">{r.subject || '(ไม่มีหัวข้อ)'}</span>
+                <span className="block text-xs text-muted truncate">
                   {displayName(r.fromAddr)} · {r.sentAt ? waitLabelDate(new Date(r.sentAt).toISOString()) : ''}
                 </span>
               </span>
@@ -1246,7 +1246,7 @@ function SearchModal({
                 {importing === r.gmailThreadId ? (
                   <span className="text-brand-600">กำลังดึงเข้าระบบ…</span>
                 ) : r.localThreadId ? (
-                  <span className="text-slate-400">อยู่ในระบบแล้ว</span>
+                  <span className="text-muted">อยู่ในระบบแล้ว</span>
                 ) : (
                   <span className="text-brand-600">ดึงเข้าระบบ →</span>
                 )}
@@ -1254,10 +1254,10 @@ function SearchModal({
             </button>
           ))}
           {res && term.trim() && !searching && res.remote.length === 0 && (
-            <div className="px-3 py-2 text-xs text-slate-400">— Gmail ไม่พบ —</div>
+            <div className="px-3 py-2 text-xs text-muted">— Gmail ไม่พบ —</div>
           )}
           {res && res.partial.length > 0 && (
-            <div className="px-3 py-2 text-[11px] text-amber-600">
+            <div className="px-3 py-2 text-[11px] text-warning-600">
               ⚠️ ค้นไม่ครบ: กล่อง {res.partial.join(', ')} หลุดการเชื่อมต่อ
             </div>
           )}

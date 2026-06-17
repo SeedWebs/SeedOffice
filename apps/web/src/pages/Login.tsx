@@ -31,20 +31,20 @@ export function Login() {
         <div className="w-12 h-12 rounded-xl bg-brand-600 grid place-items-center text-white mx-auto">
           <Sprout className="w-7 h-7" />
         </div>
-        <h1 className="text-xl font-bold text-slate-900 mt-4 text-center">SeedOffice</h1>
-        <p className="text-sm text-slate-500 mt-1 text-center">
+        <h1 className="text-xl font-bold text-ink mt-4 text-center">SeedOffice</h1>
+        <p className="text-sm text-dim mt-1 text-center">
           ระบบภายในทีม SeedWebs — งาน · เวลา · ค่าตอบแทน
         </p>
 
         {notAllowed && (
-          <div className="mt-4 text-sm bg-rose-50 text-rose-600 rounded-lg px-3 py-2">
+          <div className="mt-4 text-sm bg-danger-50 text-danger-600 rounded-lg px-3 py-2">
             อีเมลนี้ยังไม่ได้รับสิทธิ์เข้าใช้งาน — ติดต่อ owner เพื่อเพิ่มเข้าระบบ
           </div>
         )}
 
         <a
           href="/api/auth/google"
-          className="mt-6 w-full flex items-center justify-center gap-2 bg-slate-900 hover:bg-slate-800 text-white text-sm font-medium py-2.5 rounded-lg"
+          className="mt-6 w-full flex items-center justify-center gap-2 bg-ink hover:bg-strong text-white text-sm font-medium py-2.5 rounded-lg"
         >
           <svg viewBox="0 0 24 24" className="w-4 h-4" aria-hidden>
             <path
@@ -54,13 +54,13 @@ export function Login() {
           </svg>
           เข้าสู่ระบบด้วย Google
         </a>
-        <p className="text-[11px] text-slate-400 mt-3 text-center">
+        <p className="text-[11px] text-muted mt-3 text-center">
           สำหรับทีมงานและ vendor ที่ได้รับเชิญ
         </p>
 
         {dev?.enabled && (
-          <div className="mt-6 border-t border-slate-100 pt-4">
-            <div className="text-[11px] font-medium text-amber-600 mb-2">
+          <div className="mt-6 border-t border-divider pt-4">
+            <div className="text-[11px] font-medium text-warning-600 mb-2">
               DEV MODE — login โดยไม่ใช้ Google
             </div>
             <div className="flex gap-2">
@@ -68,7 +68,7 @@ export function Login() {
                 aria-label="เลือกผู้ใช้ dev"
                 value={devEmail}
                 onChange={(e) => setDevEmail(e.target.value)}
-                className="flex-1 text-sm border border-slate-200 rounded-lg px-2 py-2 min-w-0"
+                className="flex-1 text-sm border border-border-subtle rounded-lg px-2 py-2 min-w-0"
               >
                 <option value="">— เลือกผู้ใช้ —</option>
                 {dev.users.map((u) => (

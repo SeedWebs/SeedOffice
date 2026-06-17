@@ -34,10 +34,10 @@ const CATEGORY_LABEL: Record<string, string> = {
   other: 'อื่นๆ',
 }
 const STATUS_CHIP: Record<ExpenseRow['status'], { label: string; cls: string }> = {
-  pending: { label: 'รออนุมัติ', cls: 'bg-amber-100 text-amber-700' },
+  pending: { label: 'รออนุมัติ', cls: 'bg-warning-100 text-warning-700' },
   approved: { label: 'อนุมัติ', cls: 'bg-brand-50 text-brand-700' },
-  rejected: { label: 'ปฏิเสธ', cls: 'bg-rose-100 text-rose-600' },
-  reimbursed: { label: 'คืนแล้ว', cls: 'bg-slate-100 text-slate-500' },
+  rejected: { label: 'ปฏิเสธ', cls: 'bg-danger-100 text-danger-600' },
+  reimbursed: { label: 'คืนแล้ว', cls: 'bg-divider text-dim' },
 }
 
 const bkkToday = () => new Date(Date.now() + 7 * 3_600_000).toISOString().slice(0, 10)
@@ -45,7 +45,7 @@ const thisMonth = () => bkkToday().slice(0, 7)
 const monthLabel = (m: string) => fmtThaiDate(`${m}-01`, true).replace(/^1 /, '')
 
 function ExpenseForm({ onDone }: { onDone: () => void }) {
-  const { data: projectsRes } = useLoad<{ id: string; name: string; status: string }[]>(() => api.get('/api/projects'))
+  const { data: projectsRes } = useLoad<{ id: string; name: string; status: string; statusKind: string }[]>(() => api.get('/api/projects'))
   const [form, setForm] = useState({ description: '', amountBaht: '', category: 'hosting', date: bkkToday(), paidBy: 'self' as 'self' | 'company', projectId: '' })
   const [receipt, setReceipt] = useState<File | null>(null)
   const [error, setError] = useState('')
@@ -77,10 +77,10 @@ function ExpenseForm({ onDone }: { onDone: () => void }) {
   }
 
   const input = 'w-full text-sm bg-white shadow-xs rounded-lg px-3 py-2'
-  const activeProjects = (projectsRes ?? []).filter((p) => p.status !== 'archived')
+  const activeProjects = (projectsRes ?? []).filter((p) => p.statusKind !== 'archived')
   return (
     <div className="bg-white rounded-lg shadow-xs p-5">
-      <div className="font-semibold text-slate-900 mb-3">ลงค่าใช้จ่าย</div>
+      <div className="font-semibold text-ink mb-3">ลงค่าใช้จ่าย</div>
       <div className="space-y-2">
         <input placeholder="รายละเอียด เช่น ค่า domain" value={form.description} onChange={(e) => setForm({ ...form, description: e.target.value })} className={input} />
         <div className="grid grid-cols-2 gap-2">
@@ -100,12 +100,12 @@ function ExpenseForm({ onDone }: { onDone: () => void }) {
           <option value="">— ไม่ผูกโปรเจกต์ —</option>
           {activeProjects.map((p) => <option key={p.id} value={p.id}>{p.name}</option>)}
         </select>
-        <button onClick={() => fileRef.current?.click()} className="w-full text-sm border-2 border-dashed border-slate-200 rounded-lg py-3 text-slate-400 hover:border-brand-300 hover:text-brand-600 flex items-center justify-center gap-1">
+        <button onClick={() => fileRef.current?.click()} className="w-full text-sm border-2 border-dashed border-border-subtle rounded-lg py-3 text-muted hover:border-brand-300 hover:text-brand-600 flex items-center justify-center gap-1">
           <Camera className="w-4 h-4" /> {receipt ? receipt.name : 'แนบรูปใบเสร็จ'}
           {receipt && <X className="w-3.5 h-3.5 ml-1" onClick={(e) => { e.stopPropagation(); setReceipt(null) }} />}
         </button>
         <input ref={fileRef} type="file" accept="image/*,application/pdf" className="hidden" onChange={(e) => { setReceipt(e.target.files?.[0] ?? null); e.target.value = '' }} />
-        {error && <div className="text-xs text-rose-600">{error}</div>}
+        {error && <div className="text-xs text-danger-600">{error}</div>}
         <button onClick={() => void submit()} disabled={busy || !form.description.trim() || !form.amountBaht} className="w-full bg-brand-600 hover:bg-brand-700 disabled:opacity-40 text-white text-sm font-medium py-2 rounded-lg">
           ส่งขออนุมัติ
         </button>
@@ -140,7 +140,7 @@ export function ExpensesPage() {
       <PageHeader
         title="เงินสดย่อย"
         action={isOwner ? (
-          <button onClick={() => window.open(`/api/expenses/export?month=${month}`, '_blank')} className="flex items-center gap-2 text-sm shadow-xs bg-white rounded-lg px-3 py-2 hover:bg-slate-50">
+          <button onClick={() => window.open(`/api/expenses/export?month=${month}`, '_blank')} className="flex items-center gap-2 text-sm shadow-xs bg-white rounded-lg px-3 py-2 hover:bg-hover">
             <Download className="w-4 h-4" /> Export CSV
           </button>
         ) : undefined}
@@ -150,19 +150,19 @@ export function ExpensesPage() {
           <ExpenseForm onDone={() => void reload()} />
           <div className="lg:col-span-2 bg-white rounded-lg shadow-xs p-5">
             <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
-              <div className="font-semibold text-slate-900 flex items-center gap-1">
+              <div className="font-semibold text-ink flex items-center gap-1">
                 เงินสดย่อย
-                <button onClick={() => shiftMonth(-1)} className="px-1.5 py-0.5 rounded hover:bg-slate-100 text-slate-400">‹</button>
-                <span className="text-sm font-normal text-slate-500">{monthLabel(month)}</span>
-                <button onClick={() => shiftMonth(1)} className="px-1.5 py-0.5 rounded hover:bg-slate-100 text-slate-400">›</button>
+                <button onClick={() => shiftMonth(-1)} className="px-1.5 py-0.5 rounded hover:bg-divider text-muted">‹</button>
+                <span className="text-sm font-normal text-dim">{monthLabel(month)}</span>
+                <button onClick={() => shiftMonth(1)} className="px-1.5 py-0.5 rounded hover:bg-divider text-muted">›</button>
               </div>
-              <span className="text-sm text-slate-500">
-                ค้างคืน{isOwner ? ' (ทั้งทีม)' : ''} <b className="text-slate-800 tabular-nums">{formatSatang(data?.owedSatang ?? 0)}</b>
+              <span className="text-sm text-dim">
+                ค้างคืน{isOwner ? ' (ทั้งทีม)' : ''} <b className="text-strong tabular-nums">{formatSatang(data?.owedSatang ?? 0)}</b>
               </span>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full text-sm min-w-[520px]">
-                <thead className="text-slate-400 text-xs border-b border-slate-200">
+                <thead className="text-muted text-xs border-b border-border-subtle">
                   <tr>
                     <th className="text-left font-medium py-2">รายการ</th>
                     {isOwner && <th className="text-left font-medium py-2">คน</th>}
@@ -171,27 +171,27 @@ export function ExpensesPage() {
                     {isOwner && <th className="text-right font-medium py-2 w-36"></th>}
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-slate-50">
+                <tbody className="divide-y divide-hover">
                   {(data?.rows ?? []).length === 0 && (
-                    <tr><td colSpan={5} className="text-center text-sm text-slate-300 py-8">ยังไม่มีรายการเดือนนี้ — ลงค่าใช้จ่ายจากฟอร์มซ้ายมือ</td></tr>
+                    <tr><td colSpan={5} className="text-center text-sm text-border py-8">ยังไม่มีรายการเดือนนี้ — ลงค่าใช้จ่ายจากฟอร์มซ้ายมือ</td></tr>
                   )}
                   {(data?.rows ?? []).map((r) => (
                     <tr key={r.id}>
                       <td className="py-2.5 pr-2">
                         <div className="flex items-center gap-1.5 min-w-0">
-                          <span className="truncate text-slate-700">{r.description}</span>
+                          <span className="truncate text-body">{r.description}</span>
                           {r.receiptKey && (
-                            <a href={`/api/expenses/${r.id}/receipt`} target="_blank" rel="noreferrer" title="ดูใบเสร็จ" className="text-slate-300 hover:text-brand-600 shrink-0">
+                            <a href={`/api/expenses/${r.id}/receipt`} target="_blank" rel="noreferrer" title="ดูใบเสร็จ" className="text-border hover:text-brand-600 shrink-0">
                               <FileText className="w-3.5 h-3.5" />
                             </a>
                           )}
                         </div>
-                        <div className="text-[11px] text-slate-400">
+                        <div className="text-[11px] text-muted">
                           {fmtThaiDate(r.expenseDate)} · {CATEGORY_LABEL[r.category]} · {r.paidBy === 'self' ? 'ออกเอง' : 'บริษัท'}{r.projectName ? ` · ${r.projectName}` : ''}
                         </div>
                       </td>
-                      {isOwner && <td className="py-2.5 text-slate-500">{r.userName}</td>}
-                      <td className="py-2.5 text-right tabular-nums text-slate-700">{formatSatang(r.amountSatang)}</td>
+                      {isOwner && <td className="py-2.5 text-dim">{r.userName}</td>}
+                      <td className="py-2.5 text-right tabular-nums text-body">{formatSatang(r.amountSatang)}</td>
                       <td className="py-2.5 text-right">
                         <span className={`text-[11px] px-2 py-0.5 rounded-full ${STATUS_CHIP[r.status].cls}`}>{STATUS_CHIP[r.status].label}</span>
                       </td>
@@ -199,12 +199,12 @@ export function ExpensesPage() {
                         <td className="py-2.5 text-right">
                           {r.status === 'pending' && (
                             <span className="inline-flex gap-1">
-                              <button onClick={() => void setStatus(r, 'approved')} title="อนุมัติ" className="w-7 h-7 grid place-items-center rounded-lg text-emerald-600 hover:bg-emerald-50"><Check className="w-4 h-4" /></button>
-                              <button onClick={() => void setStatus(r, 'rejected')} title="ปฏิเสธ" className="w-7 h-7 grid place-items-center rounded-lg text-rose-500 hover:bg-rose-50"><X className="w-4 h-4" /></button>
+                              <button onClick={() => void setStatus(r, 'approved')} title="อนุมัติ" className="w-7 h-7 grid place-items-center rounded-lg text-success-600 hover:bg-success-50"><Check className="w-4 h-4" /></button>
+                              <button onClick={() => void setStatus(r, 'rejected')} title="ปฏิเสธ" className="w-7 h-7 grid place-items-center rounded-lg text-danger-500 hover:bg-danger-50"><X className="w-4 h-4" /></button>
                             </span>
                           )}
                           {r.status === 'approved' && r.paidBy === 'self' && (
-                            <button onClick={() => void setStatus(r, 'reimbursed')} className="text-[11px] text-slate-500 hover:text-brand-700 underline">คืนเงินแล้ว</button>
+                            <button onClick={() => void setStatus(r, 'reimbursed')} className="text-[11px] text-dim hover:text-brand-700 underline">คืนเงินแล้ว</button>
                           )}
                         </td>
                       )}
@@ -213,7 +213,7 @@ export function ExpensesPage() {
                 </tbody>
               </table>
             </div>
-            <p className="text-[11px] text-slate-400 mt-3">สรุปเดือนนี้ → Export CSV เข้า FlowAccount · ค้างคืน = อนุมัติแล้ว (จ่ายเอง) ที่ยังไม่คืนเงิน</p>
+            <p className="text-[11px] text-muted mt-3">สรุปเดือนนี้ → Export CSV เข้า FlowAccount · ค้างคืน = อนุมัติแล้ว (จ่ายเอง) ที่ยังไม่คืนเงิน</p>
           </div>
         </div>
       </div>

@@ -42,8 +42,8 @@ function Toolbar({ editor, docId, saveState }: { editor: Editor; docId: string; 
   const fileRef = useRef<HTMLInputElement>(null)
   const { promptDialog } = useDialog()
   const btn = (active: boolean) =>
-    `w-8 h-8 grid place-items-center rounded-lg shrink-0 ${active ? 'bg-brand-50 text-brand-700' : 'text-slate-500 hover:bg-slate-100'}`
-  const divider = <span className="w-px h-5 bg-slate-200 mx-1 shrink-0" />
+    `w-8 h-8 grid place-items-center rounded-lg shrink-0 ${active ? 'bg-brand-50 text-brand-700' : 'text-dim hover:bg-divider'}`
+  const divider = <span className="w-px h-5 bg-border-subtle mx-1 shrink-0" />
   const setLink = async () => {
     const prev = editor.getAttributes('link').href as string | undefined
     const url = await promptDialog({
@@ -63,7 +63,7 @@ function Toolbar({ editor, docId, saveState }: { editor: Editor; docId: string; 
     if (url) editor.chain().focus().setImage({ src: url }).run()
   }
   return (
-    <div className="flex items-center gap-0.5 border-b border-slate-200 px-2 sm:px-3 h-12 shrink-0 overflow-x-auto">
+    <div className="flex items-center gap-0.5 border-b border-border-subtle px-2 sm:px-3 h-12 shrink-0 overflow-x-auto">
       {([2, 3, 4] as const).map((lv) => (
         <button key={lv} title={`หัวข้อ h${lv}`} onClick={() => editor.chain().focus().toggleHeading({ level: lv }).run()} className={btn(editor.isActive('heading', { level: lv }))}>
           {lv === 2 ? <Heading2 className="w-4 h-4" /> : lv === 3 ? <Heading3 className="w-4 h-4" /> : <Heading4 className="w-4 h-4" />}
@@ -83,8 +83,8 @@ function Toolbar({ editor, docId, saveState }: { editor: Editor; docId: string; 
       <button title="ลิงก์" onClick={() => void setLink()} className={btn(editor.isActive('link'))}><Link2 className="w-4 h-4" /></button>
       <button title="แทรกรูป (หรือวาง/ลากรูปลงในเนื้อหา)" onClick={pickImage} className={btn(false)}><ImageIcon className="w-4 h-4" /></button>
       <button title="เส้นคั่น" onClick={() => editor.chain().focus().setHorizontalRule().run()} className={btn(false)}><Minus className="w-4 h-4" /></button>
-      <span className="ml-auto flex items-center gap-1.5 text-xs text-slate-400 shrink-0 pl-3">
-        {saveState === 'saving' ? 'กำลังบันทึก…' : <><span className="text-emerald-500">✓</span> บันทึกแล้ว</>}
+      <span className="ml-auto flex items-center gap-1.5 text-xs text-muted shrink-0 pl-3">
+        {saveState === 'saving' ? 'กำลังบันทึก…' : <><span className="text-success-500">✓</span> บันทึกแล้ว</>}
       </span>
       <input ref={fileRef} type="file" accept="image/png,image/jpeg,image/gif,image/webp,image/avif" className="hidden"
         onChange={(e) => { const f = e.target.files?.[0]; if (f) void onFile(f); e.target.value = '' }} />
@@ -171,10 +171,10 @@ function DocEditor({ doc, onMetaChanged }: { doc: DocFull; onMetaChanged: () => 
             onChange={(e) => setTitle(e.target.value)}
             onBlur={() => void saveTitle()}
             onKeyDown={(e) => { if (e.key === 'Enter') (e.target as HTMLInputElement).blur() }}
-            className="w-full text-3xl font-bold text-slate-900 leading-snug focus:outline-hidden"
+            className="w-full text-3xl font-bold text-ink leading-snug focus:outline-hidden"
             aria-label="ชื่อเอกสาร"
           />
-          <div className="text-xs text-slate-400 mt-2 mb-5">บันทึกเป็น Markdown · แก้ล่าสุด {new Date(doc.updatedAt).toLocaleString('th-TH', { timeZone: 'Asia/Bangkok', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
+          <div className="text-xs text-muted mt-2 mb-5">บันทึกเป็น Markdown · แก้ล่าสุด {new Date(doc.updatedAt).toLocaleString('th-TH', { timeZone: 'Asia/Bangkok', day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' })}</div>
           <EditorContent editor={editor} />
         </div>
       </div>
@@ -244,13 +244,13 @@ export function DocsPage() {
         <div key={n.id}>
           <div
             onClick={() => { setSelId(n.id); setMobileView('doc') }}
-            className={`group relative flex items-center gap-1.5 pr-7 py-1.5 rounded-lg cursor-pointer text-sm ${active ? 'bg-brand-50 text-brand-700 font-medium' : 'text-slate-600 hover:bg-slate-200/70'}`}
+            className={`group relative flex items-center gap-1.5 pr-7 py-1.5 rounded-lg cursor-pointer text-sm ${active ? 'bg-brand-50 text-brand-700 font-medium' : 'text-soft hover:bg-border-subtle/70'}`}
             style={{ paddingLeft: depth * 14 + 6 }}
           >
             {kids ? (
               <button
                 onClick={(e) => { e.stopPropagation(); setExpanded((s) => { const next = new Set(s); if (next.has(n.id)) next.delete(n.id); else next.add(n.id); return next }) }}
-                className="shrink-0 w-4 h-4 grid place-items-center text-slate-400 hover:text-slate-600"
+                className="shrink-0 w-4 h-4 grid place-items-center text-muted hover:text-soft"
                 aria-label={open ? 'ยุบ' : 'กาง'}
               >
                 <ChevronRight className={`w-3.5 h-3.5 transition-transform ${open ? 'rotate-90' : ''}`} />
@@ -258,12 +258,12 @@ export function DocsPage() {
             ) : (
               <span className="w-4 shrink-0" />
             )}
-            {n.icon ? <span className="shrink-0 text-sm leading-none">{n.icon}</span> : <FileText className="w-3.5 h-3.5 text-slate-400 shrink-0" />}
+            {n.icon ? <span className="shrink-0 text-sm leading-none">{n.icon}</span> : <FileText className="w-3.5 h-3.5 text-muted shrink-0" />}
             <span className="flex-1 min-w-0 truncate">{n.title}</span>
             <button
               onClick={(e) => { e.stopPropagation(); void addDoc(n.id) }}
               title="เพิ่มหน้าย่อย"
-              className="absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 grid place-items-center rounded text-slate-500 bg-slate-200 hover:bg-slate-300 opacity-0 group-hover:opacity-100"
+              className="absolute right-1 top-1/2 -translate-y-1/2 w-5 h-5 grid place-items-center rounded text-dim bg-border-subtle hover:bg-border opacity-0 group-hover:opacity-100"
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
@@ -288,11 +288,11 @@ export function DocsPage() {
           {/* tree บนพื้นหน้า (mockup) */}
           <div className={`${mobileView === 'doc' ? 'hidden' : 'flex'} lg:flex w-full lg:w-56 shrink-0 flex-col`}>
             <div className="flex items-center justify-between pl-1.5 pr-1 h-9 shrink-0">
-              <span className="text-xs font-semibold text-slate-400 uppercase tracking-wide">เอกสารทั้งหมด</span>
+              <span className="text-xs font-semibold text-muted uppercase tracking-wide">เอกสารทั้งหมด</span>
             </div>
             <div className="flex-1 overflow-y-auto py-1">
               {(nodes ?? []).length === 0 ? (
-                <div className="text-sm text-slate-400 px-2 py-6">ยังไม่มีเอกสาร — กด "เอกสารใหม่" เริ่มหน้าแรก (เช่น คู่มือพนักงานใหม่)</div>
+                <div className="text-sm text-muted px-2 py-6">ยังไม่มีเอกสาร — กด "เอกสารใหม่" เริ่มหน้าแรก (เช่น คู่มือพนักงานใหม่)</div>
               ) : (
                 renderTree(null, 0)
               )}
@@ -303,22 +303,22 @@ export function DocsPage() {
             {doc ? (
               <>
                 <div className="lg:hidden flex items-center gap-1 px-2 pt-2">
-                  <button onClick={() => setMobileView('tree')} className="p-1.5 rounded-lg text-slate-500 hover:bg-slate-100" aria-label="กลับไป tree">
+                  <button onClick={() => setMobileView('tree')} className="p-1.5 rounded-lg text-dim hover:bg-divider" aria-label="กลับไป tree">
                     <ChevronLeft className="w-5 h-5" />
                   </button>
-                  <button onClick={() => void deleteDoc()} className="ml-auto p-1.5 rounded-lg text-slate-300 hover:text-rose-600" title="ลบหน้านี้">
+                  <button onClick={() => void deleteDoc()} className="ml-auto p-1.5 rounded-lg text-border hover:text-danger-600" title="ลบหน้านี้">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
                 <div className="hidden lg:flex justify-end px-3 pt-2 -mb-10 relative z-10">
-                  <button onClick={() => void deleteDoc()} className="p-1.5 rounded-lg text-slate-300 hover:text-rose-600" title="ลบหน้านี้ (รวมหน้าย่อย)">
+                  <button onClick={() => void deleteDoc()} className="p-1.5 rounded-lg text-border hover:text-danger-600" title="ลบหน้านี้ (รวมหน้าย่อย)">
                     <Trash2 className="w-4 h-4" />
                   </button>
                 </div>
                 <DocEditor key={doc.id} doc={doc} onMetaChanged={() => { void reloadTree(); void reloadDoc() }} />
               </>
             ) : (
-              <div className="flex-1 grid place-items-center text-sm text-slate-400 p-10 text-center">
+              <div className="flex-1 grid place-items-center text-sm text-muted p-10 text-center">
                 เลือกหน้าเอกสารจากด้านซ้าย หรือสร้างหน้าใหม่<br />
                 <span className="text-[11px]">เนื้อหาเก็บเป็น Markdown · แทน Notion ส่วนเอกสาร</span>
               </div>

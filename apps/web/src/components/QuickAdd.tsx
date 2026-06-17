@@ -8,6 +8,7 @@ interface ProjectOpt {
   name: string
   logo: string | null
   status: string
+  statusKind: string
   type: string
 }
 interface GroupOpt {
@@ -27,7 +28,7 @@ export function QuickAddModal({ onClose }: { onClose: () => void }) {
   const [star, setStar] = useState(true)
   const [error, setError] = useState('')
 
-  const active = (projectsList ?? []).filter((p) => p.status !== 'archived')
+  const active = (projectsList ?? []).filter((p) => p.statusKind !== 'archived')
 
   useEffect(() => {
     if (!projectId) {
@@ -59,12 +60,12 @@ export function QuickAddModal({ onClose }: { onClose: () => void }) {
   const input = 'w-full text-sm bg-white shadow-xs rounded-lg px-3 py-2'
   return (
     <div className="fixed inset-0 z-50">
-      <div onClick={onClose} className="absolute inset-0 bg-slate-900/30" />
+      <div onClick={onClose} className="absolute inset-0 bg-ink/30" />
       <div className="absolute inset-x-0 top-24 mx-auto w-full max-w-md px-4">
         <div className="bg-white rounded-lg shadow-2xl p-5">
           <div className="flex items-center justify-between mb-3">
-            <div className="font-semibold text-slate-900">เพิ่มงานด่วน</div>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
+            <div className="font-semibold text-ink">เพิ่มงานด่วน</div>
+            <button onClick={onClose} className="text-muted hover:text-soft"><X className="w-5 h-5" /></button>
           </div>
           <input
             autoFocus
@@ -88,16 +89,16 @@ export function QuickAddModal({ onClose }: { onClose: () => void }) {
               ))}
             </select>
           </div>
-          <label className="flex items-center gap-2 text-sm text-slate-600 mb-4 cursor-pointer select-none">
+          <label className="flex items-center gap-2 text-sm text-soft mb-4 cursor-pointer select-none">
             <input type="checkbox" checked={star} onChange={(e) => setStar(e.target.checked)} className="rounded" />
-            <Star className="w-4 h-4 text-amber-400 fill-amber-400" /> ทำวันนี้ (ติดดาว)
+            <Star className="w-4 h-4 text-warning-400 fill-warning-400" /> ทำวันนี้ (ติดดาว)
           </label>
-          {error && <div className="text-xs text-rose-600 mb-2">{error}</div>}
+          {error && <div className="text-xs text-danger-600 mb-2">{error}</div>}
           <div className="flex justify-end gap-2">
-            <button onClick={onClose} className="text-sm px-3 py-2 rounded-lg hover:bg-slate-50">ยกเลิก</button>
+            <button onClick={onClose} className="text-sm px-3 py-2 rounded-lg hover:bg-hover">ยกเลิก</button>
             <button onClick={() => void submit()} disabled={!title.trim() || !groupId} className="text-sm bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 disabled:opacity-40">เพิ่มงาน</button>
           </div>
-          <p className="text-[11px] text-slate-400 mt-3">ทิป: กด <kbd className="bg-slate-100 px-1 rounded shadow-xs">N</kbd> เปิดด่วนจากทุกหน้า</p>
+          <p className="text-[11px] text-muted mt-3">ทิป: กด <kbd className="bg-divider px-1 rounded shadow-xs">N</kbd> เปิดด่วนจากทุกหน้า</p>
         </div>
       </div>
     </div>
