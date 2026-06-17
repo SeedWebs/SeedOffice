@@ -1,4 +1,4 @@
-import { bkkDateOf, rateAt } from '@seedoffice/core'
+import { bkkDateOf, rateAt, resolveStatuses } from '@seedoffice/core'
 import { companyConfig, createDb, rates, users } from '@seedoffice/db'
 import { asc, eq } from 'drizzle-orm'
 import { Hono } from 'hono'
@@ -44,10 +44,12 @@ export const userRoutes = new Hono<AppEnv>()
           cutoffDay: companyConfig.cutoffDay,
           workHourCapMinutes: companyConfig.workHourCapMinutes,
           memberDomain: companyConfig.memberDomain,
+          projectStatuses: companyConfig.projectStatuses,
         })
         .from(companyConfig)
         .limit(1)
     )[0]
     if (!cfg) return c.json({ error: 'config_missing' }, 500)
-    return c.json(cfg)
+    // null = ยังไม่ตั้ง → คืน default 6 ตัว (ทุก role ใช้ render chip/filter)
+    return c.json({ ...cfg, projectStatuses: resolveStatuses(cfg.projectStatuses) })
   })

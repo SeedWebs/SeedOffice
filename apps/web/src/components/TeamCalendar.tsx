@@ -19,11 +19,11 @@ interface UserOpt {
 }
 
 const TYPE_CLS: Record<CalEvent['type'], string> = {
-  holiday: 'bg-emerald-100 text-emerald-700',
+  holiday: 'bg-success-100 text-success-700',
   leave: 'bg-orange-100 text-orange-700',
-  meeting: 'bg-slate-100 text-slate-600',
-  deadline: 'bg-rose-100 text-rose-600',
-  other: 'bg-sky-100 text-sky-700',
+  meeting: 'bg-divider text-soft',
+  deadline: 'bg-danger-100 text-danger-600',
+  other: 'bg-info-100 text-info-700',
   payroll: 'bg-brand-100 text-brand-700',
 }
 const TYPE_LABEL: Record<string, string> = {
@@ -55,12 +55,12 @@ function AddEventModal({ defaultDate, onClose, onDone }: { defaultDate: string; 
   }
   return (
     <div className="fixed inset-0 z-50">
-      <div onClick={onClose} className="absolute inset-0 bg-slate-900/30 so-fade-in" />
+      <div onClick={onClose} className="absolute inset-0 bg-ink/30 so-fade-in" />
       <div className="absolute inset-0 grid place-items-center p-4 pointer-events-none">
         <div className="pointer-events-auto w-full max-w-sm bg-white rounded-2xl shadow-2xl p-5 so-pop-in">
           <div className="flex items-center justify-between mb-3">
-            <div className="font-semibold text-slate-900">เพิ่มกิจกรรม</div>
-            <button onClick={onClose} className="text-slate-400 hover:text-slate-600"><X className="w-5 h-5" /></button>
+            <div className="font-semibold text-ink">เพิ่มกิจกรรม</div>
+            <button onClick={onClose} className="text-muted hover:text-soft"><X className="w-5 h-5" /></button>
           </div>
           <div className="space-y-2">
             <input autoFocus placeholder="ชื่อ เช่น ประชุมทีม 10:00" value={form.title} onChange={(e) => setForm({ ...form, title: e.target.value })} className={input} />
@@ -74,12 +74,12 @@ function AddEventModal({ defaultDate, onClose, onDone }: { defaultDate: string; 
               </select>
             )}
             <div className="grid grid-cols-2 gap-2">
-              <label className="text-[11px] text-slate-400">เริ่ม<input type="date" value={form.start} onChange={(e) => setForm({ ...form, start: e.target.value })} className={input} /></label>
-              <label className="text-[11px] text-slate-400">ถึง (ถ้าหลายวัน)<input type="date" value={form.end} onChange={(e) => setForm({ ...form, end: e.target.value })} className={input} /></label>
+              <label className="text-[11px] text-muted">เริ่ม<input type="date" value={form.start} onChange={(e) => setForm({ ...form, start: e.target.value })} className={input} /></label>
+              <label className="text-[11px] text-muted">ถึง (ถ้าหลายวัน)<input type="date" value={form.end} onChange={(e) => setForm({ ...form, end: e.target.value })} className={input} /></label>
             </div>
           </div>
           <div className="flex justify-end gap-2 mt-4">
-            <button onClick={onClose} className="text-sm px-3 py-2 rounded-lg hover:bg-slate-50">ยกเลิก</button>
+            <button onClick={onClose} className="text-sm px-3 py-2 rounded-lg hover:bg-hover">ยกเลิก</button>
             <button onClick={() => void submit().then(onDone)} disabled={!form.title.trim() || (form.type === 'leave' && !form.userId)} className="text-sm bg-brand-600 text-white px-4 py-2 rounded-lg hover:bg-brand-700 disabled:opacity-40">เพิ่ม</button>
           </div>
         </div>
@@ -150,18 +150,18 @@ export function TeamCalendar() {
       <div className="flex items-center justify-between mb-3 flex-wrap gap-2">
         <div className="flex items-center gap-2">
           <Calendar className="w-4 h-4 text-brand-600" />
-          <span className="font-semibold text-slate-900">ปฏิทินทีมงาน</span>
+          <span className="font-semibold text-ink">ปฏิทินทีมงาน</span>
           <div className="flex items-center gap-0.5 ml-1">
-            <button onClick={() => nav(-1)} className="w-7 h-7 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-100" aria-label="ก่อนหน้า"><ChevronLeft className="w-4 h-4" /></button>
-            <button onClick={() => setRef(bkkNow())} className="text-xs text-slate-500 hover:bg-slate-100 px-2 py-1 rounded-lg">วันนี้</button>
-            <button onClick={() => nav(1)} className="w-7 h-7 grid place-items-center rounded-lg text-slate-400 hover:bg-slate-100" aria-label="ถัดไป"><ChevronRight className="w-4 h-4" /></button>
+            <button onClick={() => nav(-1)} className="w-7 h-7 grid place-items-center rounded-lg text-muted hover:bg-divider" aria-label="ก่อนหน้า"><ChevronLeft className="w-4 h-4" /></button>
+            <button onClick={() => setRef(bkkNow())} className="text-xs text-dim hover:bg-divider px-2 py-1 rounded-lg">วันนี้</button>
+            <button onClick={() => nav(1)} className="w-7 h-7 grid place-items-center rounded-lg text-muted hover:bg-divider" aria-label="ถัดไป"><ChevronRight className="w-4 h-4" /></button>
           </div>
-          <span className="text-sm text-slate-400">{label}</span>
+          <span className="text-sm text-muted">{label}</span>
         </div>
         <div className="flex items-center gap-2">
-          <div className="flex bg-slate-100 rounded-lg p-0.5 text-xs font-medium">
+          <div className="flex bg-divider rounded-lg p-0.5 text-xs font-medium">
             {(['day', 'week', 'month'] as const).map((v) => (
-              <button key={v} onClick={() => setView(v)} className={`px-2.5 py-1 rounded-md capitalize ${view === v ? 'bg-white shadow-xs text-brand-700' : 'text-slate-500'}`}>
+              <button key={v} onClick={() => setView(v)} className={`px-2.5 py-1 rounded-md capitalize ${view === v ? 'bg-white shadow-xs text-brand-700' : 'text-dim'}`}>
                 {v === 'day' ? 'Day' : v === 'week' ? 'Week' : 'Month'}
               </button>
             ))}
@@ -174,8 +174,8 @@ export function TeamCalendar() {
 
       {view === 'month' && (
         <>
-          <div className="grid grid-cols-7 text-[11px] text-slate-400 mb-1">{DOW.map((d) => <div key={d} className="px-2 py-1">{d}</div>)}</div>
-          <div className="grid grid-cols-7 gap-px bg-slate-200 rounded-lg overflow-hidden">
+          <div className="grid grid-cols-7 text-[11px] text-muted mb-1">{DOW.map((d) => <div key={d} className="px-2 py-1">{d}</div>)}</div>
+          <div className="grid grid-cols-7 gap-px bg-border-subtle rounded-lg overflow-hidden">
             {Array.from({ length: 42 }, (_, i) => {
               const first = new Date(Date.UTC(ref.getUTCFullYear(), ref.getUTCMonth(), 1))
               const start = new Date(first)
@@ -184,11 +184,11 @@ export function TeamCalendar() {
               const inMonth = start.getUTCMonth() === ref.getUTCMonth()
               const isToday = dIso === todayISO()
               return (
-                <div key={i} className={`${inMonth ? 'bg-white' : 'bg-slate-50/60'} min-h-[58px] p-1`}>
+                <div key={i} className={`${inMonth ? 'bg-white' : 'bg-hover/60'} min-h-[58px] p-1`}>
                   {isToday ? (
-                    <span className="bg-rose-500 text-white w-5 h-5 grid place-items-center rounded-full text-[11px]">{start.getUTCDate()}</span>
+                    <span className="bg-danger-500 text-white w-5 h-5 grid place-items-center rounded-full text-[11px]">{start.getUTCDate()}</span>
                   ) : (
-                    <span className={`${inMonth ? 'text-slate-500' : 'text-slate-300'} text-[11px] px-1`}>{start.getUTCDate()}</span>
+                    <span className={`${inMonth ? 'text-dim' : 'text-border'} text-[11px] px-1`}>{start.getUTCDate()}</span>
                   )}
                   {eventsOn(dIso).map((e) => <EventChip key={`${e.id}-${dIso}`} e={e} size="sm" />)}
                 </div>
@@ -199,7 +199,7 @@ export function TeamCalendar() {
       )}
 
       {view === 'week' && (
-        <div className="grid grid-cols-7 gap-px bg-slate-200 rounded-lg overflow-hidden">
+        <div className="grid grid-cols-7 gap-px bg-border-subtle rounded-lg overflow-hidden">
           {Array.from({ length: 7 }, (_, i) => {
             const start = new Date(ref)
             start.setUTCDate(ref.getUTCDate() - ref.getUTCDay() + i)
@@ -208,11 +208,11 @@ export function TeamCalendar() {
             return (
               <div key={i} className="bg-white min-h-[150px] p-1.5">
                 <div className="flex items-center gap-1 mb-1">
-                  <span className="text-[10px] text-slate-400">{DOW[i]}</span>
+                  <span className="text-[10px] text-muted">{DOW[i]}</span>
                   {isToday ? (
-                    <span className="bg-rose-500 text-white w-5 h-5 grid place-items-center rounded-full text-[11px]">{start.getUTCDate()}</span>
+                    <span className="bg-danger-500 text-white w-5 h-5 grid place-items-center rounded-full text-[11px]">{start.getUTCDate()}</span>
                   ) : (
-                    <span className="text-slate-600 text-sm">{start.getUTCDate()}</span>
+                    <span className="text-soft text-sm">{start.getUTCDate()}</span>
                   )}
                 </div>
                 {eventsOn(dIso).map((e) => <EventChip key={`${e.id}-${dIso}`} e={e} size="md" />)}
@@ -223,10 +223,10 @@ export function TeamCalendar() {
       )}
 
       {view === 'day' && (
-        <div className="border border-slate-200 rounded-lg p-3">
-          <div className="text-sm font-semibold text-slate-700 mb-2">{DOWF[ref.getUTCDay()]} {ref.getUTCDate()} {THMF[ref.getUTCMonth()]}</div>
+        <div className="border border-border-subtle rounded-lg p-3">
+          <div className="text-sm font-semibold text-body mb-2">{DOWF[ref.getUTCDay()]} {ref.getUTCDate()} {THMF[ref.getUTCMonth()]}</div>
           {eventsOn(iso(ref)).length === 0 ? (
-            <div className="text-sm text-slate-400 py-8 text-center">ไม่มีกิจกรรม</div>
+            <div className="text-sm text-muted py-8 text-center">ไม่มีกิจกรรม</div>
           ) : (
             eventsOn(iso(ref)).map((e) => (
               <div key={e.id} onClick={() => void removeEvent(e)} className={`rounded-lg px-3 py-2 mb-1.5 text-sm ${TYPE_CLS[e.type]} ${e.type === 'payroll' ? '' : 'cursor-pointer hover:opacity-75'}`}>
@@ -237,7 +237,7 @@ export function TeamCalendar() {
         </div>
       )}
 
-      <p className="text-[11px] text-slate-400 mt-2">วันลา/ประชุม/วันหยุด + ตัดรอบ/จ่ายเงินเดือน (อัตโนมัติจาก config) · คลิกกิจกรรมเพื่อลบ · subscribe เป็น ICS ได้ที่ ตั้งค่า</p>
+      <p className="text-[11px] text-muted mt-2">วันลา/ประชุม/วันหยุด + ตัดรอบ/จ่ายเงินเดือน (อัตโนมัติจาก config) · คลิกกิจกรรมเพื่อลบ · subscribe เป็น ICS ได้ที่ ตั้งค่า</p>
       {adding && <AddEventModal defaultDate={view === 'month' ? todayISO() : iso(ref)} onClose={() => setAdding(false)} onDone={() => { setAdding(false); void reload() }} />}
     </div>
   )

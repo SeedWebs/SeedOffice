@@ -73,12 +73,12 @@ function TimeSection({ taskId }: { taskId: string }) {
       <div className="bg-brand-50 rounded-xl p-3 flex items-center gap-3">
         <div className="flex-1">
           <div className="text-[11px] text-brand-700">ลงเวลาที่งานนี้ (วันนี้)</div>
-          <div className="text-2xl font-bold tabular-nums text-slate-900">
+          <div className="text-2xl font-bold tabular-nums text-ink">
             {formatHMS(taskSeconds + (isRunningHere ? timer.runningSeconds : 0))}
           </div>
         </div>
         {isRunningHere ? (
-          <button onClick={() => void timer.stop().then(() => reload())} className="bg-rose-500 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-1">
+          <button onClick={() => void timer.stop().then(() => reload())} className="bg-danger-500 text-white px-3 py-2 rounded-lg text-sm flex items-center gap-1">
             <Pause className="w-4 h-4" /> หยุด
           </button>
         ) : (
@@ -95,15 +95,15 @@ function TimeSection({ taskId }: { taskId: string }) {
       </div>
 
       {manualOpen && (
-        <div className="mt-2 p-3 bg-slate-50 rounded-xl space-y-2">
+        <div className="mt-2 p-3 bg-hover rounded-xl space-y-2">
           <div className="flex gap-2">
             <input type="date" value={mForm.date} onChange={(e) => setMForm({ ...mForm, date: e.target.value })} className="text-sm bg-white shadow-xs rounded-lg px-2.5 py-1.5" />
             <input type="number" step="0.25" min="0" placeholder="ชม." value={mForm.hours} onChange={(e) => setMForm({ ...mForm, hours: e.target.value })} className="w-20 text-sm bg-white shadow-xs rounded-lg px-2.5 py-1.5" />
             <input placeholder="โน้ต (ทำอะไร)" value={mForm.note} onChange={(e) => setMForm({ ...mForm, note: e.target.value })} className="flex-1 min-w-0 text-sm bg-white shadow-xs rounded-lg px-2.5 py-1.5" />
           </div>
-          {mError && <div className="text-xs text-rose-600">{mError}</div>}
+          {mError && <div className="text-xs text-danger-600">{mError}</div>}
           <div className="flex items-center justify-between">
-            <span className="text-[10px] text-slate-400">manual ถูกบันทึก log และนับเข้า manual% เสมอ</span>
+            <span className="text-[10px] text-muted">manual ถูกบันทึก log และนับเข้า manual% เสมอ</span>
             <button onClick={() => void addManual()} disabled={!mForm.hours} className="text-sm bg-brand-600 text-white px-3 py-1.5 rounded-lg disabled:opacity-40">บันทึกเวลา</button>
           </div>
         </div>
@@ -115,22 +115,22 @@ function TimeSection({ taskId }: { taskId: string }) {
             <div key={r.id} className="flex items-center gap-2 text-xs py-1">
               {editRow?.id === r.id ? (
                 <>
-                  <span className="text-slate-500 w-20">{r.workDate.slice(5)}</span>
+                  <span className="text-dim w-20">{r.workDate.slice(5)}</span>
                   <input type="number" value={editRow.minutes} onChange={(e) => setEditRow({ ...editRow, minutes: Number(e.target.value) })} className="w-16 bg-white shadow-xs rounded px-1.5 py-1" title="นาที" />
-                  <span className="text-slate-400">นาที</span>
+                  <span className="text-muted">นาที</span>
                   <button onClick={() => void saveEdit()} className="text-brand-600 font-medium">บันทึก</button>
-                  <button onClick={() => setEditRow(null)} className="text-slate-400">ยกเลิก</button>
+                  <button onClick={() => setEditRow(null)} className="text-muted">ยกเลิก</button>
                 </>
               ) : (
                 <>
-                  <span className="text-slate-500 w-20 shrink-0">{r.workDate.slice(5)}</span>
-                  <span className="tabular-nums font-medium text-slate-700">{minutesToHoursLabel(r.minutes)} ชม.</span>
-                  <span className={`px-1.5 rounded text-[10px] ${r.source === 'manual' ? 'bg-amber-50 text-amber-600' : 'bg-slate-100 text-slate-500'}`}>{r.source}</span>
-                  <span className="text-slate-400 truncate flex-1">{r.userName}{r.note ? ` · ${r.note}` : ''}{r.editCount > 0 ? ` · แก้ ${r.editCount} ครั้ง` : ''}</span>
+                  <span className="text-dim w-20 shrink-0">{r.workDate.slice(5)}</span>
+                  <span className="tabular-nums font-medium text-body">{minutesToHoursLabel(r.minutes)} ชม.</span>
+                  <span className={`px-1.5 rounded text-[10px] ${r.source === 'manual' ? 'bg-warning-50 text-warning-600' : 'bg-divider text-dim'}`}>{r.source}</span>
+                  <span className="text-muted truncate flex-1">{r.userName}{r.note ? ` · ${r.note}` : ''}{r.editCount > 0 ? ` · แก้ ${r.editCount} ครั้ง` : ''}</span>
                   {(r.userId === user?.id || user?.role === 'owner') && (
                     <span className="shrink-0 flex gap-1">
-                      <button onClick={() => setEditRow(r)} title="แก้เวลา" className="text-slate-300 hover:text-slate-600"><Pencil className="w-3.5 h-3.5" /></button>
-                      <button onClick={() => void removeRow(r)} title="ลบเวลา" className="text-slate-300 hover:text-rose-600"><Trash2 className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => setEditRow(r)} title="แก้เวลา" className="text-border hover:text-soft"><Pencil className="w-3.5 h-3.5" /></button>
+                      <button onClick={() => void removeRow(r)} title="ลบเวลา" className="text-border hover:text-danger-600"><Trash2 className="w-3.5 h-3.5" /></button>
                     </span>
                   )}
                 </>
@@ -198,8 +198,8 @@ export function TaskDrawer({ taskId, onClose, onChanged }: { taskId: string; onC
   if (!t)
     return (
       <div className="fixed inset-0 z-50">
-        <div onClick={onClose} className="absolute inset-0 bg-slate-900/30" />
-        <aside className="absolute top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl grid place-items-center text-sm text-slate-400">กำลังโหลด…</aside>
+        <div onClick={onClose} className="absolute inset-0 bg-ink/30" />
+        <aside className="absolute top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl grid place-items-center text-sm text-muted">กำลังโหลด…</aside>
       </div>
     )
 
@@ -230,39 +230,39 @@ export function TaskDrawer({ taskId, onClose, onChanged }: { taskId: string; onC
 
   return (
     <div className="fixed inset-0 z-50">
-      <div onClick={onClose} className="absolute inset-0 bg-slate-900/30" />
+      <div onClick={onClose} className="absolute inset-0 bg-ink/30" />
       <aside className="absolute top-0 right-0 h-full w-full max-w-md bg-white shadow-2xl flex flex-col">
-        <div className="p-4 border-b border-slate-200 flex items-start gap-2">
+        <div className="p-4 border-b border-border-subtle flex items-start gap-2">
           <div className="flex-1 min-w-0">
-            <div className="text-xs text-slate-400 mb-1.5">{t.projectName} · {t.groupName}</div>
+            <div className="text-xs text-muted mb-1.5">{t.projectName} · {t.groupName}</div>
             <div className="flex items-center gap-3">
               <button
                 onClick={() => canEdit && void patch({ status: done ? 'todo' : 'done' })}
                 title={done ? 'ยกเลิกเสร็จ' : 'ทำเครื่องหมายว่าเสร็จ'}
-                className={`shrink-0 w-7 h-7 rounded-lg border-2 grid place-items-center transition ${done ? 'border-brand-500 bg-brand-500 text-white' : 'border-slate-300 hover:border-brand-400'}`}
+                className={`shrink-0 w-7 h-7 rounded-lg border-2 grid place-items-center transition ${done ? 'border-brand-500 bg-brand-500 text-white' : 'border-border hover:border-brand-400'}`}
               >
                 {done && <Check className="w-4 h-4" />}
               </button>
-              <div className={`text-lg font-semibold ${done ? 'text-slate-400 line-through' : 'text-slate-900'}`}>{t.title}</div>
+              <div className={`text-lg font-semibold ${done ? 'text-muted line-through' : 'text-ink'}`}>{t.title}</div>
             </div>
           </div>
-          <button onClick={onClose} className="text-slate-400 hover:text-slate-600 shrink-0"><X className="w-5 h-5" /></button>
+          <button onClick={onClose} className="text-muted hover:text-soft shrink-0"><X className="w-5 h-5" /></button>
         </div>
 
         <div className="flex-1 overflow-y-auto p-4 space-y-5">
           <div className="flex items-center gap-2 flex-wrap text-xs">
-            <span className={`px-2 py-1 rounded-lg ${done ? 'bg-emerald-100 text-emerald-700' : t.status === 'doing' ? 'bg-amber-100 text-amber-700' : 'bg-slate-100 text-slate-600'}`}>
+            <span className={`px-2 py-1 rounded-lg ${done ? 'bg-success-100 text-success-700' : t.status === 'doing' ? 'bg-warning-100 text-warning-700' : 'bg-divider text-soft'}`}>
               {STATUS_THAI[t.status]}
             </span>
             {canEdit ? (
-              <select value={t.assigneeId ?? ''} onChange={(e) => void patch({ assigneeId: e.target.value || null })} aria-label="ผู้รับผิดชอบ" className="bg-slate-100 text-slate-600 px-2 py-1 rounded-lg">
+              <select value={t.assigneeId ?? ''} onChange={(e) => void patch({ assigneeId: e.target.value || null })} aria-label="ผู้รับผิดชอบ" className="bg-divider text-soft px-2 py-1 rounded-lg">
                 <option value="">— ผู้รับผิดชอบ —</option>
                 {(userOpts ?? []).map((u) => (
                   <option key={u.id} value={u.id}>{u.name}</option>
                 ))}
               </select>
             ) : (
-              t.assigneeName && <span className="bg-slate-100 text-slate-600 px-2 py-1 rounded-lg">{t.assigneeName}</span>
+              t.assigneeName && <span className="bg-divider text-soft px-2 py-1 rounded-lg">{t.assigneeName}</span>
             )}
           </div>
 
@@ -270,13 +270,13 @@ export function TaskDrawer({ taskId, onClose, onChanged }: { taskId: string; onC
 
           {canEdit && (
             <div className="flex flex-wrap items-center gap-2">
-              <label className="text-[11px] text-slate-400">เริ่ม
+              <label className="text-[11px] text-muted">เริ่ม
                 <input type="date" defaultValue={t.startDate ?? ''} onBlur={(e) => e.target.value !== (t.startDate ?? '') && void patch({ startDate: e.target.value || null })} className={`${input} block mt-0.5`} />
               </label>
-              <label className="text-[11px] text-slate-400">กำหนดส่ง
+              <label className="text-[11px] text-muted">กำหนดส่ง
                 <input type="date" defaultValue={t.dueDate ?? ''} onBlur={(e) => e.target.value !== (t.dueDate ?? '') && void patch({ dueDate: e.target.value || null })} className={`${input} block mt-0.5`} />
               </label>
-              <label className="text-[11px] text-slate-400">ประเมิน (ชม.)
+              <label className="text-[11px] text-muted">ประเมิน (ชม.)
                 <input type="number" defaultValue={t.estimateMinutes != null ? t.estimateMinutes / 60 : ''} onBlur={(e) => void patch({ estimateMinutes: e.target.value ? Math.round(Number(e.target.value) * 60) : null })} className={`${input} block mt-0.5 w-24`} />
               </label>
               <button
@@ -285,7 +285,7 @@ export function TaskDrawer({ taskId, onClose, onChanged }: { taskId: string; onC
                     (yes) => { if (yes) void api.delete(`/api/tasks/${t.id}`).then(() => { onChanged(); onClose() }) },
                   )
                 }}
-                title="ลบงาน" className="ml-auto self-end p-2 rounded-lg text-slate-400 hover:text-rose-600 hover:bg-rose-50"
+                title="ลบงาน" className="ml-auto self-end p-2 rounded-lg text-muted hover:text-danger-600 hover:bg-danger-50"
               >
                 <Trash2 className="w-4 h-4" />
               </button>
@@ -293,43 +293,43 @@ export function TaskDrawer({ taskId, onClose, onChanged }: { taskId: string; onC
           )}
 
           <div>
-            <div className="text-xs font-medium text-slate-400 mb-1">รายละเอียด</div>
+            <div className="text-xs font-medium text-muted mb-1">รายละเอียด</div>
             {canEdit ? (
               <textarea
                 value={descDraft ?? t.description ?? ''}
                 onChange={(e) => setDescDraft(e.target.value)}
                 onBlur={() => { if (descDraft !== null && descDraft !== (t.description ?? '')) void patch({ description: descDraft || null }) }}
                 placeholder="เพิ่มรายละเอียดงาน..."
-                className="w-full min-h-20 text-sm text-slate-600 bg-slate-50 rounded-lg p-3 focus:outline-hidden focus:ring-2 focus:ring-brand-200"
+                className="w-full min-h-20 text-sm text-soft bg-hover rounded-lg p-3 focus:outline-hidden focus:ring-2 focus:ring-brand-200"
               />
             ) : (
-              <p className="text-sm text-slate-600 whitespace-pre-line">{t.description ?? '—'}</p>
+              <p className="text-sm text-soft whitespace-pre-line">{t.description ?? '—'}</p>
             )}
           </div>
 
           <div>
-            <div className="text-xs font-medium text-slate-400 mb-2">ไฟล์แนบ</div>
+            <div className="text-xs font-medium text-muted mb-2">ไฟล์แนบ</div>
             <div className="grid grid-cols-3 gap-2">
               {t.attachments.map((a) => (
-                <div key={a.id} className="group relative aspect-square rounded-lg bg-slate-100 overflow-hidden">
+                <div key={a.id} className="group relative aspect-square rounded-lg bg-divider overflow-hidden">
                   {a.mime.startsWith('image/') ? (
                     <a href={`/api/attachments/${a.id}`} target="_blank" rel="noreferrer">
                       <img src={`/api/attachments/${a.id}`} alt={a.filename} className="w-full h-full object-cover" />
                     </a>
                   ) : (
-                    <a href={`/api/attachments/${a.id}`} className="w-full h-full grid place-items-center text-slate-400 p-2 text-center">
+                    <a href={`/api/attachments/${a.id}`} className="w-full h-full grid place-items-center text-muted p-2 text-center">
                       <span><Paperclip className="w-5 h-5 mx-auto mb-1" /><span className="text-[10px] break-all line-clamp-2">{a.filename}</span></span>
                     </a>
                   )}
                   {canEdit && (
-                    <button onClick={() => void removeAttachment(a.id)} className="absolute top-1 right-1 w-5 h-5 grid place-items-center rounded bg-slate-900/60 text-white opacity-0 group-hover:opacity-100" title="ลบไฟล์">
+                    <button onClick={() => void removeAttachment(a.id)} className="absolute top-1 right-1 w-5 h-5 grid place-items-center rounded bg-ink/60 text-white opacity-0 group-hover:opacity-100" title="ลบไฟล์">
                       <X className="w-3 h-3" />
                     </button>
                   )}
                 </div>
               ))}
               {canEdit && (
-                <button onClick={() => fileRef.current?.click()} className="aspect-square rounded-lg border-2 border-dashed border-slate-200 grid place-items-center text-slate-400 hover:border-brand-300 hover:text-brand-600">
+                <button onClick={() => fileRef.current?.click()} className="aspect-square rounded-lg border-2 border-dashed border-border-subtle grid place-items-center text-muted hover:border-brand-300 hover:text-brand-600">
                   <Plus className="w-5 h-5" />
                 </button>
               )}
@@ -338,24 +338,24 @@ export function TaskDrawer({ taskId, onClose, onChanged }: { taskId: string; onC
           </div>
 
           <div>
-            <div className="text-xs font-medium text-slate-400 mb-2">ความเห็น</div>
+            <div className="text-xs font-medium text-muted mb-2">ความเห็น</div>
             <div className="space-y-3">
-              {t.comments.length === 0 && <div className="text-sm text-slate-300">ยังไม่มีความเห็น</div>}
+              {t.comments.length === 0 && <div className="text-sm text-border">ยังไม่มีความเห็น</div>}
               {t.comments.map((cm) => (
                 <div key={cm.id} className="flex gap-2">
                   <div className={`w-7 h-7 rounded-full grid place-items-center text-[10px] font-semibold shrink-0 ${avatarColor(cm.userName)}`}>{cm.userName.slice(0, 2)}</div>
-                  <div className="bg-slate-50 rounded-xl px-3 py-2 text-sm text-slate-600 min-w-0">
-                    <b className="text-slate-700">{cm.userName}</b> · {cm.body}
-                    <div className="text-[10px] text-slate-400 mt-0.5">{fmtWhen(cm.createdAt)}</div>
+                  <div className="bg-hover rounded-xl px-3 py-2 text-sm text-soft min-w-0">
+                    <b className="text-body">{cm.userName}</b> · {cm.body}
+                    <div className="text-[10px] text-muted mt-0.5">{fmtWhen(cm.createdAt)}</div>
                   </div>
                 </div>
               ))}
             </div>
           </div>
 
-          <div className="border-t border-slate-100 pt-4">
-            <button onClick={() => setShowActivity((v) => !v)} className="flex items-center gap-2 w-full text-left text-xs font-medium text-slate-400 hover:text-slate-600">
-              <History className="w-4 h-4" /> ประวัติกิจกรรม <span className="text-slate-300">({t.activity.length})</span>
+          <div className="border-t border-divider pt-4">
+            <button onClick={() => setShowActivity((v) => !v)} className="flex items-center gap-2 w-full text-left text-xs font-medium text-muted hover:text-soft">
+              <History className="w-4 h-4" /> ประวัติกิจกรรม <span className="text-border">({t.activity.length})</span>
               <ChevronDown className={`w-4 h-4 ml-auto transition-transform ${showActivity ? 'rotate-180' : ''}`} />
             </button>
             {showActivity && (
@@ -364,9 +364,9 @@ export function TaskDrawer({ taskId, onClose, onChanged }: { taskId: string; onC
                   <div key={a.id} className="flex gap-2 text-xs">
                     <div className={`w-5 h-5 rounded-full grid place-items-center text-[9px] font-semibold shrink-0 ${avatarColor(a.actorName)}`}>{a.actorName.slice(0, 2)}</div>
                     <div className="flex-1 leading-snug">
-                      <b className="text-slate-700">{a.actorName}</b>{' '}
-                      <span className="text-slate-500">{ACTION_LABEL[a.action] ?? a.action}</span>{' '}
-                      <span className="text-slate-400">· {fmtWhen(a.at)}</span>
+                      <b className="text-body">{a.actorName}</b>{' '}
+                      <span className="text-dim">{ACTION_LABEL[a.action] ?? a.action}</span>{' '}
+                      <span className="text-muted">· {fmtWhen(a.at)}</span>
                     </div>
                   </div>
                 ))}
@@ -375,7 +375,7 @@ export function TaskDrawer({ taskId, onClose, onChanged }: { taskId: string; onC
           </div>
         </div>
 
-        <div className="p-3 border-t border-slate-200 flex gap-2">
+        <div className="p-3 border-t border-border-subtle flex gap-2">
           <input
             value={comment}
             onChange={(e) => setComment(e.target.value)}

@@ -8,7 +8,10 @@ export interface ProjectRow {
   clientId: string | null
   clientName: string | null
   type: 'project' | 'recurring'
-  status: 'design' | 'dev' | 'staging' | 'golive' | 'ma' | 'archived'
+  status: string // id ของสถานะ (configurable) — ชื่อ/สี/kind มากับ field ด้านล่าง (server ฝังให้)
+  statusName: string
+  statusColor: string
+  statusKind: 'active' | 'archived'
   quotedSatang?: number | null // ไม่มีเมื่อเป็น vendor (server ตัด)
   recurringPeriod: 'monthly' | 'yearly' | null
   startDate: string | null
@@ -20,9 +23,9 @@ export interface ProjectRow {
 }
 
 export const HEALTH_DOT: Record<'green' | 'amber' | 'red', string> = {
-  green: 'bg-emerald-500',
+  green: 'bg-success-500',
   amber: 'bg-orange-400',
-  red: 'bg-rose-500',
+  red: 'bg-danger-500',
 }
 export const HEALTH_LABEL: Record<'green' | 'amber' | 'red', string> = {
   green: 'งบงวดนี้ปกติ',
@@ -30,23 +33,24 @@ export const HEALTH_LABEL: Record<'green' | 'amber' | 'red', string> = {
   red: 'งวดนี้เกินงบ',
 }
 
-export const STATUS_LABEL: Record<ProjectRow['status'], string> = {
-  design: 'Design',
-  dev: 'Dev',
-  staging: 'Staging',
-  golive: 'Go Live',
-  ma: 'MA',
-  archived: 'archived',
+/** จานสีสถานะ (คีย์สี → class จริง) — ตรงกับ STATUS_COLOR_KEYS ใน core · literal เพื่อให้ Tailwind generate */
+export const STATUS_COLOR_CLASSES: Record<string, string> = {
+  slate: 'bg-divider text-dim',
+  amber: 'bg-warning-100 text-warning-800',
+  orange: 'bg-orange-100 text-orange-700',
+  yellow: 'bg-yellow-100 text-yellow-800',
+  emerald: 'bg-success-100 text-success-700',
+  teal: 'bg-teal-100 text-teal-700',
+  sky: 'bg-info-100 text-info-700',
+  violet: 'bg-violet-100 text-violet-700',
+  rose: 'bg-danger-100 text-danger-700',
 }
-
-export const STATUS_CHIP: Record<ProjectRow['status'], string> = {
-  design: 'bg-amber-100 text-amber-800',
-  dev: 'bg-orange-100 text-orange-700',
-  staging: 'bg-yellow-100 text-yellow-800',
-  golive: 'bg-violet-100 text-violet-700',
-  ma: 'bg-emerald-100 text-emerald-700',
-  archived: 'bg-slate-100 text-slate-500',
+/** swatch เต็ม (พื้นเข้ม) สำหรับ picker ในหน้า settings */
+export const STATUS_SWATCH: Record<string, string> = {
+  slate: 'bg-slate-400', amber: 'bg-amber-400', orange: 'bg-orange-400', yellow: 'bg-yellow-400',
+  emerald: 'bg-emerald-400', teal: 'bg-teal-400', sky: 'bg-sky-400', violet: 'bg-violet-400', rose: 'bg-rose-400',
 }
+export const statusChip = (color: string): string => STATUS_COLOR_CLASSES[color] ?? 'bg-divider text-dim'
 
 export const fmtBudgetK = (satang: number) => `฿${Math.round(satang / 100 / 1000)}K`
 

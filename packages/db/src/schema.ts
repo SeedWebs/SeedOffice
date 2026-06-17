@@ -69,6 +69,10 @@ export const companyConfig = sqliteTable('company_config', {
   // token ลับสำหรับ ICS feed สาธารณะ (SPEC §4.14 · E6) — null = ปิดลิงก์ · owner สร้าง/รีเซ็ต
   // ห้ามส่งออกทาง GET /api/config (อ่านได้ทุก role) — เห็นเฉพาะ owner ผ่าน /api/admin/ics-link
   icsToken: text('ics_token'),
+  // สถานะโปรเจกต์ปรับเองได้ (SPEC §4.3) — null = ใช้ DEFAULT 6 ตัว (resolve ใน core)
+  projectStatuses: text('project_statuses', { mode: 'json' }).$type<
+    { id: string; name: string; color: string; kind: 'active' | 'archived'; sortOrder: number }[]
+  >(),
 })
 
 /** ลูกค้า (CRM §4.17 — entity จริงตั้งแต่ T08 เลี่ยง refactor) */
@@ -86,6 +90,7 @@ export const clients = sqliteTable('clients', {
     .$defaultFn(() => new Date()),
 })
 
+/** slug เริ่มต้น (default config) — status ปรับเองได้แล้ว ไม่ใช่ enum ตายตัวใน DB (ดู core/project-status) */
 export const PROJECT_STATUSES = ['design', 'dev', 'staging', 'golive', 'ma', 'archived'] as const
 
 /** โปรเจกต์ 2 ประเภท (SPEC §4.3): project = fixed-price มีกำหนดส่ง · recurring = ดูแลรายเดือน/ปี */
@@ -98,7 +103,7 @@ export const projects = sqliteTable(
     logo: text('logo'), // emoji
     clientId: text('client_id').references(() => clients.id),
     type: text('type', { enum: ['project', 'recurring'] }).notNull(),
-    status: text('status', { enum: PROJECT_STATUSES }).notNull().default('dev'),
+    status: text('status').notNull().default('dev'), // อ้าง id ใน company_config.projectStatuses (configurable)
     quotedSatang: integer('quoted_satang'), // ราคาขาย (fixed) — vendor ห้ามเห็น (ตัดที่ serializer)
     billingType: text('billing_type', { enum: ['fixed', 'recurring'] }).notNull().default('fixed'),
     recurringPeriod: text('recurring_period', { enum: ['monthly', 'yearly'] }),

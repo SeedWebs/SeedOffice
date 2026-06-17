@@ -1,0 +1,1 @@
+ALTER TABLE `company_config` ADD `project_statuses` text;

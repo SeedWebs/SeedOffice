@@ -34,6 +34,19 @@ mockup.html เขียนด้วย v3 — เวลา copy class มาใ
 | `bg-gradient-to-*` | `bg-linear-to-*` |
 | `ring` (เปล่า = 3px) | `ring-3` |
 ธีม (brand palette + font) อยู่ที่ `apps/web/src/index.css` ใน `@theme` — ไม่มี tailwind.config.js
+**Semantic design tokens** — neutral ramp ทั้งชุดอยู่ที่ `index.css` (`:root` + `@theme inline`), map 1:1 กับ slate (สีเท่าเดิม) ปรับรวมที่ `:root` ที่เดียว · **ทั้งแอปใช้โทเคนแล้ว ห้าม `slate-*` ในของใหม่** — ตอน copy จาก mockup ให้แปลง `slate-N` → โทเคนตามนี้:
+| slate | token (util) | | slate | token (util) |
+|---|---|---|---|---|
+| 900 | `ink` | | 300 | `border` |
+| 800 | `strong` | | 200 | `border-subtle` |
+| 700 | `body` | | 100 | `divider` |
+| 600 | `soft` | | 50 | `hover` |
+| 500 | `dim` | | page bg | `var(--page)` |
+| 400 | `muted` | | | |
+ใช้ได้ทั้ง util (`text-ink`/`border-border`/`bg-hover`/`divide-divider`/`bg-ink/40`) และ `var(--ink)` ฯลฯ
+
+**Functional/state colors** (ใน `@theme`, map 1:1, ใช้ผ่าน util `text-danger-600`/`bg-warning-100` ฯลฯ) — ตอน copy จาก mockup แปลง family ตามนี้: `rose-*`→`danger-*` · `amber-*`→`warning-*` · `emerald-*`→`success-*` · `sky-*`→`info-*`
+**คงเป็นสีดิบ (ไม่ใช่ token):** จานสีสถานะโปรเจกต์ใน `lib/project-ui.ts` (`STATUS_COLOR_CLASSES` keyed ด้วย color · ตัวสถานะปรับเองได้ที่ตั้งค่า ดู §4.3 + core/project-status) + `HEALTH_DOT` · avatar palette ใน `pages/ProjectDetail.tsx` (`AVATAR_COLORS` — ตกแต่ง อิสระจาก token) · `white`/brand
 
 ## คำสั่ง
 `pnpm dev` · `pnpm build` · `pnpm deploy` · `pnpm lint` · `pnpm typecheck` · `pnpm test` · `pnpm test:e2e` · `pnpm db:generate` · `pnpm db:migrate` · `pnpm db:seed`
