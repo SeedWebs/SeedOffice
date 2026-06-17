@@ -100,7 +100,7 @@ export function ProjectStatusSettings() {
               {openColor === i && (
                 <>
                   <div className="fixed inset-0 z-40" onClick={() => setOpenColor(null)} />
-                  <div className="absolute left-0 top-full mt-1 z-50 bg-white rounded-lg shadow-2xl border border-border-subtle p-2 grid grid-cols-5 gap-1.5">
+                  <div className="absolute left-0 top-full mt-1 z-50 w-44 bg-white rounded-lg shadow-2xl border border-border-subtle p-2 grid grid-cols-5 gap-1.5">
                     {STATUS_COLOR_KEYS.map((c) => (
                       <button
                         key={c}
