@@ -6,18 +6,23 @@
 
 ## สถานะ
 
-🎨 **ช่วงออกแบบ** — ยังไม่เริ่มเขียนโค้ดจริง
+🚀 **ขึ้น production แล้ว** → **[office.seedwebs.com](https://office.seedwebs.com)** (deploy แรก มิ.ย. 2026)
 
-- ✅ สเปก (v0.9) — [SPEC.md](./SPEC.md)
-- ✅ Mockup กดได้จริง + รองรับมือถือ → **[ดู Live ▸](https://seedwebs.github.io/SeedOffice/)**
-- ✅ แผน P1 (T01–T18) — [tasks/plan.md](./tasks/plan.md) · [tasks/todo.md](./tasks/todo.md)
-- ⏳ ถัดไป: เริ่ม build P1 (monorepo scaffold)
+ใช้งานจริงครบลูป **งาน → เวลา → เงิน** พร้อมฟีเจอร์รอบข้าง:
 
-## Stack (วางแผนไว้สำหรับ P1)
+- ✅ **P1** — ลูปเงิน (โปรเจกต์/งาน · ลงเวลา timer+manual · ค่าตอบแทนงวด 25→24 · ต้นทุน/กำไร) + เอกสาร + ลูกค้า/CRM
+- ✅ **P2** — เงินสดย่อย · team hub + ปฏิทินทีม · realtime presence (Durable Objects) · PWA
+- ✅ **P3** — อีเมลกลาง (Gmail: ตอบ/มอบหมาย/ค้นย้อนหลัง) · sync Google Calendar + ICS feed
+- ⏳ ถัดไป: P4 (ใบเสนอราคา → FlowAccount) · แจ้งเตือนภายใน · cutover เลิก Notion/Everhour
 
-- **Backend:** Cloudflare Workers · Hono · D1 + Drizzle · R2
-- **Frontend:** React · Vite · React Router · Tailwind
-- **Monorepo:** pnpm workspaces (`apps/web`, `apps/api`, `packages/db`, `packages/core`)
+> ดีไซน์อ้างอิง [mockup.html](./mockup.html) ([ดู Live](https://seedwebs.github.io/SeedOffice/)) · สเปกเต็ม [SPEC.md](./SPEC.md)
+
+## Stack
+
+- **Backend:** Cloudflare Workers · Hono 4 · D1 + Drizzle 0.45 · R2 · Durable Objects (WebSocket presence/collision)
+- **Frontend:** React 19 · Vite 8 · React Router 7 · Tailwind 4.3
+- **Monorepo:** pnpm workspaces — `apps/web` · `apps/api` · `packages/db` (Drizzle) · `packages/core` (โดเมนการเงินล้วน, TDD)
+- **เทสต์:** Vitest 4 (`vitest-pool-workers` รันบน workerd + D1 จริง) + Playwright e2e
 
 ## ในรีโป
 
