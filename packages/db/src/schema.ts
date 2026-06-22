@@ -41,6 +41,32 @@ export const sessions = sqliteTable(
   (t) => [index('sessions_user_idx').on(t.userId)],
 )
 
+/** scope ที่ PAT ใช้ได้ (SPEC §4.18) — งาน+เวลาเท่านั้น, ไม่มี scope การเงิน */
+export const API_TOKEN_SCOPES = ['tasks:read', 'tasks:write', 'time:read', 'time:write', 'projects:read'] as const
+
+/**
+ * Personal Access Token (SPEC §4.18) — ให้ Claude/automation เรียก API
+ * id = SHA-256 hash ของ token (เหมือน `sessions` — token หลุดจาก DB ใช้ไม่ได้) · token เต็ม prefix `sko_` โชว์ครั้งเดียวตอนสร้าง (สร้าง+hash ใน api/lib/api-token)
+ * scope = งาน+เวลาเท่านั้น · เพิกถอน = ใส่ revokedAt (soft) — route การเงินรับ cookie เท่านั้น PAT แตะไม่ได้
+ */
+export const apiTokens = sqliteTable(
+  'api_tokens',
+  {
+    id: id(), // = SHA-256 hash ของ token (override default uuid ตอน insert)
+    userId: text('user_id')
+      .notNull()
+      .references(() => users.id),
+    name: text('name').notNull(),
+    scopes: text('scopes', { mode: 'json' }).$type<string[]>().notNull(),
+    lastUsedAt: integer('last_used_at', { mode: 'timestamp_ms' }),
+    revokedAt: integer('revoked_at', { mode: 'timestamp_ms' }),
+    createdAt: integer('created_at', { mode: 'timestamp_ms' })
+      .notNull()
+      .$defaultFn(() => new Date()),
+  },
+  (t) => [index('api_tokens_user_idx').on(t.userId)],
+)
+
 /** rate แบบ effective-dated — เปลี่ยน rate = insert แถวใหม่ ไม่แก้ของเก่า (SPEC §4.2) */
 export const rates = sqliteTable(
   'rates',
@@ -754,6 +780,7 @@ export const auditLogs = sqliteTable(
 
 export type User = typeof users.$inferSelect
 export type Session = typeof sessions.$inferSelect
+export type ApiToken = typeof apiTokens.$inferSelect
 export type Rate = typeof rates.$inferSelect
 export type CompanyConfig = typeof companyConfig.$inferSelect
 export type AuditLog = typeof auditLogs.$inferSelect

@@ -20,3 +20,18 @@ export function requireRole(...roles: Role[]) {
 /** ทางลัดที่ใช้บ่อย */
 export const ownerOnly = requireRole('owner')
 export const teamOnly = requireRole('owner', 'member') // vendor ❌ (การเงิน/ลูกค้า/เอกสาร)
+
+/**
+ * จำกัด PAT ตาม scope (SPEC §4.18) — ใช้ต่อจาก requireAuthOrToken
+ * มาทาง PAT (มี c.var.tokenScopes) → ต้องมีครบทุก scope ที่ต้องการ ไม่งั้น 403
+ * มาทาง session cookie (ไม่มี tokenScopes = คนจริง) → ผ่านเสมอ (role gate เดิมคุมสิทธิ์อยู่แล้ว)
+ */
+export function requireScope(...needed: string[]) {
+  return createMiddleware<AppEnv>(async (c, next) => {
+    const scopes = c.get('tokenScopes')
+    if (scopes && !needed.every((s) => scopes.includes(s))) {
+      return c.json({ error: 'insufficient_scope', need: needed }, 403)
+    }
+    await next()
+  })
+}

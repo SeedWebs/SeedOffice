@@ -21,6 +21,7 @@ import { projectRoutes } from './routes/projects'
 import { taskDetailRoutes } from './routes/task-detail'
 import { taskRoutes } from './routes/tasks'
 import { timeRoutes } from './routes/time'
+import { tokenRoutes } from './routes/tokens'
 import { userRoutes } from './routes/users'
 import { runScheduled } from './scheduled'
 
@@ -45,6 +46,10 @@ app.use('/api/users/*', requireAuth)
 app.use('/api/users', requireAuth)
 app.use('/api/config', requireAuth)
 app.route('/api', userRoutes)
+// Personal Access Tokens (SPEC §4.18) — จัดการผ่านเว็บ (cookie) · owner+member · vendor ❌
+app.use('/api/tokens', requireAuth, teamOnly)
+app.use('/api/tokens/*', requireAuth, teamOnly)
+app.route('/api/tokens', tokenRoutes)
 app.use('/api/projects/*', requireAuth)
 app.use('/api/projects', requireAuth)
 app.route('/api/projects', projectRoutes)
