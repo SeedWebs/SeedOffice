@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
-import { requireAuth } from './middleware/auth'
-import { ownerOnly, teamOnly } from './middleware/roles'
+import { requireAuth, requireAuthOrToken } from './middleware/auth'
+import { ownerOnly, requireScope, teamOnly, tokenScope } from './middleware/roles'
 import { adminRoutes } from './routes/admin'
 import { authRoutes } from './routes/auth'
 import { calendarRoutes } from './routes/calendar'
@@ -21,6 +21,9 @@ import { projectRoutes } from './routes/projects'
 import { taskDetailRoutes } from './routes/task-detail'
 import { taskRoutes } from './routes/tasks'
 import { timeRoutes } from './routes/time'
+import { meTodayRoutes } from './routes/me-today'
+import { profileRoutes } from './routes/profile'
+import { tokenRoutes } from './routes/tokens'
 import { userRoutes } from './routes/users'
 import { runScheduled } from './scheduled'
 
@@ -45,6 +48,10 @@ app.use('/api/users/*', requireAuth)
 app.use('/api/users', requireAuth)
 app.use('/api/config', requireAuth)
 app.route('/api', userRoutes)
+// Personal Access Tokens (SPEC §4.18) — จัดการผ่านเว็บ (cookie) · owner+member · vendor ❌
+app.use('/api/tokens', requireAuth, teamOnly)
+app.use('/api/tokens/*', requireAuth, teamOnly)
+app.route('/api/tokens', tokenRoutes)
 app.use('/api/projects/*', requireAuth)
 app.use('/api/projects', requireAuth)
 app.route('/api/projects', projectRoutes)
@@ -56,12 +63,14 @@ app.use('/api/notes/*', requireAuth, teamOnly)
 app.route('/api/clients', clientRoutes)
 app.route('/api', crmItemRoutes)
 app.use('/api/groups/*', requireAuth)
-app.use('/api/tasks/*', requireAuth)
+// งาน: เปิดให้ PAT (tasks:read GET / tasks:write เขียน) — handler ยังมี teamOnly คุม role ต่อ (vendor เขียนไม่ได้)
+// ครอบ PATCH /tasks/:id (assign/status), POST /tasks/:id/star (ทำวันนี้), POST /tasks/:id/time (ลงเวลา = tasks:write)
+app.use('/api/tasks/*', requireAuthOrToken, tokenScope({ read: 'tasks:read', write: 'tasks:write' }))
 app.use('/api/attachments/*', requireAuth)
 app.use('/api/overview', requireAuth)
 app.use('/api/timer', requireAuth)
 app.use('/api/timer/*', requireAuth)
-app.use('/api/time/*', requireAuth)
+app.use('/api/time/*', requireAuthOrToken, tokenScope({ read: 'time:read', write: 'time:write' })) // แก้/ลบ entry ผ่าน PAT
 app.use('/api/team-hours', requireAuth)
 // การเงินโปรเจกต์ทั้งหมด: vendor 403 (SPEC §4.8)
 app.use('/api/projects/:id/finance', requireAuth, teamOnly)
@@ -139,16 +148,12 @@ app.get('/api/presence/ws', requireAuth, teamOnly, async (c) => {
   return stub.fetch(new Request(c.req.raw.url, { headers }))
 })
 
-app.get('/api/me', requireAuth, (c) => {
-  const u = c.var.user
-  return c.json({
-    id: u.id,
-    name: u.name,
-    email: u.email,
-    role: u.role,
-    avatarUrl: u.avatarUrl,
-  })
-})
+// โปรไฟล์ตัวเอง (GET/PATCH /api/me) — ทุก role · ดู/แก้ ชื่อจริง/นามสกุล/ชื่อเล่น ของตัวเอง
+// เช็คอิน/งานวันนี้ของฉัน (SPEC §4.18) — PAT scope tasks:read หรือ session cookie · ก่อน /api/me (path เจาะจงกว่า)
+app.use('/api/me/today', requireAuthOrToken, requireScope('tasks:read'))
+app.route('/api', meTodayRoutes)
+app.use('/api/me', requireAuth)
+app.route('/api', profileRoutes)
 
 export { app } // ใช้ในเทสต์ (app.request)
 
