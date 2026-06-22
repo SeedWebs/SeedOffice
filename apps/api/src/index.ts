@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
-import { requireAuth } from './middleware/auth'
-import { ownerOnly, teamOnly } from './middleware/roles'
+import { requireAuth, requireAuthOrToken } from './middleware/auth'
+import { ownerOnly, requireScope, teamOnly } from './middleware/roles'
 import { adminRoutes } from './routes/admin'
 import { authRoutes } from './routes/auth'
 import { calendarRoutes } from './routes/calendar'
@@ -21,6 +21,7 @@ import { projectRoutes } from './routes/projects'
 import { taskDetailRoutes } from './routes/task-detail'
 import { taskRoutes } from './routes/tasks'
 import { timeRoutes } from './routes/time'
+import { meTodayRoutes } from './routes/me-today'
 import { profileRoutes } from './routes/profile'
 import { tokenRoutes } from './routes/tokens'
 import { userRoutes } from './routes/users'
@@ -146,6 +147,9 @@ app.get('/api/presence/ws', requireAuth, teamOnly, async (c) => {
 })
 
 // โปรไฟล์ตัวเอง (GET/PATCH /api/me) — ทุก role · ดู/แก้ ชื่อจริง/นามสกุล/ชื่อเล่น ของตัวเอง
+// เช็คอิน/งานวันนี้ของฉัน (SPEC §4.18) — PAT scope tasks:read หรือ session cookie · ก่อน /api/me (path เจาะจงกว่า)
+app.use('/api/me/today', requireAuthOrToken, requireScope('tasks:read'))
+app.route('/api', meTodayRoutes)
 app.use('/api/me', requireAuth)
 app.route('/api', profileRoutes)
 
