@@ -21,6 +21,7 @@ import { projectRoutes } from './routes/projects'
 import { taskDetailRoutes } from './routes/task-detail'
 import { taskRoutes } from './routes/tasks'
 import { timeRoutes } from './routes/time'
+import { profileRoutes } from './routes/profile'
 import { tokenRoutes } from './routes/tokens'
 import { userRoutes } from './routes/users'
 import { runScheduled } from './scheduled'
@@ -144,16 +145,9 @@ app.get('/api/presence/ws', requireAuth, teamOnly, async (c) => {
   return stub.fetch(new Request(c.req.raw.url, { headers }))
 })
 
-app.get('/api/me', requireAuth, (c) => {
-  const u = c.var.user
-  return c.json({
-    id: u.id,
-    name: u.name,
-    email: u.email,
-    role: u.role,
-    avatarUrl: u.avatarUrl,
-  })
-})
+// โปรไฟล์ตัวเอง (GET/PATCH /api/me) — ทุก role · ดู/แก้ ชื่อจริง/นามสกุล/ชื่อเล่น ของตัวเอง
+app.use('/api/me', requireAuth)
+app.route('/api', profileRoutes)
 
 export { app } // ใช้ในเทสต์ (app.request)
 

@@ -14,6 +14,7 @@ import { Login } from './pages/Login'
 import { ProjectDetailPage } from './pages/ProjectDetail'
 import { ProjectEditPage } from './pages/ProjectEdit'
 import { PayrollPage } from './pages/Payroll'
+import { ProfilePage } from './pages/Profile'
 import { ProjectsPage } from './pages/Projects'
 
 function Protected({ children, roles }: { children: ReactNode; roles?: Me['role'][] }) {
@@ -81,6 +82,7 @@ const router = createBrowserRouter([
         ),
       },
       { path: 'payroll', element: <PayrollPage /> },
+      { path: 'profile', element: <ProfilePage /> },
       {
         path: 'expenses',
         element: (

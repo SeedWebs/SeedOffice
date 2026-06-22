@@ -16,7 +16,10 @@ const id = () =>
 export const users = sqliteTable('users', {
   id: id(),
   email: text('email').notNull().unique(),
-  name: text('name').notNull(),
+  name: text('name').notNull(), // ชื่อที่แสดงทั้งแอป — derive จาก nickname || "firstName lastName" ตอนแก้โปรไฟล์
+  firstName: text('first_name'), // ชื่อจริง (แก้เองหน้าโปรไฟล์)
+  lastName: text('last_name'), // นามสกุล
+  nickname: text('nickname'), // ชื่อเล่น (ถ้ามี = ใช้เป็น display name)
   googleSub: text('google_sub').unique(),
   role: text('role', { enum: ['owner', 'member', 'vendor'] }).notNull(),
   status: text('status', { enum: ['active', 'disabled'] }).notNull().default('active'),

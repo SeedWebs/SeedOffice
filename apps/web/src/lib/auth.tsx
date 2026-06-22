@@ -7,6 +7,9 @@ export interface Me {
   email: string
   role: 'owner' | 'member' | 'vendor'
   avatarUrl: string | null
+  firstName: string | null
+  lastName: string | null
+  nickname: string | null
 }
 
 interface AuthState {

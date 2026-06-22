@@ -150,13 +150,20 @@ export function Layout() {
       </nav>
       <div className="p-3 border-t border-border-subtle">
         <div className="flex items-center gap-2.5 px-2 py-1.5">
-          <div className="w-8 h-8 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-xs font-semibold shrink-0">
-            {initial}
-          </div>
-          <div className="min-w-0 flex-1">
-            <div className="text-sm font-medium text-strong truncate">{user.name}</div>
-            <div className="text-[11px] text-muted truncate capitalize">{user.role}</div>
-          </div>
+          <NavLink
+            to="/profile"
+            onClick={() => setNavOpen(false)}
+            title="โปรไฟล์"
+            className="flex items-center gap-2.5 min-w-0 flex-1 -mx-1 px-1 py-0.5 rounded-lg hover:bg-hover"
+          >
+            <div className="w-8 h-8 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-xs font-semibold shrink-0">
+              {initial}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-sm font-medium text-strong truncate">{user.name}</div>
+              <div className="text-[11px] text-muted truncate capitalize">{user.role}</div>
+            </div>
+          </NavLink>
           <button
             onClick={() => {
               void logout().then(() => navigate('/login'))
