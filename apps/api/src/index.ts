@@ -1,6 +1,6 @@
 import { Hono } from 'hono'
 import { requireAuth, requireAuthOrToken } from './middleware/auth'
-import { ownerOnly, requireScope, teamOnly } from './middleware/roles'
+import { ownerOnly, requireScope, teamOnly, tokenScope } from './middleware/roles'
 import { adminRoutes } from './routes/admin'
 import { authRoutes } from './routes/auth'
 import { calendarRoutes } from './routes/calendar'
@@ -63,12 +63,14 @@ app.use('/api/notes/*', requireAuth, teamOnly)
 app.route('/api/clients', clientRoutes)
 app.route('/api', crmItemRoutes)
 app.use('/api/groups/*', requireAuth)
-app.use('/api/tasks/*', requireAuth)
+// งาน: เปิดให้ PAT (tasks:read GET / tasks:write เขียน) — handler ยังมี teamOnly คุม role ต่อ (vendor เขียนไม่ได้)
+// ครอบ PATCH /tasks/:id (assign/status), POST /tasks/:id/star (ทำวันนี้), POST /tasks/:id/time (ลงเวลา = tasks:write)
+app.use('/api/tasks/*', requireAuthOrToken, tokenScope({ read: 'tasks:read', write: 'tasks:write' }))
 app.use('/api/attachments/*', requireAuth)
 app.use('/api/overview', requireAuth)
 app.use('/api/timer', requireAuth)
 app.use('/api/timer/*', requireAuth)
-app.use('/api/time/*', requireAuth)
+app.use('/api/time/*', requireAuthOrToken, tokenScope({ read: 'time:read', write: 'time:write' })) // แก้/ลบ entry ผ่าน PAT
 app.use('/api/team-hours', requireAuth)
 // การเงินโปรเจกต์ทั้งหมด: vendor 403 (SPEC §4.8)
 app.use('/api/projects/:id/finance', requireAuth, teamOnly)

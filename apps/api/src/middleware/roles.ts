@@ -35,3 +35,20 @@ export function requireScope(...needed: string[]) {
     await next()
   })
 }
+
+/**
+ * จำกัด PAT แบบ method-based บน prefix (SPEC §4.18) — ใช้ต่อจาก requireAuthOrToken
+ * GET/HEAD → ต้องมี read scope · เขียน (POST/PATCH/PUT/DELETE) → ต้องมี write scope
+ * cookie (ไม่มี tokenScopes = คนจริง) → ผ่านเสมอ (role/teamOnly ใน handler คุมต่อ) · ขาด scope/ไม่ได้ตั้ง → 403
+ * หมายเหตุ: ลงเวลาคือ POST /api/tasks/:id/time (อยู่ใต้ prefix /api/tasks) จึงใช้ tasks:write
+ */
+export function tokenScope(opts: { read?: string; write?: string }) {
+  return createMiddleware<AppEnv>(async (c, next) => {
+    const scopes = c.get('tokenScopes')
+    if (!scopes) return next()
+    const isRead = c.req.method === 'GET' || c.req.method === 'HEAD'
+    const need = isRead ? opts.read : opts.write
+    if (!need || !scopes.includes(need)) return c.json({ error: 'insufficient_scope', need: need ?? null }, 403)
+    return next()
+  })
+}
