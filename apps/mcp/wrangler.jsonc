@@ -3,6 +3,8 @@
 {
   "$schema": "../../node_modules/wrangler/config-schema.json",
   "name": "seedoffice-mcp",
+  // บัญชี SeedWebs (ไม่ใช่ secret — เหมือน D1 id ใน root) · จำเป็นเพราะ worker นี้ไม่มี route ให้ wrangler เดาบัญชี (login มีหลายบัญชี)
+  "account_id": "5d27d6b42089bb94d0311c729ccce6bb",
   "main": "src/index.ts",
   "compatibility_date": "2026-06-10",
   "compatibility_flags": ["nodejs_compat"],
