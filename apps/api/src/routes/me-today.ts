@@ -1,5 +1,5 @@
-import { bkkDateOf } from '@seedoffice/core'
-import { createDb, projects, taskGroups, tasks, taskStars, timeEntries } from '@seedoffice/db'
+import { bkkDateOf, isArchivedStatus } from '@seedoffice/core'
+import { companyConfig, createDb, projects, taskGroups, tasks, taskStars, timeEntries } from '@seedoffice/db'
 import { and, asc, eq, isNull, ne } from 'drizzle-orm'
 import { Hono } from 'hono'
 import type { AppEnv } from '../types'
@@ -62,3 +62,32 @@ export const meTodayRoutes = new Hono<AppEnv>().get('/me/today', async (c) => {
     minutes: { today: await sumMinutes(today), yesterday: await sumMinutes(yesterday) },
   })
 })
+
+  /**
+   * GET /api/me/projects (SPEC §4.18 · T3) — project→group tree สำหรับ PAT/MCP
+   * ไว้ค้น groupId ก่อนสร้าง task ผ่าน POST /api/groups/:id/tasks (เดิม discover ได้แค่ board cookie-only)
+   * เปิดให้ PAT (scope tasks:read) หรือ cookie · คืนเฉพาะโครงสร้าง (ไม่มีฟิลด์การเงิน) · ตัด archived ออก
+   */
+  .get('/me/projects', async (c) => {
+    const db = createDb(c.env.DB)
+    const cfg = (await db.select({ projectStatuses: companyConfig.projectStatuses }).from(companyConfig).limit(1))[0]
+    const rows = await db
+      .select({ id: projects.id, name: projects.name, type: projects.type, status: projects.status })
+      .from(projects)
+      .orderBy(asc(projects.name))
+    const groups = await db
+      .select({ id: taskGroups.id, name: taskGroups.name, projectId: taskGroups.projectId })
+      .from(taskGroups)
+      .orderBy(asc(taskGroups.sortOrder))
+    return c.json({
+      projects: rows
+        .filter((p) => !isArchivedStatus(cfg?.projectStatuses, p.status))
+        .map((p) => ({
+          id: p.id,
+          name: p.name,
+          type: p.type,
+          status: p.status,
+          groups: groups.filter((g) => g.projectId === p.id).map((g) => ({ id: g.id, name: g.name })),
+        })),
+    })
+  })
