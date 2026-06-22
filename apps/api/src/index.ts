@@ -62,7 +62,11 @@ app.use('/api/services/*', requireAuth, teamOnly)
 app.use('/api/notes/*', requireAuth, teamOnly)
 app.route('/api/clients', clientRoutes)
 app.route('/api', crmItemRoutes)
-app.use('/api/groups/*', requireAuth)
+// สร้าง task ใหม่ผ่าน PAT (SPEC §4.18 · T3): POST /api/groups/:id/tasks เปิดให้ Bearer (tasks:write)
+// — discover groupId ผ่าน GET /api/me/projects · teamOnly ใน handler ยังกัน vendor
+app.use('/api/groups/:id/tasks', requireAuthOrToken, tokenScope({ read: 'tasks:read', write: 'tasks:write' }))
+// จัดการ group เอง (rename/delete) = cookie session เท่านั้น — โครงสร้าง board ไม่เปิดให้ PAT
+app.use('/api/groups/:id', requireAuth)
 // งาน: เปิดให้ PAT (tasks:read GET / tasks:write เขียน) — handler ยังมี teamOnly คุม role ต่อ (vendor เขียนไม่ได้)
 // ครอบ PATCH /tasks/:id (assign/status), POST /tasks/:id/star (ทำวันนี้), POST /tasks/:id/time (ลงเวลา = tasks:write)
 app.use('/api/tasks/*', requireAuthOrToken, tokenScope({ read: 'tasks:read', write: 'tasks:write' }))
@@ -151,6 +155,8 @@ app.get('/api/presence/ws', requireAuth, teamOnly, async (c) => {
 // โปรไฟล์ตัวเอง (GET/PATCH /api/me) — ทุก role · ดู/แก้ ชื่อจริง/นามสกุล/ชื่อเล่น ของตัวเอง
 // เช็คอิน/งานวันนี้ของฉัน (SPEC §4.18) — PAT scope tasks:read หรือ session cookie · ก่อน /api/me (path เจาะจงกว่า)
 app.use('/api/me/today', requireAuthOrToken, requireScope('tasks:read'))
+// discovery สำหรับ PAT/MCP (SPEC §4.18 · T3): project→group tree เพื่อรู้ groupId ตอนสร้าง task
+app.use('/api/me/projects', requireAuthOrToken, requireScope('tasks:read'))
 app.route('/api', meTodayRoutes)
 app.use('/api/me', requireAuth)
 app.route('/api', profileRoutes)
