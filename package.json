@@ -11,7 +11,7 @@
     "deploy": "pnpm build && wrangler deploy",
     "lint": "eslint .",
     "typecheck": "pnpm -r --if-present run typecheck",
-    "test": "vitest run && pnpm --filter @seedoffice/api run test",
+    "test": "vitest run && pnpm --filter @seedoffice/api run test && pnpm --filter @seedoffice/mcp run test",
     "cf-typegen": "wrangler types",
     "db:generate": "pnpm --filter @seedoffice/db exec drizzle-kit generate",
     "db:migrate": "wrangler d1 migrations apply seedoffice --local",
