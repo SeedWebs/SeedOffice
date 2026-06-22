@@ -52,3 +52,19 @@ mockup.html เขียนด้วย v3 — เวลา copy class มาใ
 `pnpm dev` · `pnpm build` · `pnpm deploy` · `pnpm lint` · `pnpm typecheck` · `pnpm test` · `pnpm test:e2e` · `pnpm db:generate` · `pnpm db:migrate` · `pnpm db:seed`
 
 **DoD ทุก task:** `typecheck + lint + test` เขียว + manual verify ผ่าน + ขึ้น CF preview ได้
+
+## Team Progress Wiki — sync ทุกครั้งที่ทำงานสำคัญ
+
+หลังทำงาน **สำคัญ** ใน SeedOffice (ฟีเจอร์ ship · ตัดสินใจ spec/scope · fix ที่ไม่ตรงไปตรงมา) → **อัปเดต hub ใน team wiki** ให้ทีมเห็นความคืบหน้าโดยไม่ต้องอ่าน diff · งานเล็ก/ยังไม่เสร็จ ข้ามได้
+
+- **Wiki repo**: `git@github.com:SeedWebs/wiki.git` — Obsidian vault **แยกจาก repo นี้** (git history คนละอัน · กฏ "ถามก่อน deploy" ไม่ใช้กับ wiki)
+- **Path ต่อคน** — แต่ละคน clone wiki คนละที่ จึง **ไม่ hardcode**: อ่านจาก env **`SEEDWEBS_WIKI_PATH`** (`echo "$SEEDWEBS_WIKI_PATH"` แล้วเอา absolute path ไปใช้กับ Read/Edit/Write — tool ไม่ expand `$VAR`)
+  - **ถ้า `SEEDWEBS_WIKI_PATH` ว่าง/ไม่ตั้ง → ข้าม step wiki เงียบๆ ห้ามเดา path**
+  - ตั้งครั้งเดียวใน `.claude/settings.local.json` (**gitignored**):
+    ```json
+    { "env": { "SEEDWEBS_WIKI_PATH": "/absolute/path/to/your/wiki" } }
+    ```
+    (env โหลดตอนเปิด session — ตั้งแล้ว reload)
+- **Hub ของ repo นี้**: `<SEEDWEBS_WIKI_PATH>/projects/seedoffice/SeedOffice.md` (อ่าน `CONVENTIONS.md` ของ wiki ก่อนเขียน — โครง hub + §1.5 ดูแลไม่ให้รก + §1.6 marker)
+- **วิธีเขียน**: สังเคราะห์ — *อะไรเปลี่ยน + ทำไม* ไม่ก็อป diff/spec · ลิงก์กลับ repo ด้วย **GitHub URL** (commit/PR/ไฟล์) ไม่ใช่ path เครื่อง
+- **Commit ใน wiki repo**: `docs(seedoffice): <สรุป>` ลง `main` ตรงๆ (เอกสาร แรงเสียดทานต่ำ)
