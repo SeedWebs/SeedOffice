@@ -66,5 +66,6 @@ mockup.html เขียนด้วย v3 — เวลา copy class มาใ
     ```
     (env โหลดตอนเปิด session — ตั้งแล้ว reload)
 - **Hub ของ repo นี้**: `<SEEDWEBS_WIKI_PATH>/projects/seedoffice/SeedOffice.md` (อ่าน `CONVENTIONS.md` ของ wiki ก่อนเขียน — โครง hub + §1.5 ดูแลไม่ให้รก + §1.6 marker)
+- **เริ่มงาน/หยิบ task: รันเลข `T?` ใน hub ก่อนลงมือ** — เจอบรรทัด `T?` (ไอเดียที่ owner จดไว้ยังไม่ใส่เลข) ให้แทนด้วยเลขจริงตามกฎ **`next = max(backlog + 📓 Log) + 1`** (id ถาวร ห้าม reuse/renumber — ดู `CONVENTIONS.md` §1.5 ของ wiki) ไล่บนลงล่าง *ก่อน* เริ่มทำงาน → owner จดไอเดียได้ลื่นไม่ต้องคิดเลข, agent เป็นคนรันให้ (skip เงียบถ้า `SEEDWEBS_WIKI_PATH` ไม่ตั้ง)
 - **วิธีเขียน**: สังเคราะห์ — *อะไรเปลี่ยน + ทำไม* ไม่ก็อป diff/spec · ลิงก์กลับ repo ด้วย **GitHub URL** (commit/PR/ไฟล์) ไม่ใช่ path เครื่อง
 - **Commit ใน wiki repo**: `docs(seedoffice): <สรุป>` ลง `main` ตรงๆ (เอกสาร แรงเสียดทานต่ำ)
