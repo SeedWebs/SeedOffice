@@ -6,6 +6,7 @@ import { useAuth } from '../lib/auth'
 import { useTimer } from '../lib/timer'
 import { useLoad } from '../lib/useLoad'
 import { avatarColor } from '../pages/ProjectDetail'
+import { Avatar } from './Avatar'
 import { useDialog } from './Dialog'
 
 interface TimeRow {
@@ -155,9 +156,9 @@ interface Detail {
   dueDate: string | null
   groupName: string
   projectName: string
-  comments: { id: string; body: string; userName: string; createdAt: number }[]
+  comments: { id: string; body: string; userName: string; userAvatarUrl?: string | null; createdAt: number }[]
   attachments: { id: string; filename: string; mime: string; sizeBytes: number }[]
-  activity: { id: string; action: string; actorName: string; meta: Record<string, unknown> | null; at: number }[]
+  activity: { id: string; action: string; actorName: string; actorAvatarUrl?: string | null; meta: Record<string, unknown> | null; at: number }[]
 }
 interface UserOpt {
   id: string
@@ -343,7 +344,7 @@ export function TaskDrawer({ taskId, onClose, onChanged }: { taskId: string; onC
               {t.comments.length === 0 && <div className="text-sm text-border">ยังไม่มีความเห็น</div>}
               {t.comments.map((cm) => (
                 <div key={cm.id} className="flex gap-2">
-                  <div className={`w-7 h-7 rounded-full grid place-items-center text-[10px] font-semibold shrink-0 ${avatarColor(cm.userName)}`}>{cm.userName.slice(0, 2)}</div>
+                  <Avatar name={cm.userName} avatarUrl={cm.userAvatarUrl} className="w-7 h-7 text-[10px]" colorClass={avatarColor(cm.userName)} />
                   <div className="bg-hover rounded-xl px-3 py-2 text-sm text-soft min-w-0">
                     <b className="text-body">{cm.userName}</b> · {cm.body}
                     <div className="text-[10px] text-muted mt-0.5">{fmtWhen(cm.createdAt)}</div>
@@ -362,7 +363,7 @@ export function TaskDrawer({ taskId, onClose, onChanged }: { taskId: string; onC
               <div className="mt-3 space-y-2.5">
                 {t.activity.map((a) => (
                   <div key={a.id} className="flex gap-2 text-xs">
-                    <div className={`w-5 h-5 rounded-full grid place-items-center text-[9px] font-semibold shrink-0 ${avatarColor(a.actorName)}`}>{a.actorName.slice(0, 2)}</div>
+                    <Avatar name={a.actorName} avatarUrl={a.actorAvatarUrl} className="w-5 h-5 text-[9px]" colorClass={avatarColor(a.actorName)} />
                     <div className="flex-1 leading-snug">
                       <b className="text-body">{a.actorName}</b>{' '}
                       <span className="text-dim">{ACTION_LABEL[a.action] ?? a.action}</span>{' '}
