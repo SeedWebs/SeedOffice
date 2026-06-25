@@ -3,6 +3,7 @@
 
 # Claude Code (local-only)
 .claude/settings.local.json
+.mcp.json
 
 # Node / build (สำหรับตอน build P1)
 node_modules/
