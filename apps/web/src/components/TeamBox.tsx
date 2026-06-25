@@ -5,6 +5,7 @@ import { api } from '../lib/api'
 import { TIMER_CHANGED_EVENT } from '../lib/timer'
 import { useLoad } from '../lib/useLoad'
 import { avatarColor } from '../pages/ProjectDetail'
+import { Avatar } from './Avatar'
 
 interface ProjectTasks {
   projectId: string
@@ -14,6 +15,7 @@ interface ProjectTasks {
 export interface TeamRow {
   userId: string
   name: string
+  avatarUrl: string | null
   role: string
   todayMinutes: number
   monthMinutes: number
@@ -98,9 +100,7 @@ export function TeamBox({ presenceRows }: { presenceRows?: TeamRow[] | null }) {
       <div className="flex flex-wrap gap-3">
         {rows.map((p) => (
           <div key={p.userId} className={`group relative ${p.onLeaveToday ? 'opacity-50' : ''}`}>
-            <div className={`w-11 h-11 rounded-full grid place-items-center text-sm font-semibold ${avatarColor(p.name)} ${p.running ? 'ring-2 ring-brand-400' : ''}`}>
-              {p.name.slice(0, 2)}
-            </div>
+            <Avatar name={p.name} avatarUrl={p.avatarUrl} className={`w-11 h-11 text-sm ${p.running ? 'ring-2 ring-brand-400' : ''}`} colorClass={avatarColor(p.name)} />
             {p.running && <RunningBadge startedAt={p.running.startedAt} />}
             <div className="absolute z-20 left-0 top-full mt-2 w-48 bg-ink text-white rounded-xl p-3 text-xs opacity-0 group-hover:opacity-100 pointer-events-none transition shadow-lg">
               <div className="font-semibold mb-0.5">{p.name}</div>
@@ -142,7 +142,7 @@ export function TeamBox({ presenceRows }: { presenceRows?: TeamRow[] | null }) {
           return (
             <div key={p.userId} className="bg-white p-3">
               <div className="flex items-center gap-2 mb-1">
-                <div className={`w-6 h-6 rounded-full grid place-items-center text-[10px] font-semibold ${avatarColor(p.name)}`}>{p.name.slice(0, 2)}</div>
+                <Avatar name={p.name} avatarUrl={p.avatarUrl} className="w-6 h-6 text-[10px]" colorClass={avatarColor(p.name)} />
                 <span className="font-medium text-sm">{p.name}</span>
               </div>
               {showYesterday && p.yesterday.byProject.length > 0 && (

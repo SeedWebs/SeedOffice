@@ -36,7 +36,7 @@ export const taskDetailRoutes = new Hono<AppEnv>()
     if (!row) return c.json({ error: 'not_found' }, 404)
 
     const comments = await db
-      .select({ comment: taskComments, userName: users.name })
+      .select({ comment: taskComments, userName: users.name, userAvatarUrl: users.avatarUrl })
       .from(taskComments)
       .innerJoin(users, eq(taskComments.userId, users.id))
       .where(eq(taskComments.taskId, taskId))
@@ -47,7 +47,7 @@ export const taskDetailRoutes = new Hono<AppEnv>()
       .where(eq(taskAttachments.taskId, taskId))
       .orderBy(asc(taskAttachments.createdAt))
     const activity = await db
-      .select({ log: auditLogs, actorName: users.name })
+      .select({ log: auditLogs, actorName: users.name, actorAvatarUrl: users.avatarUrl })
       .from(auditLogs)
       .innerJoin(users, eq(auditLogs.actorId, users.id))
       .where(eq(auditLogs.entityId, taskId))
@@ -59,12 +59,13 @@ export const taskDetailRoutes = new Hono<AppEnv>()
       groupName: row.groupName,
       projectName: row.projectName,
       assigneeName: row.assigneeName,
-      comments: comments.map((x) => ({ ...x.comment, userName: x.userName })),
+      comments: comments.map((x) => ({ ...x.comment, userName: x.userName, userAvatarUrl: x.userAvatarUrl })),
       attachments,
       activity: activity.map((x) => ({
         id: x.log.id,
         action: x.log.action,
         actorName: x.actorName,
+        actorAvatarUrl: x.actorAvatarUrl,
         meta: x.log.meta,
         at: x.log.at,
       })),

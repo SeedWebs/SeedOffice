@@ -2,6 +2,7 @@ import { formatSatang, minutesToHoursLabel } from '@seedoffice/core'
 import { ArrowUpDown, Check, ChevronLeft, GripVertical, Pencil, Plus, Star, X } from 'lucide-react'
 import { useMemo, useState, type DragEvent } from 'react'
 import { Link, useParams, useSearchParams } from 'react-router'
+import { Avatar } from '../components/Avatar'
 import { FinanceSection } from '../components/FinanceSection'
 import { ProjectIcon } from '../components/ProjectIcon'
 import { TaskDrawer } from '../components/TaskDrawer'
@@ -18,6 +19,7 @@ export interface BoardTask {
   description: string | null
   assigneeId: string | null
   assigneeName: string | null
+  assigneeAvatarUrl: string | null
   status: 'todo' | 'doing' | 'done'
   estimateMinutes: number | null
   startDate: string | null
@@ -296,9 +298,7 @@ export function ProjectDetailPage() {
                       <span className="text-[11px] text-muted shrink-0">{fmtThaiDate(t.dueDate)}</span>
                     )}
                     {t.assigneeName && (
-                      <div className={`w-6 h-6 rounded-full grid place-items-center text-[10px] font-semibold shrink-0 ${avatarColor(t.assigneeName)}`}>
-                        {t.assigneeName.slice(0, 2)}
-                      </div>
+                      <Avatar name={t.assigneeName} avatarUrl={t.assigneeAvatarUrl} className="w-6 h-6 text-[10px]" colorClass={avatarColor(t.assigneeName)} />
                     )}
                   </div>
                 </div>

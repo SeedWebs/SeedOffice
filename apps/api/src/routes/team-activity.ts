@@ -18,7 +18,7 @@ export const teamActivityRoutes = new Hono<AppEnv>().get('/', async (c) => {
   const monthStart = `${today.slice(0, 7)}-01`
 
   const team = await db
-    .select({ id: users.id, name: users.name, role: users.role })
+    .select({ id: users.id, name: users.name, avatarUrl: users.avatarUrl, role: users.role })
     .from(users)
     .where(eq(users.status, 'active'))
 
@@ -89,6 +89,7 @@ export const teamActivityRoutes = new Hono<AppEnv>().get('/', async (c) => {
       return {
         userId: u.id,
         name: u.name,
+        avatarUrl: u.avatarUrl,
         role: u.role,
         todayMinutes: todayMin,
         monthMinutes: mine.reduce((s, e) => s + e.minutes, 0),

@@ -37,7 +37,7 @@ export const taskRoutes = new Hono<AppEnv>()
       .where(eq(taskGroups.projectId, projectId))
       .orderBy(asc(taskGroups.sortOrder))
     const rows = await db
-      .select({ task: tasks, assigneeName: users.name })
+      .select({ task: tasks, assigneeName: users.name, assigneeAvatarUrl: users.avatarUrl })
       .from(tasks)
       .leftJoin(users, eq(tasks.assigneeId, users.id))
       .where(eq(tasks.projectId, projectId))
@@ -52,7 +52,7 @@ export const taskRoutes = new Hono<AppEnv>()
         ...g,
         tasks: rows
           .filter((r) => r.task.groupId === g.id)
-          .map((r) => ({ ...r.task, assigneeName: r.assigneeName, starredToday: starred.has(r.task.id) })),
+          .map((r) => ({ ...r.task, assigneeName: r.assigneeName, assigneeAvatarUrl: r.assigneeAvatarUrl, starredToday: starred.has(r.task.id) })),
       })),
     })
   })

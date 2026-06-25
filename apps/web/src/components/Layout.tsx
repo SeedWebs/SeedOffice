@@ -17,6 +17,7 @@ import { NavLink, Outlet, useNavigate } from 'react-router'
 import { api } from '../lib/api'
 import { useAuth, type Me } from '../lib/auth'
 import { TimerProvider, useTimer } from '../lib/timer'
+import { Avatar } from './Avatar'
 import { QuickAddModal } from './QuickAdd'
 
 /** banner เตือนชนเพดานชั่วโมง (SPEC §4.5 — เตือนบนเว็บ) */
@@ -105,7 +106,6 @@ export function Layout() {
   if (!user) return null
 
   const items = NAV.filter((n) => n.roles.includes(user.role))
-  const initial = user.name.slice(0, 2)
 
   const sidebar = (
     <aside
@@ -156,9 +156,7 @@ export function Layout() {
             title="โปรไฟล์"
             className="flex items-center gap-2.5 min-w-0 flex-1 -mx-1 px-1 py-0.5 rounded-lg hover:bg-hover"
           >
-            <div className="w-8 h-8 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-xs font-semibold shrink-0">
-              {initial}
-            </div>
+            <Avatar name={user.name} avatarUrl={user.avatarUrl} className="w-8 h-8 text-xs" colorClass="bg-brand-100 text-brand-700" />
             <div className="min-w-0 flex-1">
               <div className="text-sm font-medium text-strong truncate">{user.name}</div>
               <div className="text-[11px] text-muted truncate capitalize">{user.role}</div>

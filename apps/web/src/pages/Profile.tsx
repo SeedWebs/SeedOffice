@@ -1,5 +1,6 @@
 import { useState, type ChangeEvent } from 'react'
 import { AccessTokens } from '../components/AccessTokens'
+import { Avatar } from '../components/Avatar'
 import { PageHeader } from '../components/PageHeader'
 import { api } from '../lib/api'
 import { useAuth, type Me } from '../lib/auth'
@@ -62,9 +63,7 @@ export function ProfilePage() {
           </div>
           <div className="p-5 space-y-4">
             <div className="flex items-center gap-3">
-              <div className="w-12 h-12 rounded-full bg-brand-100 text-brand-700 grid place-items-center text-base font-semibold shrink-0">
-                {user.name.slice(0, 2)}
-              </div>
+              <Avatar name={user.name} avatarUrl={user.avatarUrl} className="w-12 h-12 text-base" colorClass="bg-brand-100 text-brand-700" />
               <div className="text-sm min-w-0">
                 <div className="font-medium text-strong truncate">{user.name}</div>
                 <div className="text-muted truncate">
