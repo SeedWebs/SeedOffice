@@ -3,6 +3,8 @@
 {
   "$schema": "node_modules/wrangler/config-schema.json",
   "name": "seedoffice",
+  // SeedWebs account — ไม่ใช่ secret (เหมือน D1 id) · กัน `wrangler deploy` เลือกบัญชีไม่ได้ตอน login หลายบัญชี
+  "account_id": "5d27d6b42089bb94d0311c729ccce6bb",
   "main": "apps/api/src/index.ts",
   "compatibility_date": "2026-06-10",
   "compatibility_flags": ["nodejs_compat"],
